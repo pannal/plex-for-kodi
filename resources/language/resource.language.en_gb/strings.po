@@ -1054,4 +1054,23 @@ msgstr ""
 
 msgctxt "#32601"
 msgid "Allow AV1"
+
+msgctxt "#32602"
+msgid "Enable this if your hardware can handle AV1. Disable it to force transcoding."
+msgstr ""
+
+msgctxt "#32521"
+msgid "Skip Intro Button Timeout"
+msgstr ""
+
+msgctxt "#32522"
+msgid "Automatically Skip Intro"
+msgstr ""
+
+msgctxt "#32523"
+msgid "Automatically skip intros if available."
+msgstr ""
+
+msgctxt "#32524"
+msgid "Set how long the skip intro button shows for."
 msgstr ""

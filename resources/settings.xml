@@ -60,9 +60,23 @@
                     </control>
                 </setting>
             </group>
+            <group id="3" label="32520">
+                <setting id="skip_intro_button_timeout" type="integer" label="32521">
+                    <level>0</level>
+                    <default>10</default>
+                    <control type="edit" format="integer">
+                        <heading>32520</heading>
+                    </control>
+                </setting>
+                <setting id="auto_skip_intro" type="boolean" label="32522">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+            </group>
         </category>
         <category id="user_interface" label="32467">
-            <group id="3" label="">
+            <group id="4" label="">
                 <setting id="fast_back" type="boolean" label="32485">
                     <level>0</level>
                     <default>false</default>
@@ -110,7 +124,7 @@
             </group>
         </category>
         <category id="screensaver" label="32488">
-            <group id="4" label="">
+            <group id="5" label="">
                 <setting id="screensaver_quiz" type="boolean" label="32489">
                     <level>0</level>
                     <default>false</default>

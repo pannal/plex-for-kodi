@@ -529,7 +529,7 @@ class AudioPlayerHandler(BasePlayerHandler):
         try:
             data = plexID.split(':', 1)[-1]
             from plexnet import plexobjects
-            track = plexobjects.PlexObject.deSerialize(base64.urlsafe_b64decode(data.encode('utf-8')))
+            track = plexobjects.PlexObject.deSerialize(base64.urlsafe_b64decode(data[1:].encode('utf-8')))
             track.softReload()
             self.media = track
             pobj = plexplayer.PlexAudioPlayer(track)

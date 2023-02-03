@@ -106,6 +106,8 @@ class AdvancedSettings(object):
         ("intro_skip_early", False),
         ("postplay_always", False),
         ("postplay_timeout", 16),
+        ("skip_intro_button_timeout", 10),
+        ("auto_skip_intro", False),
         ("playlist_visit_media", True),
         ("intro_skip_early", False)
     )
@@ -562,7 +564,7 @@ def getPlatform():
 
 
 def getProgressImage(obj):
-    if not obj.get('viewOffset'):
+    if not obj.get('viewOffset') or not obj.get('duration'):
         return ''
     pct = int((obj.viewOffset.asInt() / obj.duration.asFloat()) * 100)
     pct = pct - pct % 2  # Round to even number - we have even numbered progress only

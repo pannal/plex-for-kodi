@@ -5,6 +5,7 @@ from . import exceptions
 from . import util
 import json
 import six
+import time
 
 # Search Types - Plex uses these to filter specific media types when searching.
 SEARCHTYPES = {
@@ -58,7 +59,10 @@ class PlexValue(six.text_type):
         if self.isdigit():
             dt = datetime.fromtimestamp(int(self))
         else:
-            dt = datetime.strptime(self, '%Y-%m-%d')
+            # dt = datetime.strptime(self, '%Y-%m-%d')
+            # Avoid datetime.strptime to avoid
+            # https://github.com/python/cpython/issues/71587
+            dt = datetime.fromtimestamp(time.mktime(time.strptime(self, '%Y-%m-%d')))
 
         if not format_:
             return dt
