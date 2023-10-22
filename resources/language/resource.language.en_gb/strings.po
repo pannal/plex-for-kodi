@@ -1134,6 +1134,10 @@ msgctxt "#32543"
 msgid "Ends at"
 msgstr ""
 
+msgctxt "#32544"
+msgid "Cancel the post play timer by hitting the ok/select button"
+msgstr ""
+
 msgctxt "#32601"
 msgid "Allow AV1"
 msgstr ""

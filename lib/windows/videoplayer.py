@@ -202,7 +202,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         elif controlID == self.PREV_BUTTON_ID:
             self.playVideo(prev=True)
         elif controlID == self.NEXT_BUTTON_ID:
-            if not timeoutCanceled:
+            if not util.advancedSettings.cancelPostPlayTimerWithOkButton or not timeoutCanceled:
                 self.playVideo()
         elif controlID == self.PLAYER_STATUS_BUTTON_ID:
             self.showAudioPlayer()

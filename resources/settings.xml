@@ -165,6 +165,12 @@
                         <dependency type="enable" setting="show_media_ends_info">true</dependency>
                     </dependencies>
                 </setting>
+                <setting id="cancel_post_play_timer_with_ok_button" type="boolean" label="32544" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                    <visible>true</visible>
+                </setting>
             </group>
         </category>
         <category id="user_interface" label="32467">
