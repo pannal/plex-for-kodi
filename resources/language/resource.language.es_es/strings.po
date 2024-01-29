@@ -84,7 +84,7 @@ msgstr "Calidad Remoto"
 
 msgctxt "#32022"
 msgid "Online Quality"
-msgstr "Calidad Online"
+msgstr "Calidad Internet"
 
 msgctxt "#32023"
 msgid "Transcode Format"
