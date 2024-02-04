@@ -600,6 +600,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
                         self.setFocusId(self.SERVER_BUTTON_ID)
                         return
 
+                    if controlID == self.SECTION_LIST_ID and self.sectionList.control.getSelectedPosition() > 0:
+                        self.sectionList.setSelectedItemByPos(0)
+                        self.showHubs(HomeSection)
+                        return
+
                     if util.advancedSettings.fastBack and not optionsFocused and offSections \
                             and self.lastFocusID not in (self.USER_BUTTON_ID, self.SERVER_BUTTON_ID,
                                                          self.SEARCH_BUTTON_ID, self.SECTION_LIST_ID):
@@ -607,7 +612,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
                         self.setFocusId(self.SECTION_LIST_ID)
                         return
 
-                if action in(xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_CONTEXT_MENU):
+                if action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_CONTEXT_MENU):
                     if not optionsFocused and offSections \
                             and (not util.advancedSettings.fastBack or action == xbmcgui.ACTION_CONTEXT_MENU):
                         self.lastNonOptionsFocusID = self.lastFocusID
@@ -754,8 +759,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         if mli.dataSource is None:
             return
 
+        carryProps = None
+        if auto_play and self.hubControls:
+            # carry over some props to the new window as we might end up showing a resume dialog not rendering the
+            # underlying window. the new window class will invalidate the old one temporarily, though, as it seems
+            # and the properties vanish, resulting in all text2lines enabled hubs to lose their title2 labels
+            carryProps = dict(
+                ('hub.text2lines.4{0:02d}'.format(i), '1') for i, hubCtrl in enumerate(self.hubControls) if
+                hubCtrl.dataSource and self.HUBMAP[hubCtrl.dataSource.getCleanHubIdentifier()].get("text2lines"))
+
         try:
-            command = opener.open(mli.dataSource, auto_play=auto_play)
+            command = opener.open(mli.dataSource, auto_play=auto_play, dialog_props=carryProps)
             if command == "NODATA":
                 raise util.NoDataException
         except util.NoDataException:
@@ -870,7 +884,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         self.tasks = [t for t in self.tasks if t.isValid()]
 
     def sectionChanged(self, force=False):
-        self.sectionChangeTimeout = time.time() + 0.3
+        self.sectionChangeTimeout = time.time() + 0.5
         if not self.sectionChangeThread or not self.sectionChangeThread.is_alive() or force:
             self.sectionChangeThread = threading.Thread(target=self._sectionChanged, name="sectionchanged")
             self.sectionChangeThread.start()

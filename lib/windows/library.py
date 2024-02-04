@@ -711,13 +711,10 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
 
         choice = result['type']
 
-        forceRefresh = False
         if choice == self.sort:
             self.sortDesc = not self.sortDesc
         else:
             self.sortDesc = defSortByOption.get(choice, False)
-            if choice == 'titleSort':
-                forceRefresh = True
 
         self.sort = choice
 
@@ -727,7 +724,7 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
         util.setGlobalProperty('sort', choice)
         self.setProperty('sort.display', result['title'])
 
-        self.sortShowPanel(choice, forceRefresh)
+        self.sortShowPanel(choice, True)
 
     def viewTypeButtonClicked(self):
         for task in self.tasks:

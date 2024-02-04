@@ -27,7 +27,7 @@ from . import pagination
 from . import playbacksettings
 
 from lib.util import T
-from .mixins import SeasonsMixin
+from .mixins import SeasonsMixin, RatingsMixin
 
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1)
 
@@ -174,7 +174,7 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
         return self.parentWindow.show_.getRelated(offset=offset, limit=amount)
 
 
-class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin,
+class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, RatingsMixin,
                      playbacksettings.PlaybackSettingsMixin):
     xmlFile = 'script-plex-episodes.xml'
     path = util.ADDON.getAddonInfo('path')
@@ -206,6 +206,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
     PROGRESS_IMAGE_ID = 250
 
     PLAY_BUTTON_ID = 301
+    PLAY_BUTTON_DISABLED_ID = 306
     SHUFFLE_BUTTON_ID = 302
     OPTIONS_BUTTON_ID = 303
     INFO_BUTTON_ID = 304
@@ -229,6 +230,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.cameFrom = kwargs.get('came_from')
         self.tasks = backgroundthread.Tasks()
         self.initialized = False
+        self.currentItemLoaded = False
         self.closing = False
         self._reloadVideos = []
 
@@ -236,7 +238,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.episode = episode
         self.season = season if season is not None else self.episode.season()
         try:
-            self.show_ = show or (self.episode or self.season).show().reload(includeExtras=1, includeExtrasCount=10)
+            self.show_ = show or (self.episode or self.season).show().reload(includeExtras=1, includeExtrasCount=10,
+                                                                             includeOnDeck=1)
         except IndexError:
             raise util.NoDataException
 
@@ -274,7 +277,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
     def doAutoPlay(self):
         # First reload the video to get all the other info
         self.initialEpisode.reload(checkFiles=1, **VIDEO_RELOAD_KW)
-        return self.playButtonClicked(force_episode=self.initialEpisode)
+        return self.playButtonClicked(force_episode=self.initialEpisode, from_auto_play=True)
 
     def onFirstInit(self):
         self._onFirstInit()
@@ -320,7 +323,13 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
     def postSetup(self, from_select_episode=False):
         self.selectEpisode(from_select_episode=from_select_episode)
         self.checkForHeaderFocus(xbmcgui.ACTION_MOVE_DOWN)
-        self.setFocusId(self.PLAY_BUTTON_ID)
+
+        selected = self.episodeListControl.getSelectedItem()
+        if selected:
+            self.setFocusId(self.getPlayButtonID(selected, base=not self.currentItemLoaded
+                            and self.PLAY_BUTTON_DISABLED_ID or None)
+            )
+
         self.initialized = True
 
     @busy.dialog()
@@ -521,7 +530,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         elif xbmc.getCondVisibility('ControlGroup(50).HasFocus(0) + !ControlGroup(300).HasFocus(0) + !ControlGroup(1300).HasFocus(0)'):
             self.setProperty('on.extras', '1')
 
-        if player.PLAYER.bgmPlaying and player.PLAYER.handler.currentlyPlaying != self.season.show().ratingKey:
+        if player.PLAYER.bgmPlaying and player.PLAYER.handler.currentlyPlaying != self.show_.ratingKey:
             player.PLAYER.stopAndWait()
 
     def openItem(self, control=None, item=None, came_from=None):
@@ -658,7 +667,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         section_id = self.show_.getLibrarySectionId()
         self.processCommand(search.dialog(self, section_id=section_id or None))
 
-    def playButtonClicked(self, shuffle=False, force_episode=None):
+    def playButtonClicked(self, shuffle=False, force_episode=None, from_auto_play=False):
         if shuffle:
             seasonOrShow = self.season or self.show_
             items = seasonOrShow.all()
@@ -669,7 +678,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             return True
 
         else:
-            return self.episodeListClicked(force_episode=force_episode)
+            return self.episodeListClicked(force_episode=force_episode, from_auto_play=from_auto_play)
 
     def shuffleButtonClicked(self):
         self.playButtonClicked(shuffle=True)
@@ -711,7 +720,10 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             video=episode
         )
 
-    def episodeListClicked(self, force_episode=None):
+    def episodeListClicked(self, force_episode=None, from_auto_play=False):
+        if not self.currentItemLoaded and not from_auto_play:
+            return
+
         if not force_episode:
             mli = self.episodeListControl.getSelectedItem()
             if not mli or mli.getProperty("is.boundary"):
@@ -735,7 +747,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                 pos=(660, 441),
                 close_direction='none',
                 set_dropdown_prop=False,
-                header=T(32314, 'In Progress')
+                header=T(32314, 'In Progress'),
+                dialog_props=from_auto_play and self.dialogProps or None
             )
 
             if not choice:
@@ -937,6 +950,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
     def updateProperties(self):
         showTitle = self.show_ and self.show_.title or ''
 
+        self.setBoolProperty('current_item.loaded', False)
         self.updateBackgroundFrom(self.show_ or self.season.show())
         self.setProperty('season.thumb', (self.season or self.show_).thumb.asTranscodedImageURL(*self.POSTER_DIM))
         self.setProperty('show.title', showTitle)
@@ -990,28 +1004,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         mli.setProperty('content.rating', video.contentRating.split('/', 1)[-1])
         mli.setProperty('genre', self.genre)
 
-        if video.get('userRating'):
-            stars = str(int(round((video.userRating.asFloat() / 10) * 5)))
-            mli.setProperty('rating.stars', stars)
-        # elif video.rating:
-        #     stars = str(int(round((video.rating.asFloat() / 10) * 5)))
-        #     mli.setProperty('rating.stars', stars)
-
-        if video.get('ratingImage'):
-            rating = video.rating
-            audienceRating = video.audienceRating
-            if video.ratingImage.startswith('rottentomatoes:'):
-                rating = '{0}%'.format(int(rating.asFloat() * 10))
-                if audienceRating:
-                    audienceRating = '{0}%'.format(int(audienceRating.asFloat() * 10))
-
-            mli.setProperty('rating', rating)
-            mli.setProperty('rating.image', 'script.plex/ratings/{0}.png'.format(video.ratingImage.replace('://', '/')))
-            if video.get('audienceRatingImage'):
-                mli.setProperty('rating2', audienceRating)
-                mli.setProperty('rating2.image', 'script.plex/ratings/{0}.png'.format(video.audienceRatingImage.replace('://', '/')))
-        else:
-            mli.setProperty('rating', video.rating)
+        self.populateRatings(video, mli)
 
     def setPostReloadItemInfo(self, video, mli):
         self.setItemAudioAndSubtitleInfo(video, mli)
@@ -1023,6 +1016,15 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         mli.setProperty('video.rendering', video.videoCodecRendering)
         mli.setBoolProperty('unavailable', not video.available())
         mli.setBoolProperty('media.multiple', len(list(filter(lambda x: x.isAccessible(), video.media()))) > 1)
+
+        directors = u' / '.join([d.tag for d in video.directors()][:2])
+        directorsLabel = len(video.directors) > 1 and T(32401, u'DIRECTORS').upper() or T(32383,
+                                                                                          u'DIRECTOR').upper()
+        mli.setProperty('directors', directors and u'{0}    {1}'.format(directorsLabel, directors) or '')
+        writers = u' / '.join([r.tag for r in video.writers()][:2])
+        writersLabel = len(video.writers) > 1 and T(32403, u'WRITERS').upper() or T(32402, u'WRITER').upper()
+        mli.setProperty('writers',
+                        writers and u'{0}{1}    {2}'.format(directors and '    ' or '', writersLabel, writers) or '')
 
     def setItemAudioAndSubtitleInfo(self, video, mli):
         sas = video.selectedAudioStream()
@@ -1099,6 +1101,9 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
         backgroundthread.BGThreader.addTasks(tasks)
 
+    def getPlayButtonID(self, mli, base=None):
+        return (base and base or self.PLAY_BUTTON_ID) + (mli.getProperty('media.multiple') and 1000 or 0)
+
     def reloadItemCallback(self, task, episode, with_progress=False):
         self.tasks.remove(task)
         del task
@@ -1124,6 +1129,22 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                 if mli == selected:
                     self.lastItem = mli
                     self.setProgress(mli)
+
+                if not self.currentItemLoaded and (
+                        mli == selected or (self.episode and self.episode == mli.dataSource)):
+                    self.currentItemLoaded = True
+                    self.setBoolProperty('current_item.loaded', True)
+                    if not self.lastFocusID or self.lastFocusID in (
+                            self.PLAY_BUTTON_DISABLED_ID, self.PLAY_BUTTON_DISABLED_ID + 1000):
+                        # wait for visibility of the button
+                        tries = 0
+                        PBID = self.getPlayButtonID(mli)
+                        while not xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)) \
+                                and not util.MONITOR.abortRequested() and tries < 5:
+                            util.MONITOR.waitForAbort(0.1)
+                            tries += 1
+                        if xbmc.getCondVisibility('Control.IsVisible({})'.format(PBID)):
+                            self.setFocusId(PBID)
                 return
 
     def fillExtras(self, has_prev=False):

@@ -222,7 +222,7 @@
             <group id="4" label="">
                 <setting id="fast_back" type="boolean" label="32485">
                     <level>0</level>
-                    <default>false</default>
+                    <default>true</default>
                     <control type="toggle"/>
                 </setting>
                 <setting id="postplay_always" type="boolean" label="32500">

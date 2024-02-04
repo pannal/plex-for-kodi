@@ -249,10 +249,12 @@
                 <control type="grouplist">
                     <posx>466</posx>
                     <posy>0</posy>
-                    <width>1360</width>
+                    <width>1226</width>
                     <height>60</height>
                     <align>left</align>
                     <itemgap>0</itemgap>
+                    <scroll>true</scroll>
+                    <scrollspeed>5</scrollspeed>
                     <orientation>horizontal</orientation>
                     <usecontrolcoords>true</usecontrolcoords>
                     <control type="label">
@@ -297,22 +299,6 @@
                         <textcolor>FFFFFFFF</textcolor>
                         <label>$INFO[Window.Property(duration)]$INFO[Window.Property(info), &#8226; ]$INFO[Window.Property(date), &#8226; ]$INFO[Window.Property(content.rating), &#8226; ]</label>
                     </control>
-                    <control type="label">
-                        <visible>!String.IsEmpty(Window.Property(rating.stars))</visible>
-                        <width>auto</width>
-                        <height>34</height>
-                        <font>font12</font>
-                        <align>left</align>
-                        <textcolor>FFFFFFFF</textcolor>
-                        <label> &#8226; </label>
-                    </control>
-                    <control type="image">
-                        <visible>!String.IsEmpty(Window.Property(rating.stars))</visible>
-                        <posy>6</posy>
-                        <width>134</width>
-                        <height>22</height>
-                        <texture>script.plex/stars/$INFO[Window.Property(rating.stars)].png</texture>
-                    </control>
                     <control type="button">
                         <visible>!String.IsEmpty(Window.Property(video.res))</visible>
                         <posx>10</posx>
@@ -346,16 +332,17 @@
                 </control>
 
                 <control type="grouplist">
-                    <visible>!String.IsEmpty(Window.Property(rating))</visible>
-                    <posx>1560</posx>
+                    <visible>!String.IsEmpty(Window.Property(rating)) | !String.IsEmpty(Window.Property(rating2))</visible>
+                    <posx>1426</posx>
                     <posy>4</posy>
-                    <width>300</width>
+                    <width>434</width>
                     <height>32</height>
                     <align>right</align>
                     <itemgap>15</itemgap>
                     <orientation>horizontal</orientation>
                     <usecontrolcoords>true</usecontrolcoords>
                     <control type="image">
+                        <visible>!String.IsEmpty(Window.Property(rating))</visible>
                         <posy>2</posy>
                         <width>63</width>
                         <height>30</height>
@@ -363,6 +350,7 @@
                         <aspectratio align="right">keep</aspectratio>
                     </control>
                     <control type="label">
+                        <visible>!String.IsEmpty(Window.Property(rating))</visible>
                         <width>auto</width>
                         <height>30</height>
                         <font>font12</font>
@@ -375,7 +363,7 @@
                         <posy>2</posy>
                         <width>40</width>
                         <height>30</height>
-                        <texture>$INFO[Window.Property(rating2.image)]</texture>
+                        <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating2.image)]</texture>
                         <aspectratio align="right">keep</aspectratio>
                     </control>
                     <control type="label">
@@ -387,10 +375,17 @@
                         <textcolor>FFFFFFFF</textcolor>
                         <label>$INFO[Window.Property(rating2)]</label>
                     </control>
+                    <control type="image">
+                        <visible>!String.IsEmpty(Window.Property(rating.stars))</visible>
+                        <posy>6</posy>
+                        <width>134</width>
+                        <height>22</height>
+                        <texture>script.plex/stars/$INFO[Window.Property(rating.stars)].png</texture>
+                    </control>
                 </control>
 
                 <control type="label">
-                    <visible>!String.IsEmpty(Window.Property(directors))</visible>
+                    <visible>!String.IsEmpty(Window.Property(directors)) | !String.IsEmpty(Window.Property(writers))</visible>
                     <posx>466</posx>
                     <posy>130</posy>
                     <width>1360</width>
@@ -398,10 +393,10 @@
                     <font>font12</font>
                     <align>left</align>
                     <textcolor>99FFFFFF</textcolor>
-                    <label>$INFO[Window.Property(directors)]</label>
+                    <label>$INFO[Window.Property(directors)]$INFO[Window.Property(writers)]</label>
                 </control>
                 <control type="label">
-                    <visible>!String.IsEmpty(Window.Property(writers))</visible>
+                    <visible>!String.IsEmpty(Window.Property(cast))</visible>
                     <posx>466</posx>
                     <posy>165</posy>
                     <width>1360</width>
@@ -409,7 +404,7 @@
                     <font>font12</font>
                     <align>left</align>
                     <textcolor>99FFFFFF</textcolor>
-                    <label>$INFO[Window.Property(writers)]</label>
+                    <label>$INFO[Window.Property(cast)]</label>
                 </control>
                 <control type="grouplist">
                     <posx>466</posx>

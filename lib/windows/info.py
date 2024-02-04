@@ -91,10 +91,22 @@ class InfoWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
                     streamtype = stream.streamType.asInt()
                     # video
                     if streamtype == 1:
-                        addMedia.append("Video: {}x{}, {} {}/{}bit/{}/{}@{} kBit, {} fps\n".format(
+                        dovi = ""
+                        if stream.DOVIPresent:
+                            dovi = "Level: {}, Profile: {}, Version: {}, " \
+                                   "BL: {}{}, EL: {}, RPU: {}".format(stream.DOVILevel,
+                                                                      stream.DOVIProfile,
+                                                                      stream.DOVIVersion,
+                                                                      stream.DOVIBLPresent,
+                                                                      stream.DOVIBLPresent and
+                                                                      " (compat ID: {})".format(stream.DOVIBLCompatID)
+                                                                      or "",
+                                                                      stream.DOVIELPresent,
+                                                                      stream.DOVIRPUPresent)
+                        addMedia.append("Video: {}x{}, {} {}/{}bit/{}/{}@{} kBit, {} fps{}\n".format(
                             stream.width, stream.height, stream.videoCodecRendering, stream.codec.upper(),
                             stream.bitDepth, stream.chromaSubsampling, stream.colorPrimaries, stream.bitrate,
-                            stream.frameRate))
+                            stream.frameRate, dovi and "\nDoVi: {}\n".format(dovi) or ""))
                     # audio
                     elif streamtype == 2:
                         addMedia.append("Audio: {}{}, {}/{}ch@{} kBit, {} Hz\n".format(

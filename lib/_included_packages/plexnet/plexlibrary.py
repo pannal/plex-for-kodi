@@ -510,6 +510,10 @@ class Playlist(playlist.BasePlaylist, signalsmixin.SignalsMixin):
 
 
 class BaseHub(plexobjects.PlexObject):
+    def __init__(self, *args, **kwargs):
+        super(BaseHub, self).__init__(*args, **kwargs)
+        self._identifier = None
+
     def reset(self):
         self.set('offset', 0)
         self.set('size', len(self.items))
@@ -519,6 +523,11 @@ class BaseHub(plexobjects.PlexObject):
                 'more',
                 (self.items[0].container.offset.asInt() + self.items[0].container.size.asInt() < totalSize) and '1' or ''
             )
+
+    def getCleanHubIdentifier(self):
+        if not self._identifier:
+            self._identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
+        return self._identifier
 
 
 class Hub(BaseHub):
@@ -544,9 +553,6 @@ class Hub(BaseHub):
 
     def __repr__(self):
         return '<{0}:{1}>'.format(self.__class__.__name__, self.hubIdentifier)
-
-    def getCleanHubIdentifier(self):
-        return re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
 
     def reload(self, **kwargs):
         """ Reload the data for this object from PlexServer XML. """
@@ -597,9 +603,6 @@ class PlaylistHub(BaseHub):
         except exceptions.BadRequest:
             util.DEBUG_LOG('AudioPlaylistHub: Bad request: {0}'.format(self))
             self.items = []
-
-    def getCleanHubIdentifier(self):
-        return re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
 
     def extend(self, start=None, size=None):
         path = '/playlists/all?playlistType={0}'.format(self.type)

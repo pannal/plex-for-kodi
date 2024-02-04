@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="0.7.5-beta10"
+       version="0.7.5-prerelease8"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -18,7 +18,15 @@
     <extension point="xbmc.service" library="service.py" />
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">PlexMod for Kodi</summary>
+        <summary lang="es_ES">PlexMod para Kodi</summary>
+        <summary lang="de_DE">PlexMod für Kodi</summary>
         <description lang="en_GB">Unofficial Plex for Kodi add-on</description>
+        <description lang="es_ES">Complemento no oficial de Plex para Kodi</description>
+        <description lang="de_DE">Inoffizielles Plex für Kodi add-on</description>
+        <disclaimer lang="en">This add-on is not supported by Plex</disclaimer>
+        <disclaimer lang="es">Este add-on no está respaldado por Plex</disclaimer>
+        <disclaimer lang="de">Dieses Addon wird nicht von der Firma Plex Inc. unterstützt</disclaimer>
+
         <license>GPL-2.0-only</license>
         <forum>https://forums.plex.tv/t/plexmod-for-kodi-18-19-20-21/481208</forum>
         <website>https://www.plex.tv</website>

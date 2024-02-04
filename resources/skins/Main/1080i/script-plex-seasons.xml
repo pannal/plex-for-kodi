@@ -196,7 +196,7 @@
                 </control>
 
                 <control type="grouplist">
-                    <visible>!String.IsEmpty(Window.Property(rating))</visible>
+                    <visible>!String.IsEmpty(Window.Property(rating)) | !String.IsEmpty(Window.Property(rating2))</visible>
                     <posx>1660</posx>
                     <posy>70</posy>
                     <width>200</width>
@@ -206,6 +206,7 @@
                     <orientation>horizontal</orientation>
                     <usecontrolcoords>true</usecontrolcoords>
                     <control type="image">
+                        <visible>!String.IsEmpty(Window.Property(rating))</visible>
                         <posy>2</posy>
                         <width>63</width>
                         <height>30</height>
@@ -213,6 +214,7 @@
                         <aspectratio align="right">keep</aspectratio>
                     </control>
                     <control type="label">
+                        <visible>!String.IsEmpty(Window.Property(rating))</visible>
                         <width>auto</width>
                         <height>30</height>
                         <font>font12</font>
@@ -225,7 +227,7 @@
                         <posy>2</posy>
                         <width>63</width>
                         <height>30</height>
-                        <texture>$INFO[Window.Property(rating2.image)]</texture>
+                        <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating2.image)]</texture>
                         <aspectratio align="right">keep</aspectratio>
                     </control>
                     <control type="label">
@@ -436,6 +438,27 @@
                                             <label>$INFO[ListItem.Property(unwatched.count)]</label>
                                         </control>
                                     </control>
+                                    <control type="group">
+                                        <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                        <posx>0</posx>
+                                        <posy>230</posy>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>0</posy>
+                                            <width>158</width>
+                                            <height>6</height>
+                                            <texture>script.plex/white-square.png</texture>
+                                            <colordiffuse>C0000000</colordiffuse>
+                                        </control>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>1</posy>
+                                            <width>158</width>
+                                            <height>4</height>
+                                            <texture>$INFO[ListItem.Property(progress)]</texture>
+                                            <colordiffuse>FFCC7B19</colordiffuse>
+                                        </control>
+                                    </control>
                                     <control type="label">
                                         <scroll>false</scroll>
                                         <posx>0</posx>
@@ -515,6 +538,27 @@
                                                 <aligny>center</aligny>
                                                 <textcolor>FF000000</textcolor>
                                                 <label>$INFO[ListItem.Property(unwatched.count)]</label>
+                                            </control>
+                                        </control>
+                                        <control type="group">
+                                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                            <posx>0</posx>
+                                            <posy>230</posy>
+                                            <control type="image">
+                                                <posx>0</posx>
+                                                <posy>0</posy>
+                                                <width>158</width>
+                                                <height>6</height>
+                                                <texture>script.plex/white-square.png</texture>
+                                                <colordiffuse>C0000000</colordiffuse>
+                                            </control>
+                                            <control type="image">
+                                                <posx>0</posx>
+                                                <posy>1</posy>
+                                                <width>158</width>
+                                                <height>4</height>
+                                                <texture>$INFO[ListItem.Property(progress)]</texture>
+                                                <colordiffuse>FFCC7B19</colordiffuse>
                                             </control>
                                         </control>
                                         <control type="label">

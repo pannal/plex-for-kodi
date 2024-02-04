@@ -106,6 +106,11 @@ class BaseWindow(xbmcgui.WindowXML, BaseFunctions):
         self._winID = None
         self.started = False
         self.finishedInit = False
+        self.dialogProps = kwargs.get("dialog_props", None)
+
+        carryProps = kwargs.get("window_props", None)
+        if carryProps:
+            self.setProperties(list(carryProps.keys()), list(carryProps.values()))
 
     def onInit(self):
         global LAST_BG_URL
@@ -215,6 +220,10 @@ class BaseDialog(xbmcgui.WindowXMLDialog, BaseFunctions):
         self._closing = False
         self._winID = ''
         self.started = False
+
+        carryProps = kwargs.get("dialog_props", None)
+        if carryProps:
+            self.setProperties(list(carryProps.keys()), list(carryProps.values()))
 
     def onInit(self):
         self._winID = xbmcgui.getCurrentWindowDialogId()
@@ -444,6 +453,15 @@ class ManagedListItem(object):
         self.properties[key] = value
         self.listItem.setProperty(key, value)
         return self
+
+    def setProperties(self, prop_list, val_list_or_val):
+        if isinstance(val_list_or_val, list) or isinstance(val_list_or_val, tuple):
+            val_list = val_list_or_val
+        else:
+            val_list = [val_list_or_val] * len(prop_list)
+
+        for prop, val in zip(prop_list, val_list):
+            self.setProperty(prop, val)
 
     def setBoolProperty(self, key, boolean):
         return self.setProperty(key, boolean and '1' or '')

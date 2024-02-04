@@ -144,9 +144,17 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
         render = "sdr"
 
         if self.DOVIProfile == "8" and self.DOVIBLCompatID == "1":
-            render = "dv/hdr10"
+            render = "dv p8.1/hdr"
+        elif self.DOVIProfile == "8" and self.DOVIBLCompatID == "2":
+            render = "dv p8.2/sdr"
+        elif self.DOVIProfile == "8" and self.DOVIBLCompatID == "4":
+            render = "dv p8.4/hlg"
+        elif self.DOVIProfile == "7":
+            render = "dv p7"
+        elif self.DOVIProfile == "5":
+            render = "dv p5"
         elif self.DOVIProfile:
-            render = "dv"
+            render = "dv p{}".format(self.DOVIProfile)
         elif self.colorTrc == "smpte2084":
             render = "hdr"
         elif self.colorTrc == "arib-std-b67":

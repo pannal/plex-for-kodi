@@ -207,6 +207,7 @@ def showDropdown(
     header=None,
     select_index=None,
     onclose_callback=None,
+    dialog_props=None
 ):
 
     if header:
@@ -225,6 +226,7 @@ def showDropdown(
             header=header,
             select_index=select_index,
             onclose_callback=onclose_callback,
+            dialog_props=dialog_props,
         )
     else:
         pos = pos or (810, 400)
@@ -242,6 +244,7 @@ def showDropdown(
             header=header,
             select_index=select_index,
             onclose_callback=onclose_callback,
+            dialog_props=dialog_props,
         )
     choice = w.choice
     w = None

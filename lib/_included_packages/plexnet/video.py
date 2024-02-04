@@ -549,6 +549,8 @@ class Show(Video, media.RelatedMixin, SectionOnDeckMixin):
             self.roles = plexobjects.PlexItemList(data, media.Role, media.Role.TYPE, server=self.server, container=self.container)
             #self.related = plexobjects.PlexItemList(data.find('Related'), plexlibrary.Hub, plexlibrary.Hub.TYPE, server=self.server, container=self)
             self.extras = PlexVideoItemList(data.find('Extras'), initpath=self.initpath, server=self.server, container=self)
+            self.onDeck = PlexVideoItemList(data.find('OnDeck'), initpath=self.initpath, server=self.server,
+                                            container=self)
 
     @property
     def unViewedLeafCount(self):

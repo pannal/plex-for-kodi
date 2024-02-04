@@ -15,6 +15,7 @@ from . import windowutils
 from . import optionsdialog
 from . import preplayutils
 from . import pagination
+from .mixins import RatingsMixin
 
 from plexnet import plexplayer, media
 
@@ -32,7 +33,7 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
         return self.parentWindow.video.getRelated(offset=offset, limit=amount)
 
 
-class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
+class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixin):
     xmlFile = 'script-plex-pre_play.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -95,7 +96,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def doAutoPlay(self):
         # First reload the video to get all the other info
         self.video.reload(checkFiles=1, **VIDEO_RELOAD_KW)
-        return self.playVideo()
+        return self.playVideo(from_auto_play=True)
 
     @busy.dialog()
     def onReInit(self):
@@ -452,7 +453,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         x = ((focus + 1) * 304) - 100
         return x, y
 
-    def playVideo(self):
+    def playVideo(self, from_auto_play=False):
         if not self.video.available():
             util.messageDialog(T(32312, 'Unavailable'), T(32313, 'This item is currently unavailable.'))
             return
@@ -467,7 +468,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
                 pos=(660, 441),
                 close_direction='none',
                 set_dropdown_prop=False,
-                header=T(32314, 'In Progress')
+                header=T(32314, 'In Progress'),
+                dialog_props=from_auto_play and self.dialogProps or None
             )
 
             if not choice:
@@ -527,20 +529,21 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.setProperty('summary', self.video.summary.strip().replace('\t', ' '))
         self.setProperty('unwatched', not self.video.isWatched and '1' or '')
 
-        directors = u' / '.join([d.tag for d in self.video.directors()][:5])
+        directors = u' / '.join([d.tag for d in self.video.directors()][:3])
         directorsLabel = len(self.video.directors) > 1 and T(32401, u'DIRECTORS').upper() or T(32383, u'DIRECTOR').upper()
         self.setProperty('directors', directors and u'{0}    {1}'.format(directorsLabel, directors) or '')
+        writers = u' / '.join([r.tag for r in self.video.writers()][:3])
+        writersLabel = len(self.video.writers) > 1 and T(32403, u'WRITERS').upper() or T(32402, u'WRITER').upper()
+        self.setProperty('writers',
+                         writers and u'{0}{1}    {2}'.format(directors and '    ' or '', writersLabel, writers) or '')
 
+        # fixme: can this ever happen?
         if self.video.type == 'episode':
             self.setProperty('content.rating', '')
             self.setProperty('thumb', self.video.defaultThumb.asTranscodedImageURL(*self.THUMB_POSTER_DIM))
             self.setProperty('preview', self.video.thumb.asTranscodedImageURL(*self.PREVIEW_DIM))
             self.setProperty('info', u'{0} {1} {2} {3}'.format(T(32303, 'Season'), self.video.parentIndex, T(32304, 'Episode'), self.video.index))
             self.setProperty('date', util.cleanLeadingZeros(self.video.originallyAvailableAt.asDatetime('%B %d, %Y')))
-
-            writers = u' / '.join([w.tag for w in self.video.writers()][:5])
-            writersLabel = len(self.video.writers) > 1 and T(32403, u'WRITERS').upper() or T(32402, u'WRITER').upper()
-            self.setProperty('writers', writers and u'{0}    {1}'.format(writersLabel, writers) or '')
             self.setProperty('related.header', T(32306, 'Related Shows'))
         elif self.video.type == 'movie':
             self.setProperty('title', self.video.defaultTitle)
@@ -553,7 +556,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
             cast = u' / '.join([r.tag for r in self.video.roles()][:5])
             castLabel = 'CAST'
-            self.setProperty('writers', cast and u'{0}    {1}'.format(castLabel, cast) or '')
+            self.setProperty('cast', cast and u'{0}    {1}'.format(castLabel, cast) or '')
             self.setProperty('related.header', T(32404, 'Related Movies'))
 
         self.setProperty('video.res', self.video.resolutionString())
@@ -563,29 +566,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.setProperty('audio.channels', self.video.audioChannelsString(metadata.apiTranslate))
         self.setBoolProperty('media.multiple', len(list(filter(lambda x: x.isAccessible(), self.video.media()))) > 1)
 
-        self.setProperties(('rating.stars', 'rating', 'rating.image', 'rating2', 'rating2.image'), '')
-        if self.video.userRating:
-            stars = str(int(round((self.video.userRating.asFloat() / 10) * 5)))
-            self.setProperty('rating.stars', stars)
-        # elif self.video.rating:
-        #     stars = str(int(round((self.video.rating.asFloat() / 10) * 5)))
-        #     self.setProperty('rating.stars', stars)
-
-        if self.video.ratingImage:
-            rating = self.video.rating
-            audienceRating = self.video.audienceRating
-            if self.video.ratingImage.startswith('rottentomatoes:'):
-                rating = '{0}%'.format(int(rating.asFloat() * 10))
-                if audienceRating:
-                    audienceRating = '{0}%'.format(int(audienceRating.asFloat() * 10))
-
-            self.setProperty('rating', rating)
-            self.setProperty('rating.image', 'script.plex/ratings/{0}.png'.format(self.video.ratingImage.replace('://', '/')))
-            if self.video.audienceRatingImage:
-                self.setProperty('rating2', audienceRating)
-                self.setProperty('rating2.image', 'script.plex/ratings/{0}.png'.format(self.video.audienceRatingImage.replace('://', '/')))
-        else:
-            self.setProperty('rating', self.video.rating)
+        self.populateRatings(self.video, self)
 
         self.setAudioAndSubtitleInfo()
 
