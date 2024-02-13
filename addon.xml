@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="0.7.5-prerelease8"
+       version="0.7.5-rev1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -33,7 +33,65 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- WIP
+- Fix: transcoding is broken due to deepcopy usage
+- Add IMDB ID to video info
+- Fix: Libraries: Missing items when filters applied and collections exist (thanks @bowlingbeeg )
+- Fix: Libraries: Removed most filters from collections view as they don’t work (thanks @bowlingbeeg)
+- Fix: Chapters not available in episodes during playback after manually changing watch status
+- Fix: next episode receives resume state from previously resumed episode when pressing NEXT
+- Fix: Items with non-existant files get removed from the home hubs when visited
+- Fix: When using ACTION_PLAYER_PLAY to autoplay an item on Home that resumes, all title2 titles of the underlying screen disappear
+- Fix: PPI: CPU core usage overlaps items when playing something with enabled subtitles
+- Fix: SeekDialog/Handler/Player: Edge case where progress wasn't updated in certain situations
+- Fix: Non-Home-Hubs: hub elements limited to 10 after modifying an underlying item
+- Update Spanish translations (thanks @Deci8BelioS)
+- TV Shows: Allow deleting TV shows if possible
+- TV Shows: Allow deleting seasons if possible
+- TV Shows: Add CONTEXT_MENU handler on seasons, allowing changing watched status and deletion
+- TV Shows: More accurately show progress bar including in progress episodes
+- Player: Don’t use old resume info when going to next video in playlist
+- Player: Simplify and optimize stop/end/next logic
+- Core: Fall back properly when Kodi version string couldn’t be parsed
+- Core: Correctly reload addon settings on maximize from minimized state (so yes, you can minimize the addon, change addon settings, then maximize it again and the settings will be applied)
+- Core: Edge-case: Ensure TV background music isn't recognized as audio
+- Core: Logging: Clean Plex tokens from constructed item for playback dict
+- Core: SeekHandler: fix usage of player.video.duration erroring
+- Core: Home: Store last BG on minimize and on home select as well; don't store the same background URL if it hasn't changed
+- Core: VideoPlayer: Make sure we're the only active player, try to stop all other active players for 5 seconds
+- Core: Instead of using Action(back) before running addon, navigate to Home and try to guarantee that
+- Home: Don’t round robin while loading the next hub pagination chunk
+- Home: Sections: Increase section select timeout from 300 to 500ms
+- Home: Fix autoplay from home on episodes (ACTION_PLAYER_PLAY)
+- Home: Don't fail on empty hub
+- InfoScreen: Add DV stream metadata info
+- Episodes: Show episode options menu on long press select/OK (CONTEXT_MENU)
+- Episodes/Seasons/Shows: Calculate and show season watched percentage including in-progress episodes
+- Episodes/Seasons/Shows: Show progress even for shows/seasons with only an in progress episode, no fully watched ones
+- Episodes: Adjust ratings/userratings positioning and label widths; add autoscroll to show and episode titles
+- Episodes: Wait for full episode data to be loaded before enabling playback
+- Episodes: Add directors/writers to episode view
+- Episodes: BGM: Fix show() accessor failing
+- Episodes: Don't play background music when current volume is zero
+- Movies/TV/Episodes: Support ratings from non-legacy agents (also when primary provider is IMDB)
+- Movies: Scroll long titles as well
+- Movies/Preplay: Move userRating/stars in line with other ratings
+- Movies/Preplay: Show writers besides directors as well
+- PlayerSettings: Add Kodi Resolution Settings for Kodi >= 18 (only when you have a whitelist configured in Kodi/Video)
+- PlayerSettings: Add Kodi Colour Management for Kodi >= 20 (when applicable)
+- SeekDialog: Ignore immediate OK/SELECT on auto-skipping marker with countdown during the first second of the marker shown
+- SeekDialog: Make sure we only send the correct timeline request on certain actions
+- SeekDialog: Make sure we send a timeline request on certain actions
+- SeekDialog: Remove now unnecessary negative offset on manual marker skip on final credits marker, as we’ve got much more robust PostPlay handling now
+- SeekDialog: Avoid showing the final credits marker twice (after it’s been manually skipped already)
+- SeekDialog: Hide once-manually-skipped markers and move them to the OSD as well
+- SeekDialog: Don't react to SELECT/ENTER on counting down autoskip marker if marker is only visible in OSD
+- SeekDialog: Bingemode: Don’t autoskip the credits of the last available episode of a TV show
+- Player/SeekDialog: Simplify and harden PostPlay behaviour
+- Libraries: Clean up code, improve performance (memory usage, CPU load) and optimize viewing experience by properly chunking the view’s requests based on the view position (thanks @bowlingbeeg)
+- Addon Settings: Add setting for Library view chunk size
+- Settings: Add separate playback setting to skip Post Play in TV shows (separate from binge mode)
+- Settings: Clarify and reorder playback settings
+
         </news>
         <assets>
             <icon>icon.png</icon>

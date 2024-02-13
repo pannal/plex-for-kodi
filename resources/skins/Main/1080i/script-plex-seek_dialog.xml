@@ -363,19 +363,10 @@
                         <width>893</width>
                         <height>50</height>
                         <aligny>bottom</aligny>
-                        <label>[COLOR FFE5A00D]Audio:[/COLOR] $INFO[Window.Property(ppi.Audio)]</label>
+                        <label>$INFO[Window.Property(ppi.Audio),[COLOR FFE5A00D]Audio:[/COLOR] ]$INFO[Window.Property(ppi.Subtitles),   [COLOR FFE5A00D]Subtitle:[/COLOR] ]</label>
                         <font>font14</font>
                         <shadowcolor>black</shadowcolor>
-                        <visible>Player.HasVideo + !String.IsEmpty(Window.Property(ppi.Audio))</visible>
-                    </control>
-                    <control type="label">
-                        <width>893</width>
-                        <height>50</height>
-                        <aligny>bottom</aligny>
-                        <label>[COLOR FFE5A00D]Subtitle:[/COLOR] $INFO[Window.Property(ppi.Subtitles)]</label>
-                        <font>font14</font>
-                        <shadowcolor>black</shadowcolor>
-                        <visible>Player.HasVideo + !String.IsEmpty(Window.Property(ppi.Subtitles))</visible>
+                        <visible>Player.HasVideo + [!String.IsEmpty(Window.Property(ppi.Audio)) | !String.IsEmpty(Window.Property(ppi.Subtitles))]</visible>
                     </control>
                     <control type="label">
                         <width>893</width>

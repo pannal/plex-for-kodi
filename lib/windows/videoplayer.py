@@ -17,6 +17,7 @@ from . import pagination
 from lib import util
 from lib import player
 from lib import colors
+from lib import kodijsonrpc
 
 from lib.util import T
 
@@ -297,6 +298,27 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
     def play(self, resume=False, handler=None):
         self.hidePostPlay()
+
+        def anyOtherVPlayer():
+            return any(list(filter(lambda x: x['playerid'] > 0, kodijsonrpc.rpc.Player.GetActivePlayers())))
+
+        if player.PLAYER.isPlayingVideo():
+            activePlayers = anyOtherVPlayer()
+            if activePlayers:
+                util.DEBUG_LOG("Stopping other active players: {}".format(activePlayers))
+                xbmc.executebuiltin('PlayerControl(Stop)')
+                ct = 0
+                while player.PLAYER.isPlayingVideo() or anyOtherVPlayer():
+                    if ct >= 50:
+                        util.showNotification("Other player active", header=util.T(32448, 'Playback Failed!'))
+                        break
+                    util.MONITOR.waitForAbort(0.1)
+                    ct += 1
+
+                if ct >= 50:
+                    self.doClose()
+                    return
+                util.MONITOR.waitForAbort(0.5)
 
         self.setBackground()
         if self.playQueue:

@@ -43,6 +43,12 @@ class PlexValue(six.text_type):
     def __call__(self, default):
         return not self.NA and self or PlexValue(default, self.parent)
 
+    def __copy__(self):
+        return self.__deepcopy__()
+
+    def __deepcopy__(self, memodict=None):
+        return self.__class__(self)
+
     def asBool(self):
         return self == '1'
 

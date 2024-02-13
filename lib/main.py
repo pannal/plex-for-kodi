@@ -61,6 +61,8 @@ def signout():
 
 def main():
     global BACKGROUND
+    util.ensureHome()
+
     try:
         with util.Cron(0.1):
             BACKGROUND = background.BackgroundWindow.create(function=_main)

@@ -131,20 +131,20 @@ class NowPlayingManager(object):
         for timelineType in self.TIMELINE_TYPES:
             self.timelines[timelineType] = TimelineData(timelineType)
 
-    def updatePlaybackState(self, timelineType, playerObject, state, time, playQueue=None, duration=0, force=False):
+    def updatePlaybackState(self, timelineType, playerObject, state, t, playQueue=None, duration=0, force=False):
         timeline = self.timelines[timelineType]
         timeline.state = state
         timeline.item = playerObject.item
         timeline.choice = playerObject.choice
         timeline.playQueue = playQueue
-        timeline.attrs["time"] = str(time)
+        timeline.attrs["time"] = str(t)
         timeline.duration = duration
 
         # self.sendTimelineToAll()
 
-        self.sendTimelineToServer(timelineType, timeline, time, force=force)
+        self.sendTimelineToServer(timelineType, timeline, t, force=force)
 
-    def sendTimelineToServer(self, timelineType, timeline, time, force=False):
+    def sendTimelineToServer(self, timelineType, timeline, t, force=False):
         if not hasattr(timeline.item, 'getServer') or not timeline.item.getServer():
             return
 
@@ -168,11 +168,11 @@ class NowPlayingManager(object):
         # It's possible with timers and in player seeking for the time to be greater than the
         # duration, which causes a 400, so in that case we'll set the time to the duration.
         duration = timeline.item.duration.asInt() or timeline.duration
-        if time > duration:
-            time = duration
+        if t > duration:
+            t = duration
 
         params = util.AttributeDict()
-        params["time"] = time
+        params["time"] = t
         params["duration"] = duration
         params["state"] = timeline.state
         params["guid"] = timeline.item.guid

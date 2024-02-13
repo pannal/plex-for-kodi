@@ -10,7 +10,6 @@ from . import http
 from . import util
 from . import exceptions
 from . import compat
-from . import verlib
 
 from xml.etree import ElementTree
 from . import signalsmixin

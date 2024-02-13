@@ -171,7 +171,7 @@ class PlexPlayer(object):
 
         self.metadata = obj
 
-        util.LOG("Constructed video item for playback: {0}".format(dict(obj)))
+        util.LOG("Constructed video item for playback: {0}".format(util.cleanObjTokens(dict(obj))))
 
         return self.metadata
 
@@ -853,7 +853,7 @@ class PlexAudioPlayer(object):
 
         self.metadata = obj
 
-        util.LOG("Constructed audio item for playback: {0}".format(dict(obj)))
+        util.LOG("Constructed audio item for playback: {0}".format(util.cleanObjTokens(dict(obj))))
 
         return self.metadata
 
@@ -927,7 +927,7 @@ class PlexPhotoPlayer(object):
             obj.url = server.buildUrl(path, True)
             obj.enableBlur = server.supportsPhotoTranscoding
 
-            util.DEBUG_LOG("Constructed photo item for playback: {0}".format(dict(obj)))
+            util.DEBUG_LOG("Constructed photo item for playback: {0}".format(util.cleanObjTokens(dict(obj))))
 
             self.metadata = obj
 

@@ -513,6 +513,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
 
     def storeLastBG(self):
         if util.advancedSettings.dynamicBackgrounds:
+            oldbg = util.getSetting("last_bg_url", "")
             # store BG url of first hub, first item, as this is most likely to be the one we're focusing on the
             # next start
             try:
@@ -524,6 +525,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
                             ds = self.hubControls[index][0].dataSource
                             if not ds.art:
                                 continue
+
+                            if oldbg:
+                                url = plexnet.compat.quote_plus(ds.art)
+                                if url in oldbg:
+                                    return
 
                             bg = util.backgroundFromArt(ds.art, width=self.width, height=self.height)
                             if bg:
@@ -630,6 +636,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
                     if ex.button in (2, None):
                         return
                     elif ex.button == 1:
+                        self.storeLastBG()
                         xbmc.executebuiltin('ActivateWindow(10000)')
                         return
                     elif ex.button == 0:
@@ -826,6 +833,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
                 self.sectionList.selectItem(self.bottomItem)
                 item = self.sectionList[self.bottomItem]
 
+        if item.getProperty('is.home'):
+            self.storeLastBG()
+
         if item.dataSource != self.lastSection:
             self.lastSection = item.dataSource
             self.sectionChanged(force)
@@ -923,6 +933,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
                     continue
 
                 hubs = self.sectionHubs.get(section.key, ())
+                if not hubs:
+                    util.LOG("Hubs for {} not found/no data".format(section.key))
+                    continue
+
                 for idx, ihub in enumerate(hubs):
                     if ihub == hub:
                         if self.lastSection == section:

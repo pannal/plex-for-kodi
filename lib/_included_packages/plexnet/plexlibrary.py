@@ -557,7 +557,7 @@ class Hub(BaseHub):
     def reload(self, **kwargs):
         """ Reload the data for this object from PlexServer XML. """
         try:
-            data = self.server.query(self.key, params=kwargs)
+            data = self.server.query(self.key, **kwargs)
         except Exception as e:
             import traceback
             traceback.print_exc()

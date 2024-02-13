@@ -30,7 +30,7 @@ class AudioObjectClass(object):
 
         self.metadata = obj
 
-        util.LOG("Constructed audio item for playback: {0}".format(obj))
+        util.LOG("Constructed audio item for playback: {0}".format(util.cleanObjTokens(obj)))
 
         return self.metadata
 
