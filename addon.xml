@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="0.7.5-rev1"
+       version="0.7.6-beta1"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -35,6 +35,7 @@
         <news>
 - Fix: transcoding is broken due to deepcopy usage
 - Add IMDB ID to video info
+- Core: asyncio Kodi compat
 - Fix: Libraries: Missing items when filters applied and collections exist (thanks @bowlingbeeg )
 - Fix: Libraries: Removed most filters from collections view as they don’t work (thanks @bowlingbeeg)
 - Fix: Chapters not available in episodes during playback after manually changing watch status

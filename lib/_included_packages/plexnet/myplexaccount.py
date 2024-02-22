@@ -65,7 +65,9 @@ class MyPlexAccount(object):
             'isAdmin': self.isAdmin,
             'isSecure': self.isSecure,
             'adminHasPlexPass': self.adminHasPlexPass,
-            'thumb': self.thumb
+            'thumb': self.thumb,
+            'homeUsers': self.homeUsers,
+            'lastHomeUserUpdate': self.lastHomeUserUpdate
         }
 
         util.INTERFACE.setRegistry("MyPlexAccount", json.dumps(obj), "myplex")
@@ -99,6 +101,11 @@ class MyPlexAccount(object):
                 self.isProtected = bool(obj.get('pin'))
                 self.adminHasPlexPass = obj.get('adminHasPlexPass') or self.adminHasPlexPass
                 self.thumb = obj.get('thumb')
+                self.lastHomeUserUpdate = obj.get('lastHomeUserUpdate')
+                self.homeUsers = [HomeUser(data) for data in obj.get('homeUsers', [])]
+                if self.homeUsers:
+                    util.LOG("cached home users: {0} (last update: {1})".format(self.homeUsers,
+                                                                                self.lastHomeUserUpdate))
 
     def verifyAccount(self):
         if self.authToken:
@@ -148,15 +155,7 @@ class MyPlexAccount(object):
             self.isProtected = bool(self.pin)
 
             # update the list of users in the home
-            self.updateHomeUsers()
-
-            # set admin attribute for the user
-            self.isAdmin = False
-            if self.homeUsers:
-                for user in self.homeUsers:
-                    if self.ID == user.id:
-                        self.isAdmin = str(user.admin) == "1"
-                        break
+            self.updateHomeUsers(use_async=bool(self.homeUsers))
 
             if self.isAdmin and self.isPlexPass:
                 self.adminHasPlexPass = True
@@ -207,6 +206,7 @@ class MyPlexAccount(object):
         self.authToken = None
         self.pin = None
         self.lastHomeUserUpdate = None
+        self.homeUsers = []
 
         # Booleans
         self.isSignedIn = False
@@ -248,7 +248,7 @@ class MyPlexAccount(object):
             return
         self.validateToken(self.authToken, False)
 
-    def updateHomeUsers(self):
+    def updateHomeUsers(self, use_async=False):
         # Ignore request and clear any home users we are not signed in
         if not self.isSignedIn:
             self.homeUsers = []
@@ -260,15 +260,33 @@ class MyPlexAccount(object):
 
         # Cache home users for 60 seconds, mainly to stop back to back tests
         epoch = time.time()
-        if not self.lastHomeUserUpdate:
-            self.lastHomeUserUpdate = epoch
-        elif self.lastHomeUserUpdate + 60 > epoch:
+
+        if self.lastHomeUserUpdate and self.lastHomeUserUpdate + 360 > epoch:
             util.DEBUG_LOG("Skipping home user update (updated {0} seconds ago)".format(epoch - self.lastHomeUserUpdate))
             return
 
         req = myplexrequest.MyPlexRequest("/api/home/users")
-        xml = req.getToStringWithTimeout(seconds=util.LONG_TIMEOUT)
-        data = ElementTree.fromstring(xml)
+        if use_async:
+            context = req.createRequestContext("home_users", callback.Callable(self.onHomeUsersUpdateResponse),
+                                                timeout=util.LONG_TIMEOUT)
+            if self.isOffline:
+                context.timeout = self.isOffline and asyncadapter.AsyncTimeout(1).setConnectTimeout(1)
+            util.APP.startRequest(req, context)
+        else:
+            self.onHomeUsersUpdateResponse(req, None, None)
+
+    def onHomeUsersUpdateResponse(self, request, response, context):
+        """
+        this can either be called with a given request, which will lead to a synchronous request, or as a
+        completionCallback from an async request
+        """
+        if response:
+            data = response.getBodyXml()
+        else:
+            xml = request.getToStringWithTimeout(seconds=util.LONG_TIMEOUT)
+            data = ElementTree.fromstring(xml)
+
+        oldHU = self.homeUsers[:]
         if data.attrib.get('size') and data.find('User') is not None:
             self.homeUsers = []
             for user in data.findall('User'):
@@ -278,9 +296,19 @@ class MyPlexAccount(object):
                 homeUser.isProtected = homeUser.protected == "1"
                 self.homeUsers.append(homeUser)
 
-            self.lastHomeUserUpdate = epoch
+            self.lastHomeUserUpdate = time.time()
+            self.saveState()
 
-        util.LOG("home users: {0}".format(self.homeUsers))
+            # set admin attribute for the user
+            self.isAdmin = False
+            if self.homeUsers:
+                for user in self.homeUsers:
+                    if self.ID == user.id:
+                        self.isAdmin = str(user.admin) == "1"
+                        break
+
+            if oldHU != self.homeUsers:
+                util.LOG("home users: {0}".format(self.homeUsers))
 
     def switchHomeUser(self, userId, pin=''):
         if userId == self.ID and self.isAuthenticated:

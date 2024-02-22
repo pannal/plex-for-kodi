@@ -25,10 +25,13 @@ class PlexResource(object):
         self.type = data.attrib.get('type')
         self.clientIdentifier = data.attrib.get('clientIdentifier')
         self.product = data.attrib.get('product')
-        self.provides = data.attrib.get('provides')
+        self.provides = data.attrib.get('provides', [])
         self.serverClass = data.attrib.get('serverClass')
         self.sourceType = data.attrib.get('sourceType')
         self.uuid = self.clientIdentifier
+
+        if 'server' not in self.provides:
+            return
 
         hasSecureConn = False
 

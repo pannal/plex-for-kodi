@@ -9,11 +9,12 @@ import gc
 import atexit
 import threading
 import six
+import sys
+sys.modules['_asyncio'] = None
 
 from . import plex
 
 from plexnet import plexapp
-from plexnet import threadutils
 from .windows import background, userselect, home, windowutils
 from . import player
 from . import backgroundthread

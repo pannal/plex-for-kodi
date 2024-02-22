@@ -22,11 +22,13 @@ def init():
     global MANAGER, SERVERMANAGER, ACCOUNT
     from . import myplexaccount
     ACCOUNT = myplexaccount.ACCOUNT
+    util.DEBUG_LOG("Waiting for account initialization...")
     ACCOUNT.init()
     from . import plexservermanager
     SERVERMANAGER = plexservermanager.MANAGER
     from . import myplexmanager
     util.MANAGER = MANAGER = myplexmanager.MANAGER
+    util.DEBUG_LOG("Verifying account...")
     ACCOUNT.verifyAccount()
 
 

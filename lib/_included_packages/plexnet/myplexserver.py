@@ -13,7 +13,8 @@ class MyPlexServer(plexserver.PlexServer):
         plexserver.PlexServer.__init__(self)
         self.uuid = 'myplex'
         self.name = 'plex.tv'
-        conn = plexconnection.PlexConnection(plexresource.ResourceConnection.SOURCE_MYPLEX, "https://plex.tv", False, None)
+        conn = plexconnection.PlexConnection(plexresource.ResourceConnection.SOURCE_MYPLEX, "https://plex.tv", False,
+                                             None, skipLocalCheck=True)
         self.connections.append(conn)
         self.activeConnection = conn
 

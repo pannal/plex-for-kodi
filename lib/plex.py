@@ -341,8 +341,8 @@ def init():
     util.DEBUG_LOG('Initializing...')
 
     with CallbackEvent(plexapp.util.APP, 'init'):
+        util.DEBUG_LOG('Waiting for plexapp initialization...')
         plexapp.init()
-        util.DEBUG_LOG('Waiting for account initialization...')
 
     util.DEBUG_LOG('Account initialized: {}'.format(plexapp.ACCOUNT.ID))
 

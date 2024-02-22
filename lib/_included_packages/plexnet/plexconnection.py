@@ -18,9 +18,12 @@ else:
 
     # local networks
     LOCAL_NETWORKS = {
-        4: [IPv4Network('10.0.0.0/8'), IPv4Network('192.168.0.0/16'), IPv4Network('127.0.0.0/8')],
+        4: [IPv4Network('10.0.0.0/8'), IPv4Network('192.168.0.0/16'), IPv4Network('172.16.0.0/12'),
+            IPv4Network('127.0.0.0/8')],
         6: [IPv6Network('fd00::/8')]
     }
+
+    LOCALS_SEEN = {}
 
 
 class ConnectionSource(int):
@@ -122,32 +125,53 @@ class PlexConnection(object):
     def checkLocal(self):
         pUrl = urlparse(self.address)
         hostname = pUrl.hostname
-        try:
-            ips = resolve(hostname)
-        except (socket.gaierror, ICMPLibError):
-            return False
+
+        if "plex.direct" in hostname:
+            util.DEBUG_LOG("Using shortcut for hostname IP detection due to plex.direct host: {}".format(hostname))
+            ips = [hostname.split(".", 1)[0].replace("-", ".")]
+
+        else:
+            try:
+                ips = resolve(hostname)
+            except (socket.gaierror, ICMPLibError):
+                util.DEBUG_LOG("Couldn't resolve hostname: {}".format(hostname))
+                return False
 
         for ip in ips:
-            if ip == hostname:
-                continue
+            local_and_alive = False
+            if ip in LOCALS_SEEN:
+                local, network, host = LOCALS_SEEN[ip]
+                if local:
+                    util.DEBUG_LOG("We've already verified {} ({}) as local, skipping".format(hostname, ip))
+                else:
+                    util.DEBUG_LOG("We've already verified {} ({}) as remote, skipping".format(hostname, ip))
+                    continue
+                local_and_alive = True
 
-            network = self.ipInLocalNet(ip)
-            if not network:
-                continue
+            else:
+                network = self.ipInLocalNet(ip)
+                if not network:
+                    LOCALS_SEEN[ip] = (False, network, None)
+                    continue
 
-            try:
-                host = ping(ip, count=1, interval=1, timeout=util.LAN_REACHABILITY_TIMEOUT, privileged=False)
-            except:
-                continue
+                try:
+                    host = ping(ip, count=1, interval=1, timeout=util.LAN_REACHABILITY_TIMEOUT, privileged=False)
+                except:
+                    util.DEBUG_LOG("IP {} didn't answer in time ({}s)".format(ip, util.LAN_REACHABILITY_TIMEOUT))
+                    LOCALS_SEEN[ip] = (False, network, None)
+                    continue
 
-            if host.is_alive:
+            if local_and_alive or host.is_alive:
                 self.isLocal = True
-                util.LOG("Found IP {0} in local network ({1}) when checking {2}. Ping: {3}ms (max: {4}ms)"
-                         .format(ip, network, self.address, host.max_rtt, int(util.LAN_REACHABILITY_TIMEOUT * 1000)))
+                if not local_and_alive:
+                    util.LOG("Found IP {0} in local network ({1}) when checking {2}. Ping: {3}ms (max: {4}s)"
+                             .format(ip, network, self.address, host.max_rtt, util.LAN_REACHABILITY_TIMEOUT))
+                    LOCALS_SEEN[ip] = (True, network, host)
 
                 if self.isSecure:
                     # alert the server that we've found the IP locally, so we can test non-secure connectivity
                     self.isSecureButLocal = (ip, pUrl.port)
+                return True
 
         return False
 
@@ -210,7 +234,7 @@ class PlexConnection(object):
             context.server = server
             util.addPlexHeaders(self.request, server.getToken())
             self.hasPendingRequest = util.APP.startRequest(self.request, context)
-            util.DEBUG_LOG("Testing insecure connection test for: {0}".format(server))
+            util.DEBUG_LOG("Testing insecure connection for: {0}".format(server))
             return True
 
         return False

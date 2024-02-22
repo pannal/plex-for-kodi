@@ -1,4 +1,5 @@
-[- 0.7.5-rev1 -]
+[- 0.7.5-rev2 -]
+- Core: asyncio Kodi compat
 - Fix: transcoding is broken due to deepcopy usage
 - Add IMDB ID to video info
 - Fix: Libraries: Missing items when filters applied and collections exist (thanks @bowlingbeeg )
