@@ -17,12 +17,39 @@ from . import asyncadapter
 from . import callback
 from . import util
 
-
 codes = requests.codes
 status_codes = requests.status_codes._codes
 
 
 DEFAULT_TIMEOUT = asyncadapter.AsyncTimeout(util.TIMEOUT).setConnectTimeout(util.TIMEOUT)
+
+KNOWN_HOSTS = {}
+
+_getaddrinfo = socket.getaddrinfo
+
+
+def pgetaddrinfo(host, port, *args, **kwargs):
+    """
+    "circumvent" DNS rebind protection
+    """
+    if host.endswith("plex.direct"):
+        v6 = host.count("-") > 3
+        if host in KNOWN_HOSTS:
+            ip = KNOWN_HOSTS[host]
+        else:
+            base = host.split(".", 1)[0]
+            ip = KNOWN_HOSTS[host] = v6 and base.replace("-", ":") or base.replace("-", ".")
+            util.DEBUG_LOG("Dynamically resolving {} to {}".format(host, ip))
+
+        fam = v6 and socket.AF_INET6 or socket.AF_INET
+        stype = kwargs.get("type", kwargs.get("socktype", socket.SOCK_STREAM))
+        proto = kwargs.get("proto", socket.IPPROTO_TCP)
+
+        return [(fam, stype, proto, '', (ip, port))]
+    return _getaddrinfo(host, port, *args, **kwargs)
+
+
+socket.getaddrinfo = pgetaddrinfo
 
 
 def GET(*args, **kwargs):

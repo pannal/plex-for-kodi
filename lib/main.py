@@ -67,15 +67,7 @@ def main():
     try:
         with util.Cron(0.1):
             BACKGROUND = background.BackgroundWindow.create(function=_main)
-
-            tries = 0
-            while not BACKGROUND.isOpen and not util.MONITOR.waitForAbort(2) and tries < 60:
-                if tries == 0:
-                    util.LOG("Couldn't start main loop, other dialog open? Retrying for 120s.")
-                BACKGROUND.show()
-                tries += 1
-
-            if BACKGROUND.isOpen:
+            if BACKGROUND.waitForOpen():
                 util.setGlobalProperty('running', '1')
                 BACKGROUND.modal()
                 del BACKGROUND
@@ -107,7 +99,7 @@ def _main():
                         (len(plexapp.ACCOUNT.homeUsers) > 1 or plexapp.ACCOUNT.isProtected)
 
                     ):
-                        result = userselect.start()
+                        result = userselect.start(BACKGROUND._winID)
                         if not result:
                             return
                         elif result == 'signout':
@@ -142,7 +134,12 @@ def _main():
 
                         util.DEBUG_LOG('Main: STARTING WITH SERVER: {0}'.format(selectedServer))
 
-                        windowutils.HOME = home.HomeWindow.open()
+                        windowutils.HOME = home.HomeWindow.create()
+                        if windowutils.HOME.waitForOpen(base_win_id=BACKGROUND._winID):
+                            windowutils.HOME.modal()
+                        else:
+                            util.LOG("Couldn't open home window, exiting")
+                            return
                         util.CRON.cancelReceiver(windowutils.HOME)
 
                         if not windowutils.HOME.closeOption or windowutils.HOME.closeOption == "quit":

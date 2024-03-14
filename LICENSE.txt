@@ -490,3 +490,10 @@ Library.
 Fontawesome
 https://fontawesome.com/license/free
 CC BY 4.0 License: https://creativecommons.org/licenses/by/4.0/#
+
+-------------------------------------------------------------------------
+Play queue by Sébastien Robaszkiewicz from <a href="https://thenounproject.com/browse/icons/term/play-queue/" target="_blank" title="Play queue Icons">Noun Project</a> (CC BY 3.0)
+fast forward by Adiyogi from <a href="https://thenounproject.com/browse/icons/term/fast-forward/" target="_blank" title="fast forward Icons">Noun Project</a> (CC BY 3.0)
+subtitle by YANDI RS from <a href="https://thenounproject.com/browse/icons/term/subtitle/" target="_blank" title="subtitle Icons">Noun Project</a> (CC BY 3.0)
+
+Other unlisted icons under CC BY 3.0, https://creativecommons.org/licenses/by/3.0/

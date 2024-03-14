@@ -287,12 +287,19 @@ class Settings(object):
                 QualitySetting('remote_quality', T(32021, 'Remote Quality'), 13),
                 QualitySetting('online_quality', T(32022, 'Online Quality'), 13),
                 BoolSetting('playback_directplay', T(32025, 'Allow Direct Play'), True),
-                BoolSetting('playback_remux', T(32026, 'Allow Direct Stream'), True),
+                BoolSetting('playback_remux', T(32026, 'Allow Direct Stream'), True).description(
+                    T(32979, 'Allows the server to only transcode streams of a video that need transcoding,'
+                             ' while streaming the others unaltered. If disabled, force the server to transcode '
+                             'everything not direct playable.')
+                ),
                 BoolSetting('allow_4k', T(32036, 'Allow 4K'), True).description(
                     T(32102, 'Enable this if your hardware can handle 4K playback. Disable it to force transcoding.')
                 ),
                 BoolSetting('allow_hevc', T(32037, 'Allow HEVC (h265)'), True).description(
                     T(32103, 'Enable this if your hardware can handle HEVC/h265. Disable it to force transcoding.')
+                ),
+                BoolSetting('allow_vc1', T(32977, 'Allow VC1'), True).description(
+                    T(32978, 'Enable this if your hardware can handle VC1. Disable it to force transcoding.')
                 )
             )
         ),
@@ -484,12 +491,12 @@ class Settings(object):
                 ReadFactorSetting('readfactor',
                                   T(32922, 'Kodi Cache Readfactor'),
                                   4,
-                                  [(rf, str(rf)) for rf in util.kcm.readFactorOpts])
+                                  [(rf, str(rf) if rf > 0 else T(32976, 'stub')) for rf in util.kcm.readFactorOpts])
                 .description(
                     T(32923, 'Sets the Kodi cache readfactor value. Default: {0}, recommended: {1}.'
                              'With "Slow connection" enabled this will be set to {2}, as otherwise the cache doesn\'t'
                              'fill fast/aggressively enough.').format(util.kcm.defRF,
-                                                                      "{}-{}".format(*util.kcm.recRFRange),
+                                                                      util.kcm.recRFRange,
                                                                       util.kcm.defRFSM)
                 ),
                 BoolSetting(

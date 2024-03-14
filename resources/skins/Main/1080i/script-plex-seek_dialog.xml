@@ -54,24 +54,28 @@
                     <visible>!String.IsEmpty(Window.Property(is.show))</visible>
                     <posx>60</posx>
                     <posy>0</posy>
-                    <width>1500</width>
+                    <width>1720</width>
                     <height>60</height>
                     <font>font13</font>
                     <align>left</align>
                     <aligny>center</aligny>
                     <textcolor>FFFFFFFF</textcolor>
-                    <label>[B]$INFO[VideoPlayer.TVShowTitle][/B]$INFO[VideoPlayer.Title, &#8226; ]$INFO[VideoPlayer.Season, &#8226; Season ]$INFO[VideoPlayer.Episode, Episode ]</label>
+                    <scroll>true</scroll>
+                    <scrollspeed>15</scrollspeed>
+                    <label>[B]$INFO[VideoPlayer.TVShowTitle][/B]$INFO[VideoPlayer.Title, &#8226; ]$INFO[VideoPlayer.Season, &#8226; Season ]$INFO[VideoPlayer.Episode, Episode ]$INFO[Window.Property(ep.year), &#8226; ]</label>
                 </control>
                 <control type="label">
                     <visible>String.IsEmpty(Window.Property(is.show))</visible>
                     <posx>60</posx>
                     <posy>0</posy>
-                    <width>1500</width>
+                    <width>1720</width>
                     <height>60</height>
                     <font>font13</font>
                     <align>left</align>
                     <aligny>center</aligny>
                     <textcolor>FFFFFFFF</textcolor>
+                    <scroll>true</scroll>
+                    <scrollspeed>15</scrollspeed>
                     <label>[B]$INFO[VideoPlayer.Title][/B]$INFO[VideoPlayer.Year, &#8226; ]</label>
                 </control>
                 <control type="label">
@@ -174,7 +178,7 @@
                     <textcolor>A0FFFFFF</textcolor>
                     <label>$INFO[Window.Property(time.ends_label)] $INFO[Window.Property(time.end)]</label>
                 </control>
-                <control type="label">
+                <!--<control type="label">
                     <visible>Player.Paused + String.IsEmpty(Window.Property(show.OSD))</visible>
                     <animation effect="fade" time="200" delay="200" end="100">Visible</animation>
                     <posx>0</posx>
@@ -186,7 +190,7 @@
                     <aligny>center</aligny>
                     <textcolor>FFCC7B19</textcolor>
                     <label>[UPPERCASE]$ADDON[script.plexmod 32436][/UPPERCASE]</label>
-                </control>
+                </control>-->
             </control>
 
             <control type="group">
@@ -450,8 +454,6 @@
                 <usecontrolcoords>true</usecontrolcoords>
                 <control type="group" id="421">
                     <visible>!String.IsEmpty(Window.Property(nav.repeat))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false" condition="Control.HasFocus(401)">Conditional</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false" condition="!Control.HasFocus(401)">Conditional</animation>
                     <width>125</width>
                     <height>101</height>
                     <control type="button" id="401">
@@ -476,7 +478,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="99FFFFFF">script.plex/buttons/repeat.png</texture>
+                            <texture colordiffuse="AAFFFFFF">script.plex/buttons/player/repeat.png</texture>
                         </control>
                         <control type="image">
                             <visible>Playlist.IsRepeat | !String.IsEmpty(Window.Property(pq.repeat))</visible>
@@ -484,7 +486,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="FFCC7B19">script.plex/buttons/repeat.png</texture>
+                            <texture colordiffuse="FFCC7B19">script.plex/buttons/player/repeat.png</texture>
                         </control>
                         <control type="image">
                             <visible>Playlist.IsRepeatOne | !String.IsEmpty(Window.Property(pq.repeat.one))</visible>
@@ -492,7 +494,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="FFCC7B19">script.plex/buttons/repeat-one.png</texture>
+                            <texture colordiffuse="FFCC7B19">script.plex/buttons/player/repeat-one.png</texture>
                         </control>
                     </control>
                     <control type="group">
@@ -503,7 +505,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="FFE5A00D">script.plex/buttons/repeat-focus.png</texture>
+                            <texture>script.plex/buttons/player/repeat.png</texture>
                         </control>
                         <control type="image">
                             <visible>Playlist.IsRepeat | !String.IsEmpty(Window.Property(pq.repeat))</visible>
@@ -511,7 +513,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="FFCC7B19">script.plex/buttons/repeat-focus.png</texture>
+                            <texture colordiffuse="FFCC7B19">script.plex/buttons/player/repeat.png</texture>
                         </control>
                         <control type="image">
                             <visible>Playlist.IsRepeatOne | !String.IsEmpty(Window.Property(pq.repeat.one))</visible>
@@ -519,26 +521,24 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="FFCC7B19">script.plex/buttons/repeat-one-focus.png</texture>
+                            <texture colordiffuse="FFCC7B19">script.plex/buttons/player/repeat-one.png</texture>
                         </control>
                     </control>
                 </control>
 
                 <control type="togglebutton" id="402">
                     <visible>!String.IsEmpty(Window.Property(has.playlist)) + !String.IsEmpty(Window.Property(nav.shuffle))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/shuffle-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="99FFFFFF">script.plex/buttons/shuffle.png</texturenofocus>
+                    <texturefocus>script.plex/buttons/player/shuffle.png</texturefocus>
+                    <texturenofocus colordiffuse="AAFFFFFF">script.plex/buttons/player/shuffle.png</texturenofocus>
                     <usealttexture>!String.IsEmpty(Window.Property(pq.shuffled))</usealttexture>
-                    <alttexturefocus colordiffuse="FFCC7B19">script.plex/buttons/shuffle-focus.png</alttexturefocus>
-                    <alttexturenofocus colordiffuse="FFCC7B19">script.plex/buttons/shuffle.png</alttexturenofocus>
+                    <alttexturefocus colordiffuse="FFCC7B19">script.plex/buttons/player/shuffle.png</alttexturefocus>
+                    <alttexturenofocus colordiffuse="FFCC7B19">script.plex/buttons/player/shuffle.png</alttexturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="422">
@@ -549,38 +549,34 @@
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="40FFFFFF">script.plex/buttons/shuffle-focus.png</texturefocus>
+                    <texturefocus colordiffuse="40FFFFFF">script.plex/buttons/shuffle.png</texturefocus>
                     <texturenofocus colordiffuse="40FFFFFF">script.plex/buttons/shuffle.png</texturenofocus>
                     <label> </label>
                 </control>
 
                 <control type="button" id="403">
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/settings-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="99FFFFFF">script.plex/buttons/settings.png</texturenofocus>
+                    <texturefocus>script.plex/buttons/player/settings.png</texturefocus>
+                    <texturenofocus colordiffuse="AAFFFFFF">script.plex/buttons/player/settings.png</texturenofocus>
                     <label> </label>
                 </control>
 
 
                 <control type="button" id="404">
                     <visible>!String.IsEmpty(Window.Property(pq.hasprev)) + !String.IsEmpty(Window.Property(nav.prevnext))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="93,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="93,50" reversible="false">UnFocus</animation>
                     <hitrect x="58" y="28" w="69" h="45" />
                     <posx>30</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus flipx="true" colordiffuse="FFE5A00D">script.plex/buttons/next-focus.png</texturefocus>
-                    <texturenofocus flipx="true" colordiffuse="99FFFFFF">script.plex/buttons/next.png</texturenofocus>
+                    <texturefocus flipx="true">script.plex/buttons/player/next.png</texturefocus>
+                    <texturenofocus flipx="true" colordiffuse="AAFFFFFF">script.plex/buttons/player/next.png</texturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="424">
@@ -591,22 +587,20 @@
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus flipx="true" colordiffuse="40FFFFFF">script.plex/buttons/next-focus.png</texturefocus>
-                    <texturenofocus flipx="true" colordiffuse="40FFFFFF">script.plex/buttons/next.png</texturenofocus>
+                    <texturefocus flipx="true" colordiffuse="40FFFFFF">script.plex/buttons/player/next.png</texturefocus>
+                    <texturenofocus flipx="true" colordiffuse="40FFFFFF">script.plex/buttons/player/next.png</texturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="405">
                     <visible>!String.IsEmpty(Window.Property(nav.ffwdrwd))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus flipx="true" colordiffuse="FFE5A00D">script.plex/buttons/skip-forward-focus.png</texturefocus>
-                    <texturenofocus flipx="true" colordiffuse="99FFFFFF">script.plex/buttons/skip-forward.png</texturenofocus>
+                    <texturefocus flipx="true">script.plex/buttons/player/skip-forward.png</texturefocus>
+                    <texturenofocus flipx="true" colordiffuse="AAFFFFFF">script.plex/buttons/player/skip-forward.png</texturenofocus>
                     <label> </label>
                 </control>
 
@@ -638,7 +632,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="99FFFFFF">script.plex/buttons/pause.png</texture>
+                            <texture colordiffuse="AAFFFFFF">script.plex/buttons/player/pause.png</texture>
                         </control>
                         <control type="image">
                             <visible>Player.Paused | Player.Forwarding | Player.Rewinding</visible>
@@ -646,7 +640,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="99FFFFFF">script.plex/buttons/play.png</texture>
+                            <texture colordiffuse="AAFFFFFF">script.plex/buttons/player/play.png</texture>
                         </control>
                     </control>
                     <control type="group">
@@ -657,7 +651,7 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="FFE5A00D">script.plex/buttons/pause-focus.png</texture>
+                            <texture>script.plex/buttons/player/pause.png</texture>
                         </control>
                         <control type="image">
                             <visible>Player.Paused | Player.Forwarding | Player.Rewinding</visible>
@@ -665,50 +659,44 @@
                             <posy>0</posy>
                             <width>125</width>
                             <height>101</height>
-                            <texture colordiffuse="FFE5A00D">script.plex/buttons/play-focus.png</texture>
+                            <texture>script.plex/buttons/player/play.png</texture>
                         </control>
                     </control>
                 </control>
 
                 <control type="button" id="407">
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/stop-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="99FFFFFF">script.plex/buttons/stop.png</texturenofocus>
+                    <texturefocus>script.plex/buttons/player/stop.png</texturefocus>
+                    <texturenofocus colordiffuse="AAFFFFFF">script.plex/buttons/player/stop.png</texturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="408">
                     <visible>!String.IsEmpty(Window.Property(nav.ffwdrwd))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/skip-forward-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="99FFFFFF">script.plex/buttons/skip-forward.png</texturenofocus>
+                    <texturefocus>script.plex/buttons/player/skip-forward.png</texturefocus>
+                    <texturenofocus colordiffuse="AAFFFFFF">script.plex/buttons/player/skip-forward.png</texturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="409">
                     <visible>!String.IsEmpty(Window.Property(pq.hasnext)) + !String.IsEmpty(Window.Property(nav.prevnext))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/next-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="99FFFFFF">script.plex/buttons/next.png</texturenofocus>
+                    <texturefocus>script.plex/buttons/player/next.png</texturefocus>
+                    <texturenofocus colordiffuse="AAFFFFFF">script.plex/buttons/player/next.png</texturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="419">
@@ -718,53 +706,47 @@
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
-                    <texturefocus colordiffuse="40FFFFFF">script.plex/buttons/next-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="40FFFFFF">script.plex/buttons/next.png</texturenofocus>
+                    <texturefocus colordiffuse="40FFFFFF">script.plex/buttons/player/next.png</texturefocus>
+                    <texturenofocus colordiffuse="40FFFFFF">script.plex/buttons/player/next.png</texturenofocus>
                     <label> </label>
                 </control>
 
 
                 <control type="button" id="410">
                     <visible>[!String.IsEmpty(Window.Property(pq.hasnext)) | !String.IsEmpty(Window.Property(pq.hasprev))] + !String.IsEmpty(Window.Property(nav.playlist))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="93,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="93,50" reversible="false">UnFocus</animation>
                     <hitrect x="58" y="28" w="69" h="45" />
                     <posx>30</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/pqueue-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="99FFFFFF">script.plex/buttons/pqueue.png</texturenofocus>
+                    <texturefocus>script.plex/buttons/player/pqueue.png</texturefocus>
+                    <texturenofocus colordiffuse="AAFFFFFF">script.plex/buttons/player/pqueue.png</texturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="430">
                     <enable>false</enable>
                     <visible>String.IsEmpty(Window.Property(pq.hasnext)) + String.IsEmpty(Window.Property(pq.hasprev)) + !String.IsEmpty(Window.Property(nav.playlist))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="93,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="93,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>30</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="40FFFFFF">script.plex/buttons/pqueue-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="40FFFFFF">script.plex/buttons/pqueue.png</texturenofocus>
+                    <texturefocus colordiffuse="40FFFFFF">script.plex/buttons/player/pqueue.png</texturefocus>
+                    <texturenofocus colordiffuse="40FFFFFF">script.plex/buttons/player/pqueue.png</texturenofocus>
                     <label> </label>
                 </control>
                 <control type="button" id="412">
                     <visible>!String.IsEmpty(Window.Property(nav.quick_subtitles))</visible>
-                    <animation effect="zoom" start="100" end="124" time="100" center="63,50" reversible="false">Focus</animation>
-                    <animation effect="zoom" start="124" end="100" time="100" center="63,50" reversible="false">UnFocus</animation>
                     <hitrect x="28" y="28" w="69" h="45" />
                     <posx>0</posx>
                     <posy>0</posy>
                     <width>125</width>
                     <height>101</height>
                     <font>font12</font>
-                    <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/subtitle-focus.png</texturefocus>
-                    <texturenofocus colordiffuse="99FFFFFF">script.plex/buttons/subtitle.png</texturenofocus>
+                    <texturefocus>script.plex/buttons/player/subtitle.png</texturefocus>
+                    <texturenofocus colordiffuse="AAFFFFFF">script.plex/buttons/player/subtitle.png</texturenofocus>
                     <label> </label>
                 </control>
             </control>

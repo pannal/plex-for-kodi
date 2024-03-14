@@ -4,6 +4,7 @@ import threading
 import six
 import re
 import os
+import random
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -27,6 +28,7 @@ class BasePlayerHandler(object):
         self.media = None
         self.baseOffset = 0
         self._lastDuration = 0
+        self._progressHld = {}
         self.timelineType = None
         self.lastTimelineState = None
         self.ignoreTimelines = False
@@ -117,9 +119,6 @@ class BasePlayerHandler(object):
         return self._lastDuration
 
     def updateNowPlaying(self, force=False, refreshQueue=False, t=None, state=None, overrideChecks=False):
-        util.DEBUG_LOG("UpdateNowPlaying: force: {0} refreshQueue: "
-                       "{1} state: {2} overrideChecks: {3} time: {4}".format(force, refreshQueue, state, overrideChecks,
-                                                                             t))
         if self.ignoreTimelines:
             util.DEBUG_LOG("UpdateNowPlaying: ignoring timeline as requested")
             return
@@ -131,6 +130,11 @@ class BasePlayerHandler(object):
         if not self.shouldSendTimeline(item):
             return
 
+        util.DEBUG_LOG("UpdateNowPlaying: {0}, force: {1} refreshQueue: "
+                       "{2} state: {3} overrideChecks: {4} time: {5}".format(item.ratingKey,
+                                                                             force, refreshQueue, state, overrideChecks,
+                                                                             t))
+
         state = state or self.player.playState
         # Avoid duplicates
         if state == self.lastTimelineState and not force:
@@ -140,6 +144,7 @@ class BasePlayerHandler(object):
         # self.timelineTimer.reset()
 
         _time = t or int(self.trueTime * 1000)
+        self._progressHld[item.ratingKey] = _time
 
         # self.trigger("progress", [m, item, time])
 
@@ -194,6 +199,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.seeking = self.NO_SEEK
         self.seekOnStart = 0
         self._lastDuration = 0
+        self._progressHld = {}
         self.mode = self.MODE_RELATIVE
         self.ended = False
         self.stoppedManually = False
@@ -206,6 +212,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.seeking = seeking
         self.duration = duration
         self._lastDuration = duration
+        self._progressHld = {}
         self.bifURL = bif_url
         self.title = title
         self.title2 = title2
@@ -290,6 +297,8 @@ class SeekPlayerHandler(BasePlayerHandler):
         if not self.playlist or self.stoppedManually:
             return False
 
+        self.triggerProgressEvent()
+
         self.player.playVideoPlaylist(self.playlist, handler=self, resume=False)
 
         return True
@@ -298,6 +307,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         if not self.playlist or not self.playlist.prev():
             return False
 
+        self.triggerProgressEvent()
         self.seeking = self.SEEK_PLAYLIST
         self.player.playVideoPlaylist(self.playlist, handler=self, resume=False)
 
@@ -442,6 +452,20 @@ class SeekPlayerHandler(BasePlayerHandler):
             util.CRON.forceTick()
         # self.hideOSD()
 
+    @property
+    def videoPlayedFac(self):
+        return self.trueTime * 1000 / float(self.duration)
+
+    @property
+    def videoWatched(self):
+        return self.videoPlayedFac >= self.playedThreshold
+
+    def triggerProgressEvent(self):
+        rk = str(self.player.video.ratingKey)
+
+        self.player.trigger('video.progress', data=(rk, self._progressHld[rk] if not self.videoWatched else True))
+        self._progressHld = {}
+
     def onPlayBackStopped(self):
         util.DEBUG_LOG('SeekHandler: onPlayBackStopped - '
                        'Seeking={0}, QueueingNext={1}, BingeMode={2}, StoppedManually={3}, SkipPostPlay={4}'
@@ -460,10 +484,11 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         if self.seeking not in (self.SEEK_IN_PROGRESS, self.SEEK_REWIND):
             self.updateNowPlaying()
+            self.triggerProgressEvent()
 
             # show post play if possible, if an item has been watched (90% by Plex standards)
             if self.seeking != self.SEEK_PLAYLIST and self.duration:
-                playedFac = self.trueTime * 1000 / float(self.duration)
+                playedFac = self.videoPlayedFac
                 util.DEBUG_LOG("Player - played-threshold: {}/{}".format(playedFac, self.playedThreshold))
                 if playedFac >= self.playedThreshold and self.next(on_end=True):
                     return
@@ -485,6 +510,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             return
 
         self.updateNowPlaying()
+        self.triggerProgressEvent()
 
         if self.queuingNext:
             util.DEBUG_LOG('SeekHandler: onPlayBackEnded - event ignored')
@@ -1104,6 +1130,8 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.ignoreStopEvents = False
         self.sessionID = session_id or self.sessionID
 
+        # fixme: this handler might be accessing a new playerObject, not the one it's expecting to access,
+        #        especially when .next() is used
         self.handler.setup(self.video.duration.asInt(), meta, offset, bifURL, title=self.video.grandparentTitle,
                            title2=self.video.title, seeking=seeking, chapters=self.video.chapters)
 
@@ -1269,7 +1297,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 xbmc.executebuiltin('PlayerControl(RandomOff)')
         self.stopAndWait()
         self.ignoreStopEvents = False
-        self.sessionID = "PLS%s" % playlist.ratingKey
+        self.sessionID = "PLS%s" % getattr(playlist, "ratingKey", getattr(playlist, "id", random.randint(0, 1000)))
         self.play(plist, startpos=startpos, **kwargs)
 
     def createTrackListItem(self, track, fanart=None, index=0):

@@ -197,7 +197,7 @@
         </control>
 
         <control type="image" id="110">
-            <visible>ControlGroup(400).HasFocus(0)</visible>
+            <visible>ControlGroup(400).HasFocus(0) + String.IsEmpty(Window.Property(busy))</visible>
             <posx>770</posx>
             <posy>275</posy>
             <width>380</width>
@@ -226,6 +226,22 @@
                 <itemlayout width="330">
 
                     <control type="group">
+                        <visible>!String.IsEmpty(ListItem.Property(empty))</visible>
+                        <posx>0</posx>
+                        <posy>40</posy>
+                        <control type="image">
+                            <visible>Control.HasFocus(101) | ControlGroup(400).HasFocus(0)</visible>
+                            <posx>75</posx>
+                            <posy>75</posy>
+                            <width>150</width>
+                            <height>150</height>
+                            <texture>script.plex/user_select/refresh.png</texture>
+                            <colordiffuse>FFA0A0A0</colordiffuse>
+                        </control>
+                    </control>
+
+                    <control type="group">
+                        <visible>String.IsEmpty(ListItem.Property(empty))</visible>
                         <posx>0</posx>
                         <posy>40</posy>
                         <width>300</width>
@@ -314,6 +330,22 @@
                 <focusedlayout width="330">
 
                     <control type="group">
+                        <visible>!String.IsEmpty(ListItem.Property(empty))</visible>
+                        <posx>0</posx>
+                        <posy>40</posy>
+                        <control type="image">
+                            <visible>Control.HasFocus(101) | ControlGroup(400).HasFocus(0)</visible>
+                            <posx>75</posx>
+                            <posy>75</posy>
+                            <width>150</width>
+                            <height>150</height>
+                            <texture>script.plex/user_select/refresh.png</texture>
+                            <colordiffuse>FFFFFFFF</colordiffuse>
+                        </control>
+                    </control>
+
+                    <control type="group">
+                        <visible>String.IsEmpty(ListItem.Property(empty))</visible>
                         <posx>0</posx>
                         <posy>40</posy>
                         <control type="image" id="110">
@@ -879,16 +911,16 @@
             </control>
             <control type="image">
                 <posx>153r</posx>
-                <posy>54</posy>
+                <posy>47.5</posy>
                 <width>93</width>
-                <height>30</height>
+                <height>43</height>
                 <texture>script.plex/home/plex.png</texture>
             </control>
         </control>
 
         <control type="group">
             <visible>!String.IsEmpty(Window.Property(busy))</visible>
-            <animation effect="fade" start="0" end="100" delay="500">Visible</animation>
+            <animation effect="fade" start="0" end="100">Visible</animation>
             <control type="image">
                 <posx>840</posx>
                 <posy>465</posy>

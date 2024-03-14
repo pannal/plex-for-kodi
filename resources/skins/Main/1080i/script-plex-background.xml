@@ -13,7 +13,7 @@
             <posx>710</posx>
             <posy>459</posy>
             <width>500</width>
-            <height>162</height>
+            <height>232.5</height>
             <texture>script.plex/splash.png</texture>
         </control>
 
@@ -23,7 +23,7 @@
                 <posx>812</posx>
                 <posy>135</posy>
                 <width>300</width>
-                <height>97</height>
+                <height>139</height>
                 <texture>script.plex/user_select/plex.png</texture>
             </control>
             <control type="image">

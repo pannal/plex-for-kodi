@@ -216,7 +216,8 @@ class ServerListItem(kodigui.ManagedListItem):
             self.safeSetProperty('secure', isSecure and '1' or '')
             self.safeSetProperty('local', isLocal and '1' or '')
 
-        self.safeSetProperty('current', plexapp.SERVERMANAGER.selectedServer.uuid == self.uuid and '1' or '')
+        if plexapp.SERVERMANAGER.selectedServer:
+            self.safeSetProperty('current', plexapp.SERVERMANAGER.selectedServer.uuid == self.uuid and '1' or '')
         if name:
             self.safeSetLabel(name)
 
@@ -354,6 +355,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         self.updateHubs = {}
         self.changingServer = False
         self._shuttingDown = False
+        self._skipNextAction = False
         windowutils.HOME = self
 
         self.lock = threading.Lock()
@@ -544,6 +546,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         controlID = self.getFocusId()
 
         try:
+            if self._skipNextAction:
+                self._skipNextAction = False
+                return
+
             if not controlID and not action == xbmcgui.ACTION_MOUSE_MOVE:
                 if self.lastFocusID:
                     self.setFocusId(self.lastFocusID)
@@ -661,7 +667,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         # elif controlID == self.USER_BUTTON_ID:
         #     self.showUserMenu()
         elif controlID == self.USER_LIST_ID:
-            self.doUserOption()
+            if self.doUserOption():
+                self._skipNextAction = True
             self.setBoolProperty('show.options', False)
             self.setFocusId(self.USER_BUTTON_ID)
         elif controlID == self.PLAYER_STATUS_BUTTON_ID:
@@ -825,11 +832,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         if not item:
             return
 
-        if not item.getProperty('item'):
-            if action and action == xbmcgui.ACTION_MOVE_RIGHT:
+        if not item.getProperty('item') and action:
+            if action == xbmcgui.ACTION_MOVE_RIGHT:
                 self.sectionList.selectItem(0)
                 item = self.sectionList[0]
-            else:
+            elif action == xbmcgui.ACTION_MOVE_LEFT:
                 self.sectionList.selectItem(self.bottomItem)
                 item = self.sectionList[self.bottomItem]
 
@@ -837,7 +844,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
             self.storeLastBG()
 
         if item.dataSource != self.lastSection:
-            self.lastSection = item.dataSource
             self.sectionChanged(force)
 
     def checkHubItem(self, controlID, actionID=None):
@@ -896,6 +902,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
     def sectionChanged(self, force=False):
         self.sectionChangeTimeout = time.time() + 0.5
         if not self.sectionChangeThread or not self.sectionChangeThread.is_alive() or force:
+            if self.sectionChangeThread and self.sectionChangeThread.is_alive():
+                self.sectionChangeThread.join()
+
             self.sectionChangeThread = threading.Thread(target=self._sectionChanged, name="sectionchanged")
             self.sectionChangeThread.start()
 
@@ -903,6 +912,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         while not util.MONITOR.waitForAbort(0.1):
             if time.time() >= self.sectionChangeTimeout:
                 break
+
+        ds = self.sectionList.getSelectedItem().dataSource
+        if self.lastSection == ds:
+            return
+
+        self.lastSection = ds
 
         self._sectionReallyChanged()
 
@@ -1417,6 +1432,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
         if plexapp.ACCOUNT.isSignedIn:
             if len(plexapp.ACCOUNT.homeUsers) > 1:
                 items.append(kodigui.ManagedListItem(T(32342, 'Switch User'), data_source='switch'))
+            else:
+                items.append(kodigui.ManagedListItem(T(32980, 'Refresh Users'), data_source='refresh_users'))
         items.append(kodigui.ManagedListItem(T(32343, 'Settings'), data_source='settings'))
         if plexapp.ACCOUNT.isSignedIn:
             items.append(kodigui.ManagedListItem(T(32344, 'Sign Out'), data_source='signout'))
@@ -1453,6 +1470,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver):
             settings.openWindow()
         elif option == 'go_online':
             plexapp.ACCOUNT.refreshAccount()
+        elif option == 'refresh_users':
+            plexapp.ACCOUNT.updateHomeUsers()
+            return True
         else:
             self.closeOption = option
             self.doClose()

@@ -6,25 +6,10 @@ from . import kodigui
 from . import dropdown
 from . import busy
 
-from lib import util, image, backgroundthread
+from lib import util
 from plexnet import plexapp
 
 from lib.util import T
-
-
-class UserThumbTask(backgroundthread.Task):
-    def setup(self, users, callback):
-        self.users = users
-        self.callback = callback
-        return self
-
-    def run(self):
-        for user in self.users:
-            if self.isCanceled():
-                return
-
-            thumb, back = image.getImage(user.thumb, user.id)
-            self.callback(user, thumb, back)
 
 
 class UserSelectWindow(kodigui.BaseWindow):
@@ -68,7 +53,7 @@ class UserSelectWindow(kodigui.BaseWindow):
                     self.setFocusId(self.PIN_ENTRY_GROUP_ID)
                 self.pinEntryClicked(ID + 60)
                 return
-            elif ID in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_BACKSPACE):
+            elif ID in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PREVIOUS_MENU,  xbmcgui.ACTION_BACKSPACE):
                 item = self.userList.getSelectedItem()
                 if xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.PIN_ENTRY_GROUP_ID)):
                     if item.getProperty('editing.pin'):
@@ -90,6 +75,15 @@ class UserSelectWindow(kodigui.BaseWindow):
             item = self.userList.getSelectedItem()
             if item.dataSource.isProtected:
                 self.setFocusId(self.PIN_ENTRY_GROUP_ID)
+
+            # refresh clicked
+            elif not item.dataSource:
+                # refresh user list
+                with self.propertyContext('busy'):
+                    self.userList.reset()
+                    self.setProperty('initialized', '')
+                    plexapp.ACCOUNT.updateHomeUsers()
+                    self.start(with_busy=False)
             else:
                 self.userSelected(item)
         elif 200 < controlID < 212:
@@ -102,25 +96,19 @@ class UserSelectWindow(kodigui.BaseWindow):
             item = self.userList.getSelectedItem()
             item.setProperty('editing.pin', '')
 
-    def userThumbCallback(self, user, thumb, back):
-        item = self.userList.getListItemByDataSource(user)
-        if item:
-            item.setThumbnailImage(thumb)
-            item.setProperty('back.image', back)
-
-    def start(self):
-        self.setProperty('busy', '1')
+    def start(self, with_busy=True):
+        if with_busy:
+            self.setProperty('busy', '1')
         try:
             users = plexapp.ACCOUNT.homeUsers
 
             items = []
             selectIndex = None
             for idx, user in enumerate(users):
-                # thumb, back = image.getImage(user.thumb, user.id)
-                # mli = kodigui.ManagedListItem(user.title, thumbnailImage=thumb, data_source=user)
-                mli = kodigui.ManagedListItem(user.title, user.title[0].upper(), data_source=user)
+                mli = kodigui.ManagedListItem(user.title, user.title[0].upper(), thumbnailImage=user.thumb,
+                                              data_source=user)
+                mli.setProperty('back.image', user.id)
                 mli.setProperty('pin', user.title)
-                # mli.setProperty('back.image', back)
                 mli.setProperty('protected', user.isProtected and '1' or '')
                 mli.setProperty('admin', user.isAdmin and '1' or '')
 
@@ -129,10 +117,11 @@ class UserSelectWindow(kodigui.BaseWindow):
 
                 items.append(mli)
 
-            self.userList.addItems(items)
+            # append refresh button
+            mli = kodigui.ManagedListItem("", "", data_source=kodigui.EmptyDataSource(), properties={"empty": '1'})
+            items.append(mli)
 
-            self.task = UserThumbTask().setup(users, self.userThumbCallback)
-            backgroundthread.BGThreader.addTask(self.task)
+            self.userList.addItems(items)
 
             self.setFocusId(self.USER_LIST_ID)
 
@@ -227,8 +216,10 @@ class UserSelectWindow(kodigui.BaseWindow):
             self.task.cancel()
 
 
-def start():
-    w = UserSelectWindow.open()
+def start(base_win_id):
+    w = UserSelectWindow.create()
+    if w.waitForOpen(base_win_id=base_win_id):
+        w.modal()
     selected = w.selected
     del w
     return selected

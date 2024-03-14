@@ -2004,3 +2004,35 @@ msgstr "Direkt zur nächsten Episode springen"
 msgctxt "#32974"
 msgid "When finishing an episode, don't show Post Play but go to the next one immediately.\nCan be disabled/enabled per TV show. Doesn't override enabled binge mode. Overrides the Post Play setting."
 msgstr "Beim Beenden einer Episode nicht in die Post Play Ansicht gehen und stattdessen sofort zur nächsten Episode springen.\nCan be disabled/enabled per TV show. Überschreibt aktivierten Binge-Modus nicht. Überschreibt die \"Automatisch nächsten Titel abspielen\"-Einstellung"
+
+msgctxt "#32975"
+msgid "Delete Season"
+msgstr "Staffel löschen"
+
+msgctxt "#32976"
+msgid "Adaptive"
+msgstr "Adaptiv"
+
+msgctxt "#32977"
+msgid "Allow VC1"
+msgstr "VC1 zulassen"
+
+msgctxt "#32978"
+msgid "Enable this if your hardware can handle VC1. Disable it to force transcoding."
+msgstr "Diese Option aktivieren, wenn die Hardware VC1 verarbeiten kann. Deaktivieren, um die Transkodierung zu erzwingen."
+
+msgctxt "#32979"
+msgid "Allows the server to only transcode streams of a video that need transcoding, while streaming the others unaltered. If disabled, force the server to transcode everything not direct playable."
+msgstr "Erlaubt dem Server nur Streams eines Videos zu transkodieren, die dies benötigen, während die anderen unverändert übertragen werden. Ist dies deaktiviert, wird der Server dazu gezwungen, alles zu transkodieren, was nicht direkt abspielbar ist."
+
+msgctxt "#32980"
+msgid "Refresh Users"
+msgstr "Benutzer aktual."
+
+msgctxt "#32981"
+msgid "Background worker count"
+msgstr "Anzahl Hintergrund-Worker"
+
+msgctxt "#32982"
+msgid "Depending on how many cores your CPU has and how much it can handle, increasing this might improve certain situations. If you experience crashes or other annormalities, leave this at its default (3)."
+msgstr "Je nachdem, wie viele Kerne Deine CPU hat und wie viel sie verarbeiten kann, kann eine höhere Zahl bestimmte Situationen verbessern. Solltest Du Abstürze oder andere Annomalien bemerken, stelle dies auf den Standardwert zurück (3). Benötigt einen Addon-Neustart."

@@ -139,6 +139,10 @@ class MediaDecisionEngine(object):
 
         numVideoStreams = 0
         problematicAudioStream = False
+        allowedVC = dict([(k, item.settings.getPreference("allow_{}".format(k), d)) for k, d in
+                          (("hevc", True), ("av1", False), ("vc1", True))])
+        allowedVC["vp9"] = item.settings.getGlobal("vp9Support")
+        allowedVC["h264"] = True
 
         if part.get('hasChapterVideoStream').asBool():
             numVideoStreams = 1
@@ -148,13 +152,7 @@ class MediaDecisionEngine(object):
             if streamType == stream.TYPE_VIDEO:
                 numVideoStreams = numVideoStreams + 1
 
-                if stream.codec == "h264" or (
-                    stream.codec == "hevc" and item.settings.getPreference("allow_hevc", True)
-                ) or (
-                    stream.codec == "av1" and item.settings.getPreference("allow_av1", False)
-                ) or (
-                    stream.codec == "vp9" and item.settings.getGlobal("vp9Support")
-                ):
+                if stream.codec in allowedVC and allowedVC[stream.codec]:
                     choice.sorts.videoDS = 1
             elif streamType == stream.TYPE_AUDIO:
                 # fixme: really?
@@ -293,6 +291,10 @@ class MediaDecisionEngine(object):
 
         if choice.videoStream.codec == "av1" and not item.settings.getPreference("allow_av1", False):
             util.LOG("MDE: (DP) Codec is AV1, which is disabled")
+            return False
+
+        if choice.videoStream.codec == "vc1" and not item.settings.getPreference("allow_vc1", True):
+            util.LOG("MDE: (DP) Codec is VC1, which is disabled")
             return False
 
         return True

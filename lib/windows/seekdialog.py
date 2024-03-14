@@ -78,6 +78,7 @@ FINAL_MARKER_NEGOFF = 3000
 MARKER_SHOW_NEGOFF = 3000
 MARKER_OFF = 500
 MARKER_CHAPTER_OVERLAP_THRES = 30000  # 30 seconds
+MARKER_END_JUMP_OFF = 1000
 
 
 class SeekDialog(kodigui.BaseDialog):
@@ -169,7 +170,6 @@ class SeekDialog(kodigui.BaseDialog):
         self._delayedSeekThread = None
         self._delayedSeekTimeout = 0
         self._osdHideAnimationTimeout = 0
-        self._osdHideFast = False
         self._hideDelay = self.HIDE_DELAY
         self._autoSeekDelay = util.advancedSettings.autoSeek and util.advancedSettings.autoSeekDelay or 0
         self._atSkipStep = -1
@@ -242,8 +242,8 @@ class SeekDialog(kodigui.BaseDialog):
         response = kwargs.get("response")
         self.lastTimelineResponse = response.getBodyXml()
 
-    def resetTimeout(self):
-        self.timeout = time.time() + self._hideDelay
+    def resetTimeout(self, fast=False):
+        self.timeout = time.time() + (fast and min(0.5, self._hideDelay) or self._hideDelay)
 
     def resetAutoSeekTimer(self, value="not_set"):
         self.autoSeekTimeout = value if value != "not_set" else time.time() + self._autoSeekDelay
@@ -388,6 +388,7 @@ class SeekDialog(kodigui.BaseDialog):
                 bool(chapters) or (util.getUserSetting('virtual_chapters', True) and bool(self.markers)))
         self.setProperty('video.title', title)
         self.setProperty('is.show', (self.player.video.type == 'episode') and '1' or '')
+        self.setProperty('ep.year', (self.player.video.type == 'episode') and self.player.video.year or '')
         self.setProperty('has.playlist', self.handler.playlist and '1' or '')
         self.setProperty('shuffled', (self.handler.playlist and self.handler.playlist.isShuffled) and '1' or '')
         self.setProperty('has.chapters', self.showChapters and '1' or '')
@@ -512,13 +513,13 @@ class SeekDialog(kodigui.BaseDialog):
                         if markerDef["marker"]:
                             marker = markerDef["marker"]
                             final = getattr(marker, "final", False)
+                            markerOff = 0 if final else MARKER_END_JUMP_OFF
 
-                            markerOff = 0
                             util.DEBUG_LOG('MarkerSkip: Skipping marker {}'.format(markerDef["marker"]))
                             self.setProperty('show.markerSkip', '')
                             self.setProperty('show.markerSkip_OSDOnly', '')
                             markerDef["skipped"] = True
-                            self.doSeek(math.ceil(float(marker.endTimeOffset)) - markerOff)
+                            self.doSeek(math.ceil(float(marker.endTimeOffset)) + markerOff)
                             self.hideOSD(skipMarkerFocus=True)
 
                             if marker.type == "credits" and not final:
@@ -538,6 +539,11 @@ class SeekDialog(kodigui.BaseDialog):
                         self.setProperty('show.chapters', '1')
                         self.setFocusId(self.BIG_SEEK_LIST_ID)
                         return
+                    elif action in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK):
+                        if self.getProperty('show.markerSkip') and not self.getProperty('show.markerSkip_OSDOnly'):
+                            self.setProperty('show.markerSkip', '')
+                            self.setProperty('show.markerSkip_OSDOnly', '1')
+                            return
 
                 if controlID == self.MAIN_BUTTON_ID:
                     # we're seeking from the timeline with the OSD open - do an actual timeline seek
@@ -1050,11 +1056,11 @@ class SeekDialog(kodigui.BaseDialog):
 
     def handleDialog(self, func):
         self.hasDialog = True
-
+        hideFast = False
         try:
-            func()
+            hideFast = func()
         finally:
-            self.resetTimeout()
+            self.resetTimeout(fast=hideFast)
             self.hasDialog = False
 
     def videoSettingsHaveChanged(self):
@@ -1232,15 +1238,15 @@ class SeekDialog(kodigui.BaseDialog):
 
         changed = self.videoSettingsHaveChanged()
 
-        if self.player.playState == self.player.STATE_PLAYING:
-            self._osdHideFast = True
-
         if changed == 'SUBTITLE':
             self.setSubtitles(do_sleep=False)
             self.lastSubtitleNavAction = "forward"
+            return True
 
         elif changed:
             self.doSeek(self.trueOffset(), settings_changed=True)
+        else:
+            return True
 
     def setBigSeekShift(self):
         closest = None
@@ -1917,7 +1923,7 @@ class SeekDialog(kodigui.BaseDialog):
             if startTimeOff == 0 and not markerDef["markerAutoSkipped"]:
                 if setSkipped:
                     markerDef["markerAutoSkipped"] = True
-                return int(markerDef["marker"].endTimeOffset) + 1000
+                return int(markerDef["marker"].endTimeOffset) + MARKER_END_JUMP_OFF
             return False
 
         if cancelTimer and self.countingDownMarker:
@@ -1976,7 +1982,7 @@ class SeekDialog(kodigui.BaseDialog):
                 return False
 
             util.DEBUG_LOG('MarkerAutoSkip: Skipping marker {}'.format(markerDef["marker"]))
-            self.doSeek(int(markerDef["marker"].endTimeOffset) + 1000)
+            self.doSeek(int(markerDef["marker"].endTimeOffset) + MARKER_END_JUMP_OFF)
             return True
 
         # got a marker, display logic
@@ -1987,10 +1993,12 @@ class SeekDialog(kodigui.BaseDialog):
             setattr(self, markerDef["markerAutoSkipShownTimer"], time.time())
 
         else:
-            if timer + getattr(self, markerDef["markerSkipBtnTimeout"]) <= time.time():
-                self.setProperty('show.markerSkip_OSDOnly', '1')
-            else:
-                self.setProperty('show.markerSkip_OSDOnly', '')
+            # if we've not already OSD-hidden the marker manually, check its timeout
+            if not self.getProperty('show.markerSkip_OSDOnly'):
+                if timer + getattr(self, markerDef["markerSkipBtnTimeout"]) <= time.time():
+                    self.setProperty('show.markerSkip_OSDOnly', '1')
+                else:
+                    self.setProperty('show.markerSkip_OSDOnly', '')
 
         # no marker auto skip and not yet skipped or not yet auto skipped, normal display
         if (markerAutoSkip and not markerAutoSkipped) or (not markerAutoSkip and not markerDef["skipped"]):
@@ -2066,18 +2074,11 @@ class SeekDialog(kodigui.BaseDialog):
                 xbmc.executebuiltin('Dialog.Close(busydialog,1)')
 
             if not self.hasDialog and not self.playlistDialogVisible and self.osdVisible():
-                if time.time() > self.timeout and not self._osdHideFast:
-                    if not xbmc.getCondVisibility('Window.IsActive(videoosd) | Player.Rewinding | Player.Forwarding'):
-                        self.hideOSD()
-
-                # try insta-hiding the OSDs when playback was requested
-                elif self._osdHideFast:
+                if time.time() > self.timeout:
                     xbmc.executebuiltin('Dialog.Close(videoosd,true)')
                     xbmc.executebuiltin('Dialog.Close(seekbar,true)')
                     if not xbmc.getCondVisibility('Window.IsActive(videoosd) | Player.Rewinding | Player.Forwarding'):
                         self.hideOSD()
-
-                    self._osdHideFast = False
 
         if offset or self.initialized:
             try:
@@ -2140,7 +2141,6 @@ class SeekDialog(kodigui.BaseDialog):
         self.resetSeeking()
         self._osdHideAnimationTimeout = time.time() + self.OSD_HIDE_ANIMATION_DURATION
 
-        self._osdHideFast = False
         if self.playlistDialog:
             self.playlistDialog.doClose()
             self.playlistDialogVisible = False

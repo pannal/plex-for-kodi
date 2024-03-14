@@ -403,7 +403,7 @@ class PlexPlayer(object):
 
         builder.extras.append(
             "add-transcode-target(type=videoProfile&videoCodec="
-            "h264,mpeg1video,mpeg2video,mpeg4,msmpeg4v2,msmpeg4v3,vc1,wmv3&container=mkv&"
+            "h264,mpeg1video,mpeg2video,mpeg4,msmpeg4v2,msmpeg4v3,wmv3&container=mkv&"
             "audioCodec={}&subtitleCodec={}&protocol=http&context=streaming)".format(audioCodecs, subtitleCodecs))
 
         # builder.extras.append(
@@ -527,6 +527,12 @@ class PlexPlayer(object):
             # builder.extras.append(
             #     "add-direct-play-profile(type=videoProfile&videoCodec=av1&container=*&audioCodec=*)")
 
+        # VC1
+        if self.item.settings.getPreference("allow_vc1", True):
+            builder.extras.append(
+                "append-transcode-target-codec(type=videoProfile&context=streaming&container=mkv&"
+                "protocol=http&videoCodec=vc1)")
+
         return builder
 
     def buildTranscodeMkvLegacy(self, obj, directStream=True):
@@ -579,7 +585,7 @@ class PlexPlayer(object):
 
         builder.extras.append(
             "add-transcode-target(type=videoProfile&videoCodec="
-            "h264,mpeg1video,mpeg2video,mpeg4,msmpeg4v2,msmpeg4v3,vc1,wmv3&container=mkv&"
+            "h264,mpeg1video,mpeg2video,mpeg4,msmpeg4v2,msmpeg4v3,wmv3&container=mkv&"
             "audioCodec="+audioCodecs+"&protocol=http&context=streaming)")
 
         # builder.extras.append(
@@ -663,6 +669,12 @@ class PlexPlayer(object):
                 "protocol=http&videoCodec=av1)")
             # builder.extras.append(
             #     "add-direct-play-profile(type=videoProfile&videoCodec=av1&container=*&audioCodec=*)")
+
+        # VC1
+        if self.item.settings.getPreference("allow_vc1", True):
+            builder.extras.append(
+                "append-transcode-target-codec(type=videoProfile&context=streaming&container=mkv&"
+                "protocol=http&videoCodec=vc1)")
 
         return builder
 
@@ -787,6 +799,7 @@ class PlexPlayer(object):
 
         builder.addParam("session", self.item.settings.getGlobal("clientIdentifier"))
         builder.addParam("directStream", directStream and "1" or "0")
+        #builder.addParam("directStreamAudio", directStream and "1" or "0")
         builder.addParam("directPlay", "0")
 
         qualityIndex = self.item.settings.getQualityIndex(self.item.getQualityType(server))

@@ -1398,9 +1398,9 @@
             </control>
             <control type="image">
                 <posx>153r</posx>
-                <posy>54</posy>
+                <posy>47.5</posy>
                 <width>93</width>
-                <height>30</height>
+                <height>43</height>
                 <texture>script.plex/home/plex.png</texture>
             </control>
         </control>

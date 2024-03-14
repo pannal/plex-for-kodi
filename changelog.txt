@@ -1,3 +1,33 @@
+[-0.7.6-]
+- Core: Avoid DNS rebind protection issues for plex.direct
+- Core: Support ipv6 plex.direct hosts when checking for locality/LAN
+- Core: Network: Massively speed up local connection checks
+- Core: Network: Skip local connection checks for plex.tv
+- Core: Network: Add 172.16.0.0/12 as local network
+- Core: MyPlex: Ignore non-server resources
+- Core: Use correct default for LAN_REACHABILITY_TIMEOUT
+- Core: Cache home users indefinitely; add refresh button to user select
+- Core: Add support for adaptive readfactor from Kodi Omega BETA3 onwards; recommend it instead of the default range
+- Core: Add setting to allow VC1 DirectPlay (default on; was on by default before)
+- Core: MDE: Fix DirectStreaming when media has no deep analysis by setting the maximum bitrate to unlimited in maximum quality mode
+- Core: Simplify video DirectStream codec decision handling
+- Core: Make sure our home window opens, exit if it doesn't in time; unify waiting for window functionality
+- Home: Add "Refresh Users" action to user dropdown to refresh available home users
+- Home: Reduce unnecessary section refreshes if the section hasn't changed
+- Playback: Fix PlayQueue crashing
+- Userselect: Remove legacy thread/cache handling leftovers
+- Userselect: Fix ACTION_PREVIOUS_MENU/ESC closing the addon instead of leaving the user selection
+- SeekDialog: Avoid accidental seeking when navigating through player buttons after closing player settings without changing anything
+- SeekDialog: Hide OSD fast after changing subtitle via settings
+- SeekDialog: Show episode year in player overlay if possible
+- SeekDialog: Widen episode/movie title line
+- SeekDialog: Autoscroll episode/movie title lines for too long titles
+- SeekDialog: Hide non-autoskipping marker into the OSD using NAV_BACK/PREVIOUS_MENU
+- SeekDialog: Apply positive marker endtime offset to manually skipping markers as well (unifying with the autoskip handling), to avoid re-showing the marker occasionally after seeking
+- Library: Show current total item count in title
+- Settings: Add description for Direct Stream
+
+
 [- 0.7.5-rev2 -]
 - Core: asyncio Kodi compat
 - Fix: transcoding is broken due to deepcopy usage

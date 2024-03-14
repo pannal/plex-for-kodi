@@ -1135,6 +1135,8 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
 
             util.setGlobalProperty('key', jumpList[0].key)
 
+        self.setProperty("items.count", str(totalSize))
+
         self.showPanelControl.reset()
         self.keyListControl.reset()
 
@@ -1237,6 +1239,8 @@ class LibraryWindow(kodigui.MultiWindow, windowutils.UtilMixin):
             else:
                 self.setBoolProperty('no.content', True)
             return
+
+        self.setProperty("items.count", photos.totalSize)
 
         for photo in photos:
             title = photo.title

@@ -1709,3 +1709,31 @@ msgstr ""
 msgctxt "#32975"
 msgid "Delete Season"
 msgstr ""
+
+msgctxt "#32976"
+msgid "Adaptive"
+msgstr ""
+
+msgctxt "#32977"
+msgid "Allow VC1"
+msgstr ""
+
+msgctxt "#32978"
+msgid "Enable this if your hardware can handle VC1. Disable it to force transcoding."
+msgstr ""
+
+msgctxt "#32979"
+msgid "Allows the server to only transcode streams of a video that need transcoding, while streaming the others unaltered. If disabled, force the server to transcode everything not direct playable."
+msgstr ""
+
+msgctxt "#32980"
+msgid "Refresh Users"
+msgstr ""
+
+msgctxt "#32981"
+msgid "Background worker count"
+msgstr ""
+
+msgctxt "#32982"
+msgid "Depending on how many cores your CPU has and how much it can handle, increasing this might improve certain situations. If you experience crashes or other annormalities, leave this at its default (3). Needs an addon restart."
+msgstr ""

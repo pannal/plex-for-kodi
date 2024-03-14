@@ -30,6 +30,7 @@ class PlexServerManager(signalsmixin.SignalsMixin):
         self.transcodeServer = None
         self.channelServer = None
         self.deferReachabilityTimer = None
+        self.reachabilityNeverTested = True
 
         self.startSelectedServerSearch()
         self.loadState()
@@ -172,6 +173,8 @@ class PlexServerManager(signalsmixin.SignalsMixin):
         if not plexapp.ACCOUNT.isAuthenticated and plexapp.ACCOUNT.isActive():
             util.LOG("Ignore testing server reachability until we're authenticated")
             return
+
+        self.reachabilityNeverTested = False
 
         # To improve reachability performance and app startup, we'll try to test the
         # preferred server first, and defer the connection tests for a few seconds.
