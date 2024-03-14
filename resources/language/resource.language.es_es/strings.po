@@ -4,7 +4,7 @@ msgstr ""
 "Project-Id-Version: XBMC-Addons\n"
 "Report-Msgid-Bugs-To: alanwww1@xbmc.org\n"
 "POT-Creation-Date: 2013-12-12 22:56+0000\n"
-"PO-Revision-Date: 2024-01-28 13:15+0100\n"
+"PO-Revision-Date: 2024-03-14 22:55+0100\n"
 "Last-Translator: DeciBelioS\n"
 "Language-Team: LANGUAGE\n"
 "Language: es\n"
@@ -1709,3 +1709,31 @@ msgstr "Al terminar un episodio, no muestra Post Play sino que pasa al siguiente
 msgctxt "#32975"
 msgid "Delete Season"
 msgstr "Borrar temporada"
+
+msgctxt "#32976"
+msgid "Adaptive"
+msgstr "Adaptable"
+
+msgctxt "#32977"
+msgid "Allow VC1"
+msgstr "Permitir VC1"
+
+msgctxt "#32978"
+msgid "Enable this if your hardware can handle VC1. Disable it to force transcoding."
+msgstr "Actívalo si tu hardware puede manejar VC1. Desactívalo para forzar la transcodificación."
+
+msgctxt "#32979"
+msgid "Allows the server to only transcode streams of a video that need transcoding, while streaming the others unaltered. If disabled, force the server to transcode everything not direct playable."
+msgstr "Permite al servidor transcodificar sólo las secuencias de un vídeo que necesitan transcodificación, mientras transmite las demás sin alterarlas. Si se desactiva, obliga al servidor a transcodificar todo lo que no se pueda reproducir directamente."
+
+msgctxt "#32980"
+msgid "Refresh Users"
+msgstr "Actualizar usuarios"
+
+msgctxt "#32981"
+msgid "Background worker count"
+msgstr "Recuento de núcleos en segundo plano"
+
+msgctxt "#32982"
+msgid "Depending on how many cores your CPU has and how much it can handle, increasing this might improve certain situations. If you experience crashes or other annormalities, leave this at its default (3). Needs an addon restart."
+msgstr "Dependiendo de cuántos núcleos tenga tu CPU y de cuánto pueda soportar, aumentarlo podría mejorar ciertas situaciones. Si experimentas cuelgues u otras anomalías, déjalo en su valor por defecto (3). Necesita un reinicio del addon."
