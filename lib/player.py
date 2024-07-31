@@ -440,6 +440,8 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.player.trigger('started.video')
 
         if self.isDirectPlay:
+            if util.isCoreELEC:
+                xbmc.sleep(500)
             self.seekAbsolute()
 
         if self.dialog:
