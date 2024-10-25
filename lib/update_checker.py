@@ -73,6 +73,7 @@ def update_loop():
                     setSetting('last_update_check', last_update_check)
 
                     if update_version:
+                        log("Update found: {}".format(update_version))
                         # notify user in main app and wait for response
                         setGlobalProperty('update_is_downgrade', updater.is_downgrade and '1' or '', wait=True)
                         setGlobalProperty('update_available', update_version, wait=True)

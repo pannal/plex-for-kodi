@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="0.8.0-beta3.8"
+       version="0.8.0-beta4"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
