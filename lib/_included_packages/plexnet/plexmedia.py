@@ -106,7 +106,7 @@ class PlexMedia(plexobjects.PlexObject):
                 if attr and not attr.NA:
                     extra.append("{0}={1}".format(astr, attr))
 
-        return self.versionString(log_safe=True) + " " + ' '.join(extra)
+        return str(self.container.ratingKey) + ": " + self.versionString(log_safe=True) + " " + ' '.join(extra)
 
     def versionString(self, log_safe=False):
         details = []

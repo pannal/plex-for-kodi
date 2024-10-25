@@ -88,12 +88,12 @@ class KodiCacheManager(object):
             try:
                 self.memorySize = int(ADV_MSIZE_RE.search(cachexml).group(1)) // 1024 // 1024
             except:
-                DEBUG_LOG("script.plex: invalid or not found memorysize in advancedsettings.xml")
+                DEBUG_LOG("script.plexmod: invalid or not found memorysize in advancedsettings.xml")
 
             try:
                 self.readFactor = int(ADV_RFACT_RE.search(cachexml).group(1))
             except:
-                DEBUG_LOG("script.plex: invalid or not found readfactor in advancedsettings.xml")
+                DEBUG_LOG("script.plexmod: invalid or not found readfactor in advancedsettings.xml")
 
         #    self._cleanData = data.replace(cachexml, "")
         #else:

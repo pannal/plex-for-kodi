@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import plexplayer, media
+from plexnet import plexplayer, media, util as pnUtil
 
 from lib import metadata
 from lib import util
@@ -302,6 +302,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         self.video.setMediaChoice(choice['key'])
         choice['key'].set('selected', 1)
+        pnUtil.INTERFACE.playbackManager(self.video, key="media_version", value=choice['key'].id)
         self.setInfo()
 
     def delete(self):

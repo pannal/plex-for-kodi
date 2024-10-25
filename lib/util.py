@@ -5,7 +5,6 @@ import gc
 import os
 import sys
 import re
-import binascii
 import json
 import threading
 import math
@@ -24,14 +23,6 @@ import requests
 import plexnet.util
 
 from .kodijsonrpc import rpc
-# noinspection PyUnresolvedReferences
-from kodi_six import xbmc
-# noinspection PyUnresolvedReferences
-from kodi_six import xbmcgui
-# noinspection PyUnresolvedReferences
-from kodi_six import xbmcaddon
-# noinspection PyUnresolvedReferences
-from kodi_six import xbmcvfs
 
 from . import colors
 # noinspection PyUnresolvedReferences
@@ -40,25 +31,25 @@ from .logging import log, log_error
 # noinspection PyUnresolvedReferences
 from .i18n import T
 from . import aspectratio
-from .kodi_util import *
+# noinspection PyUnresolvedReferences
+from .kodi_util import (ADDON, xbmc, xbmcvfs, xbmcaddon, xbmcgui, translatePath, KODI_VERSION_MAJOR, KODI_VERSION_MINOR,
+                        KODI_BUILD_NUMBER, FROM_KODI_REPOSITORY, setGlobalProperty, setGlobalBoolProperty,
+                        waitForGPEmpty, waitForConsumption, getGlobalProperty)
+# noinspection PyUnresolvedReferences
+from .settings_util import getSetting, getUserSetting, setSetting, USER_SETTINGS, JSON_SETTINGS
 from plexnet import signalsmixin
 
 DEBUG = True
 _SHUTDOWN = False
 
-ADDON = xbmcaddon.Addon()
-
-SETTINGS_LOCK = threading.Lock()
-
-SKIN_PLEXTUARY = xbmc.getSkinDir() == "skin.plextuary"
-FROM_KODI_REPOSITORY = ADDON.getAddonInfo('name') == "PM4K for Plex"
+SKIN_PLEXTUARY = "skin.plextuary" in xbmc.getSkinDir()
 PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 27
+THEME_VERSION = 34
 
-xbmc.log('script.plex: Kodi {0}.{1} (build {2})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER),
+xbmc.log('script.plexmod: Kodi {0}.{1} (build {2})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER),
          xbmc.LOGINFO)
 
 
@@ -104,48 +95,6 @@ CURRENT_AR = DISPLAY_RESOLUTION[0] / DISPLAY_RESOLUTION[1]
 
 # we currently only support vertical scaling for smaller ARs; change to != once we know how to scale horizontally
 NEEDS_SCALING = round(CURRENT_AR, 2) < round(1920 / 1080, 2)
-
-
-def getSetting(key, default=None):
-    with SETTINGS_LOCK:
-        setting = ADDON.getSetting(key)
-        is_json = key in JSON_SETTINGS
-        return _processSetting(setting, default, is_json=is_json)
-
-
-def getUserSetting(key, default=None):
-    if not plexnet.util.ACCOUNT:
-        return default
-
-    is_json = key in JSON_SETTINGS
-
-    key = '{}.{}'.format(key, plexnet.util.ACCOUNT.ID)
-    with SETTINGS_LOCK:
-        setting = ADDON.getSetting(key)
-        return _processSetting(setting, default, is_json=is_json)
-
-
-JSON_SETTINGS = []
-USER_SETTINGS = []
-
-
-def _processSetting(setting, default, is_json=False):
-    if not setting:
-        return default
-    if isinstance(default, bool):
-        return setting.lower() == 'true'
-    elif isinstance(default, float):
-        return float(setting)
-    elif isinstance(default, int):
-        return int(float(setting or 0))
-    elif isinstance(default, list) and not is_json:
-        if setting:
-            return json.loads(binascii.unhexlify(setting))
-        else:
-            return default
-
-    return setting
-
 
 HOME_BUTTON_MAPPED = None
 
@@ -220,7 +169,8 @@ class AddonSettings(object):
         ("tickrate", 1.0),
         ("honor_plextv_dnsrebind", True),
         ("honor_plextv_pam", True),
-        ("coreelec_resume_seek_wait", 350),
+        ("coreelec_resume_seek_wait", 500),
+        ("background_resolution_scale_perc", 100),
     )
 
     def __init__(self):
@@ -380,20 +330,6 @@ def reInitAddon():
     populateTimeFormat()
 
 
-def setSetting(key, value):
-    with SETTINGS_LOCK:
-        value = _processSettingForWrite(value)
-        ADDON.setSetting(key, value)
-
-
-def _processSettingForWrite(value):
-    if isinstance(value, list):
-        value = binascii.hexlify(json.dumps(value))
-    elif isinstance(value, bool):
-        value = value and 'true' or 'false'
-    return str(value)
-
-
 def showNotification(message, time_ms=3000, icon_path=None, header=ADDON.getAddonInfo('name')):
     try:
         icon_path = icon_path or translatePath(ADDON.getAddonInfo('icon'))
@@ -495,11 +431,12 @@ def simpleSize(size):
     Example: 12345 -> 12.06 KB
     """
     s = 0
+    i = 0
     if size > 0:
         i = int(math.floor(math.log(size, 1024)))
         p = math.pow(1024, i)
         s = round(size / p, 2)
-    if (s > 0):
+    if s > 0:
         return '%s %s' % (s, SIZE_NAMES[i])
     else:
         return '0B'
@@ -1033,7 +970,7 @@ def dumpSettings():
         all_settings = SETTING_RE.findall(data)
         f.close()
     except:
-        LOG('script.plex: No settings.xml found')
+        LOG('script.plexmod: No settings.xml found')
         return
 
     final = OrderedDict({"settings": OrderedDict((k, []) for k in sections), "addon_settings": [], "unspecified": []})

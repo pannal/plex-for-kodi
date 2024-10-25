@@ -260,6 +260,7 @@ class PlexPlayer(BasePlayer):
                 newDecision = decision.getDecision(False)
             else:
                 util.WARN_LOG("MDE: Server failed to provide a decision")
+                raise DecisionFailure("0", "Can't play back media")
         else:
             util.WARN_LOG("MDE: Server or item does not support decisions")
 
@@ -387,14 +388,19 @@ class PlexPlayer(BasePlayer):
 
         if not forceAC3:
             if directStream:
-                audioCodecs = "eac3,ac3,dca,aac,mp3,mp2,pcm,flac,alac,wmav2,wmapro,wmavoice,opus,vorbis,truehd"
+                audioCodecs = util.AUDIO_CODECS
             else:
-                audioCodecs = "mp3,ac3,dca,aac,opus"
+                audioCodecs = util.AUDIO_CODECS_TC
+
+            # filter audio codecs
+            disACodecs = self.item.settings.getPreference("audio_disabled_codecs", [])
+            if disACodecs:
+                audioCodecs = list(set(audioCodecs) - set(disACodecs))
         else:
             if dtsIsAC3:
-                audioCodecs = "ac3,dca"
+                audioCodecs = ["ac3", "dca"]
             else:
-                audioCodecs = "ac3"
+                audioCodecs = ["ac3",]
 
         subtitleCodecs = "srt,ssa,ass,mov_text,tx3g,ttxt,text,pgs,vobsub,smi,subrip,eia_608_embedded," \
                          "eia_708_embedded,dvb_subtitle" + (",webvtt" if KODI_VERSION_MAJOR > 19 else '')
@@ -413,7 +419,7 @@ class PlexPlayer(BasePlayer):
         builder.extras.append(
             "add-transcode-target(type=videoProfile&videoCodec="
             "h264,mpeg1video,mpeg2video,mpeg4,msmpeg4v2,msmpeg4v3,wmv3&container=mkv&"
-            "audioCodec={}&subtitleCodec={}&protocol=http&context=streaming)".format(audioCodecs, subtitleCodecs))
+            "audioCodec={}&subtitleCodec={}&protocol=http&context=streaming)".format(",".join(audioCodecs), subtitleCodecs))
 
         # builder.extras.append(
         #     "append-transcode-target-audio-codec(type=videoProfile&context=streaming&protocol=http&audioCodec=" +
@@ -542,6 +548,12 @@ class PlexPlayer(BasePlayer):
                 "append-transcode-target-codec(type=videoProfile&context=streaming&container=mkv&"
                 "protocol=http&videoCodec=vc1)")
 
+        if self.item.settings.getPreference("disable_hdr", False):
+            builder.extras.append(
+                "add-limitation(scope=videoTranscodeTarget&scopeName=*&scopeType=videoCodec&context=streaming&protocol=http&"
+                "type=match&name=video.colorTrc&list=bt709|bt470m|bt470bg|smpte170m|smpte240m|bt2020-10|bt2020-10"
+                "&isRequired=true)")
+
         return builder
 
     def buildDirectPlay(self, obj, partIndex):
@@ -623,6 +635,10 @@ class PlexPlayer(BasePlayer):
             path = self.item.getAbsolutePath("key")
 
         builder.addParam("path", path)
+
+        if self.choice.subtitleStream and self.choice.subtitleStream.should_auto_sync:
+            builder.addParam("autoAdjustSubtitle",
+                             util.INTERFACE.getPreference('auto_sync', True) and '1' or '0')
 
         part = self.media.parts[partIndex]
         seekOffset = int(self.seekValue / 1000)

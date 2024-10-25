@@ -456,6 +456,11 @@ class Settings(object):
                     desc_ds=T(32979, ''),
                     feature_4k=T(32036, ''),
                     desc_4k=T(32102, ''))),
+                BoolSetting(
+                    'disable_hdr', T(33660, 'Disable HDR'), False
+                ).description(T(33661, "If you don't want your client to handle HDR (or HDR-fallback), "
+                                       "enable this to force transcoding. Doesn't apply to DV Profile 5.")
+                ),
                 MultiOptionsSetting(
                     'allowed_codecs', T(33059, ''),
                     ["allow_hevc", "allow_vc1"],
@@ -496,6 +501,14 @@ class Settings(object):
                     T(32065, 'When force AC3 settings are enabled, treat DTS the same as AC3 '
                              '(useful for Optical passthrough)')
                 ),
+                MultiOptionsSetting(
+                    'audio_disabled_codecs', T(33665, 'Disable audio codecs'),
+                    [],
+                    list(sorted([(a, "{} ({})".format(b, a)) for a, b in plexnet.util.AUDIO_CODECS_VERB.items()]))
+                ).description(
+                    T(33666, "Audio codecs you can't play back. Disables Direct Play for such media items, "
+                             "enables Direct Stream if possible, transcodes audio stream to compatible format.")
+                ),
                 BoolSetting('audio_hires', T(33079, ''),
                             True).description(
                     T(33080, '')
@@ -512,6 +525,11 @@ class Settings(object):
                     T(32945, 'When Direct Streaming instruct the Plex Server to burn in SSA/ASS subtitles (thus '
                              'transcoding the video stream). If disabled it will not touch the video stream, but '
                              'will convert the subtitle to unstyled text.')
+                ),
+                BoolSetting('auto_sync', T(33655, 'Auto-Sync Subtitles'),
+                            True).description(
+                    T(33656, 'Only for External SRT subtitles. The PMS setting for voice activity detection '
+                             'has to be enabled for this to work.')
                 ),
                 BoolSetting('forced_subtitles_override', T(32941, 'Forced subtitles fix'),
                             False).description(
@@ -585,6 +603,12 @@ class Settings(object):
                     T(32999, "")
                 ),
                 BoolSetting(
+                    'home_confirm_actions', T(33663, 'Home: Confirm item actions'), True
+                ).description(
+                    T(33664, "When acting on items in the Home view, such as mark played, hide from continue "
+                             "watching etc., show a confirmation dialog.")
+                ),
+                BoolSetting(
                     'hubs_round_robin', T(33043, ''), False
                 ).description(
                     T(33044, "").format(util.addonSettings.hubsRrMax)
@@ -608,6 +632,10 @@ class Settings(object):
                     T(33046, '')),
                 BoolSetting('no_osd_time_spoilers', T(33004, ''), False, backport_from="no_spoilers").description(
                     T(33005, '')),
+                BoolSetting('use_alternate_seek', T(33667, 'CoreELEC: Use alternate seek'), True).description(
+                    T(33668, 'Enables an alternate method to seek on CoreELEC due to a seemingly '
+                             'buggy implementation. Use this if you have audio issues after seeking/resuming.'
+                      )) if util.isCoreELEC else None,
                 MultiUAOptionsSetting(
                     'player_show_buttons', T(33057, 'Show buttons'),
                     ['subtitle_downloads', 'skip_intro', 'skip_credits'],
@@ -765,7 +793,26 @@ class Settings(object):
         ),
         'system': (
             T(33600, 'System'), (
-
+                BoolSetting('auto_update_check', T(33672, 'Check for updates'), True)
+                .description(T(33673, "Automatically check for updates periodically. If installed from a "
+                                      "Kodi repository and the Update Source setting is set to Repository, Kodi "
+                                      "itself will handle the updating of this addon. "
+                                      "Needs a Kodi restart when changed.")) if not util.FROM_KODI_REPOSITORY else None,
+                BoolSetting('update_check_startup', T(33674, 'Check for updates on start'), True)
+                .description(T(33675, "Automatically check for updates on startup. "
+                                      "Doesn't do much when Update source is Repository."
+                                      "Needs a Kodi restart when changed.")) if not util.FROM_KODI_REPOSITORY else None,
+                OptionsSetting(
+                    'update_source',
+                    T(33676, 'Update source'),
+                    'repository',
+                    (('beta', T(33678, 'Beta')), ('stable', T(33679, 'Stable')),
+                     ('repository', T(33680, 'Repository')))
+                ).description(T(33677, 'Specifies the update mode. Will immediately check for a new version '
+                                       'when changed and closing settings.\nDefault: Repository\n\nBeta: Bleeding '
+                                       'edge (possibly unstable)\nStable: Stable branch (faster than Repository)\n'
+                                       'Repository: Kodi repository (official (slow) or Don\'t Panic)')
+                              ) if not util.FROM_KODI_REPOSITORY else None,
                 BoolSetting('exit_default_is_quit', T(32965, 'Start Plex On Kodi Startup'), False)
                 .description(T(32966, "stub")),
                 BoolSetting('path_mapping', T(33000, ''), True).description(T(33001, '')),

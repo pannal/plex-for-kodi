@@ -23,6 +23,7 @@ from . import busy
 from . import dropdown
 from . import kodigui
 from . import opener
+from . import optionsdialog
 from . import preplay
 from . import search
 from . import subitems
@@ -175,6 +176,38 @@ def setItemType(type_=None):
     ITEM_TYPE = type_
     util.setGlobalProperty('item.type', str(ITEM_TYPE))
 
+class CreateDefaultItemsTask(backgroundthread.Task):
+    def setup(self, startPos, count, totalSize, fallback, callback, key=None):
+        self.startPos = startPos
+        self.count = count
+        self.totalSize = totalSize
+        self.endPos = self.startPos + self.count
+        if self.endPos > self.totalSize:
+            self.endPos = self.totalSize
+        self.fallback = fallback
+        self.callback = callback
+        self.key = key
+        return self
+
+    def contains(self, pos):
+        return self.startPos <= pos < self.endPos
+
+    def run(self):
+        if self.isCanceled():
+            return
+
+        items = []
+        firstMli = None
+        for x in range(self.startPos, self.endPos):
+            mli = kodigui.ManagedListItem('')
+            mli.setProperty('thumb.fallback', self.fallback)
+            mli.setProperty('index', str(x))
+            if self.key:
+                mli.setProperty('key', self.key)
+                if x == self.startPos:  # i.e. first item
+                    firstMli = mli
+            items.append(mli)
+        self.callback(items, self.key, firstMli)
 
 class ChunkRequestTask(backgroundthread.Task):
     def setup(self, section, start, size, callback, filter_=None, sort=None, unwatched=False, subDir=False):
@@ -320,6 +353,8 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
     # so that we fill an entire row
     CHUNK_SIZE = 240
     CHUNK_OVERCOMMIT = 6
+    DEFAULT_ITEMS_CHUNK_SIZE = 250
+    DEFAULT_ITEMS_CHUNK_SIZE_BIG = 500
 
     def __init__(self, *args, **kwargs):
         PlaybackBtnMixin.__init__(self)
@@ -436,15 +471,20 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
             elif action == xbmcgui.ACTION_MOUSE_DRAG:
                 self.onMouseDrag(action)
             elif action == xbmcgui.ACTION_CONTEXT_MENU:
-                if not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.OPTIONS_GROUP_ID)):
-                    self.lastNonOptionsFocusID = self.lastFocusID
-                    self.setFocusId(self.OPTIONS_GROUP_ID)
-                    return
-                else:
-                    if self.lastNonOptionsFocusID:
-                        self.setFocusId(self.lastNonOptionsFocusID)
-                        self.lastNonOptionsFocusID = None
+                # item action possible?
+                had_action = self.itemOptions()
+                if not had_action:
+                    if not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.OPTIONS_GROUP_ID)):
+                        self.lastNonOptionsFocusID = self.lastFocusID
+                        self.setFocusId(self.OPTIONS_GROUP_ID)
                         return
+                    else:
+                        if self.lastNonOptionsFocusID:
+                            self.setFocusId(self.lastNonOptionsFocusID)
+                            self.lastNonOptionsFocusID = None
+                            return
+                else:
+                    return
 
             elif action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_CONTEXT_MENU):
                 if not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.OPTIONS_GROUP_ID)) and \
@@ -503,6 +543,65 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
             return
 
         self.showPhotoItemProperties(mli.dataSource)
+
+    def itemOptions(self):
+        mli = self.showPanelControl.getSelectedItem()
+        if not mli:
+            return True
+
+        if mli.dataSource is None:
+            return True
+
+        if mli.dataSource.TYPE in ('episode', 'season', 'movie', 'show'):
+            options = []
+            ds = mli.dataSource
+            if not mli.getProperty('watched'):
+                options.append({'key': 'mark_watched', 'display': T(32319, "Mark Played")})
+
+            if (ds.isFullyWatched or ds.isWatched or
+                    (ds.TYPE in ("show", "season") and 0 < ds.unViewedLeafCount < ds.leafCount)):
+                options.append({'key': 'mark_unwatched', 'display': T(32318, "Mark Unplayed")})
+
+            title = mli.label
+            secondary = mli.label2
+            if ds.TYPE in ("movie", "show"):
+                secondary = mli.getProperty('year')
+            elif ds.TYPE == "episode":
+                title = ds.defaultTitle
+                secondary = mli.getProperty('subtitle')
+
+            label = u"{} ({})".format(six.ensure_str(title), six.ensure_str(secondary))
+
+            choice = dropdown.showDropdown(
+                options,
+                pos=(660, 441),
+                close_direction='none',
+                set_dropdown_prop=False,
+                header=T(33030, 'Choose action for: {}').format(label),
+                align_items="left",
+            )
+
+            if choice and choice["key"] in ("mark_watched", "mark_unwatched"):
+                if util.getSetting('home_confirm_actions', True):
+                    button = optionsdialog.show(
+                        T(32319, "Mark Played") if choice["key"] == "mark_watched" else T(32318, "Mark Unplayed"),
+                        label,
+                        T(32328, 'Yes'),
+                        T(32329, 'No'),
+                    )
+
+                    if button != 0:
+                        return True
+
+                if choice["key"] == "mark_watched":
+                    mli.dataSource.markWatched()
+                    self.updateUnwatchedAndProgress(mli)
+
+                elif choice["key"] == "mark_unwatched":
+                    mli.dataSource.markUnwatched()
+                    self.updateUnwatchedAndProgress(mli)
+            return True
+
 
     def updateKey(self, mli=None):
         mli = mli or self.showPanelControl.getSelectedItem()
@@ -1010,13 +1109,14 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
         mli.dataSource.reload()
         if mli.dataSource.isWatched:
             mli.setProperty('unwatched', '')
-            mli.setBoolProperty('watched', mli.dataSource.isFullyWatched)
             mli.setProperty('unwatched.count', '')
         else:
             if self.section.TYPE == 'show' or mli.dataSource.TYPE == 'show' or mli.dataSource.TYPE == 'season':
                 mli.setProperty('unwatched.count', str(mli.dataSource.unViewedLeafCount))
+                mli.setBoolProperty('unwatched.count.large', mli.dataSource.unViewedLeafCount > 999)
             else:
                 mli.setProperty('unwatched', '1')
+        mli.setBoolProperty('watched', mli.dataSource.isFullyWatched)
         mli.setProperty('progress', util.getProgressImage(mli.dataSource))
 
     def setTitle(self):
@@ -1081,10 +1181,15 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
 
         return (self.sort, self.sortDesc and 'desc' or 'asc')
 
+
+    def getDefChunkSize(self, size):
+        return self.DEFAULT_ITEMS_CHUNK_SIZE if size < 1000 else self.DEFAULT_ITEMS_CHUNK_SIZE_BIG
+
     @busy.dialog()
     def fillShows(self):
         self.setBoolProperty('no.content', False)
         self.setBoolProperty('no.content.filtered', False)
+        self.setBoolProperty('content.filling', True)
         items = []
         jitems = []
         self.keyItems = {}
@@ -1103,10 +1208,10 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
         elif ITEM_TYPE == 'track':
             type_ = 10
 
-        idx = 0
+        tasks = []
         fallback = 'script.plex/thumb_fallbacks/{0}.png'.format(TYPE_KEYS.get(self.section.type, TYPE_KEYS['movie'])['fallback'])
 
-        if self.sort != 'titleSort' or ITEM_TYPE == 'folder' or self.subDir or self.section.TYPE == "collection":
+        if self.sort != 'titleSort' or ITEM_TYPE in ('folder', 'episode') or self.subDir or self.section.TYPE == "collection":
             if ITEM_TYPE == 'folder':
                 sectionAll = self.section.folder(0, 0, self.subDir)
             else:
@@ -1123,11 +1228,8 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
                 else:
                     self.setBoolProperty('no.content', True)
             else:
-                for x in range(totalSize):
-                    mli = kodigui.ManagedListItem('')
-                    mli.setProperty('thumb.fallback', fallback)
-                    mli.setProperty('index', str(x))
-                    items.append(mli)
+                for startPosition in range(0, totalSize, self.getDefChunkSize(totalSize)):
+                    tasks.append(CreateDefaultItemsTask().setup(startPosition, self.getDefChunkSize(totalSize), totalSize, fallback, self._defaultItemsCallback))
         else:
             jumpList = self.section.jumpList(filter_=self.getFilterOpts(), sort=self.getSortOpts(), unwatched=self.filterUnwatched, type_=type_)
 
@@ -1145,23 +1247,18 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
 
                 return
 
+            idx = 0
             for kidx, ji in enumerate(jumpList):
+                ji_size = ji.size.asInt()
                 mli = kodigui.ManagedListItem(ji.title, data_source=ji.key)
                 mli.setProperty('key', ji.key)
                 mli.setProperty('original', '{0:02d}'.format(kidx))
                 self.keyItems[ji.key] = mli
                 jitems.append(mli)
-                totalSize += ji.size.asInt()
+                totalSize += ji_size
 
-                for x in range(ji.size.asInt()):
-                    mli = kodigui.ManagedListItem('')
-                    mli.setProperty('key', ji.key)
-                    mli.setProperty('thumb.fallback', fallback)
-                    mli.setProperty('index', str(idx))
-                    items.append(mli)
-                    if not x:  # i.e. first item
-                        self.firstOfKeyItems[ji.key] = mli
-                    idx += 1
+                tasks.append(CreateDefaultItemsTask().setup(idx, ji.size.asInt(), totalSize, fallback, self._defaultItemsCallback, key=ji.key))
+                idx += ji_size
 
             util.setGlobalProperty('key', jumpList[0].key)
 
@@ -1170,7 +1267,14 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
         self.showPanelControl.reset()
         self.keyListControl.reset()
 
-        self.showPanelControl.addItems(items)
+        # Start the background tasks to create the default items
+        self.tasks.add(tasks)
+        backgroundthread.BGThreader.addTasksToFront(tasks)
+
+        # Wait for the default items to be created
+        while backgroundthread.BGThreader.working() and not util.MONITOR.abortRequested():
+            util.MONITOR.waitForAbort(0.1)
+
         self.keyListControl.addItems(jitems)
 
         self.showPanelControl.selectItem(0)
@@ -1178,9 +1282,12 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
 
         tasks = []
         for startChunkPosition in range(0, totalSize, self.CHUNK_SIZE):
+            # fixme: this is a workaround so we don't error out when firstCharacter and /all item count differ
+            # this might hide items
+            chunkEnd = totalSize if totalSize < self.CHUNK_SIZE else self.CHUNK_SIZE
             tasks.append(
                 ChunkRequestTask().setup(
-                    self.section, startChunkPosition, self.CHUNK_SIZE, self._chunkCallback, filter_=self.getFilterOpts(), sort=self.getSortOpts(), unwatched=self.filterUnwatched, subDir=self.subDir
+                    self.section, startChunkPosition, chunkEnd, self._chunkCallback, filter_=self.getFilterOpts(), sort=self.getSortOpts(), unwatched=self.filterUnwatched, subDir=self.subDir
                 )
             )
 
@@ -1314,6 +1421,28 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
         if keys:
             util.setGlobalProperty('key', keys[0])
 
+    def _defaultItemsCallback(self, items, key, firstMli):
+        if not items:
+            return
+
+        while True:
+            self.lock.acquire()
+            # When creating the default items for the title sort we need to add them to the list
+            # in order.  So we look at the first index of the incoming items to see if it's the
+            # next batch of items to add.  If not then it releases the lock and adds a small delay
+            # so that other threads can grab the lock.
+            if key and firstMli:
+                if int(firstMli.getProperty('index')) != self.showPanelControl.size():
+                    self.lock.release()
+                    xbmc.sleep(1)
+                    continue
+
+                self.firstOfKeyItems[key] = firstMli
+
+            self.showPanelControl.addItems(items)
+            self.lock.release()
+            break
+
     def _chunkCallback(self, items, start):
         if not self.showPanelControl or not items:
             return
@@ -1325,11 +1454,11 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
             thumbDim = TYPE_KEYS.get(self.section.type, TYPE_KEYS['movie'])['thumb_dim']
             artDim = TYPE_KEYS.get(self.section.type, TYPE_KEYS['movie']).get('art_dim', (256, 256))
 
+            if not self.showPanelControl:
+                return
+
             if ITEM_TYPE == 'episode':
                 for offset, obj in enumerate(items):
-                    if not self.showPanelControl:
-                        return
-
                     mli = self.showPanelControl[pos]
                     if obj:
                         mli.dataSource = obj
@@ -1341,13 +1470,14 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
                             subtitle = "\n" + subtitle
                         else:
                             subtitle = ' - ' + obj.originallyAvailableAt.asDatetime('%m/%d/%y')
-                        mli.setLabel((obj.defaultTitle or '') + subtitle)
+                        mli.setLabel((obj.defaultTitle or ''))# + subtitle)
 
                         mli.setThumbnailImage(obj.defaultThumb.asTranscodedImageURL(*thumbDim))
 
                         mli.setProperty('summary', obj.summary)
 
-                        mli.setLabel2(util.durationToText(obj.fixedDuration()))
+                        #mli.setLabel2(util.durationToText(obj.fixedDuration()))
+                        mli.setLabel2(subtitle)
                         mli.setProperty('art', obj.defaultArt.asTranscodedImageURL(*artDim))
                         if not obj.isWatched:
                             mli.setProperty('unwatched', '1')
@@ -1364,9 +1494,6 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
 
             elif ITEM_TYPE == 'album':
                 for offset, obj in enumerate(items):
-                    if not self.showPanelControl:
-                        return
-
                     mli = self.showPanelControl[pos]
                     if obj:
                         mli.dataSource = obj
@@ -1388,8 +1515,6 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
                     pos += 1
             else:
                 for offset, obj in enumerate(items):
-                    if not self.showPanelControl:
-                        return
 
                     mli = self.showPanelControl[pos]
                     if obj:
@@ -1419,6 +1544,7 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
                             if not obj.isWatched and obj.TYPE != "Directory":
                                 if self.section.TYPE == 'show' or obj.TYPE == 'show' or obj.TYPE == 'season':
                                     mli.setProperty('unwatched.count', str(obj.unViewedLeafCount))
+                                    mli.setBoolProperty('unwatched.count.large', obj.unViewedLeafCount > 999)
                                 else:
                                     mli.setProperty('unwatched', '1')
                             elif obj.isFullyWatched and obj.TYPE != "Directory":
@@ -1434,6 +1560,8 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
                             mli.setProperty('index', '')
 
                     pos += 1
+
+        self.setBoolProperty('content.filling', False)
 
     def requestChunk(self, start):
         if util.addonSettings.retrieveAllMediaUpFront:

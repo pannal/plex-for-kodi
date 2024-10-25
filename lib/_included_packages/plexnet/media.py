@@ -159,6 +159,10 @@ class MediaPartStream(plexstream.PlexStream):
         cls = STREAMCLS.get(stype, MediaPartStream)
         return cls(data, initpath=initpath, server=server, part=part)
 
+    @staticmethod
+    def rebuild(s):
+        return MediaPartStream.parse(s.data, initpath=s.initpath, server=s.server, part=s.part)
+
     def __repr__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.id)
 
@@ -176,6 +180,18 @@ class AudioStream(MediaPartStream):
 class SubtitleStream(MediaPartStream):
     TYPE = 'subtitlestream'
     STREAMTYPE = plexstream.PlexStream.TYPE_SUBTITLE
+
+    def __init__(self, data, initpath=None, server=None, part=None):
+        super(MediaPartStream, self).__init__(data, initpath=initpath, server=server, part=part)
+        self._should_auto_sync = self.canAutoSync.asBool() and util.INTERFACE.getPreference('auto_sync', True)
+
+    @property
+    def should_auto_sync(self):
+        return self._should_auto_sync
+
+    @should_auto_sync.setter
+    def should_auto_sync(self, value):
+        self._should_auto_sync = value
 
 
 class TranscodeSession(plexobjects.PlexObject):

@@ -209,7 +209,15 @@ class LibrarySection(plexobjects.PlexObject):
             args['type'] = str(type_)
 
         if unwatched:
-            args[self.TYPE == 'movie' and 'unwatched' or 'unwatchedLeaves'] = 1
+            if self.TYPE == 'movie':
+                args['unwatched'] = 1
+            elif type_ == 4:
+                args['episode.unwatched'] = 1
+            elif self.TYPE == 'show':
+                args['show.unwatchedLeaves'] = 1
+            else:
+                # might not apply anywhere
+                args['unwatchedLeaves'] = 1
 
         if args:
             path += util.joinArgs(args, '?' not in path)
@@ -236,10 +244,18 @@ class LibrarySection(plexobjects.PlexObject):
             args['type'] = str(type_)
 
         if unwatched:
-            args[self.TYPE == 'movie' and 'unwatched' or 'unwatchedLeaves'] = 1
+            if self.TYPE == 'movie':
+                args['unwatched'] = 1
+            elif type_ == 4:
+                args['episode.unwatched'] = 1
+            elif self.TYPE == 'show':
+                args['show.unwatchedLeaves'] = 1
+            else:
+                # might not apply anywhere
+                args['unwatchedLeaves'] = 1
 
         if args:
-            path += util.joinArgs(args)
+            path += util.joinArgs(args, '?' not in path)
 
         try:
             return plexobjects.listItems(self.server, path, bytag=True)

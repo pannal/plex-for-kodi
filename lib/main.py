@@ -53,9 +53,9 @@ def waitForThreads():
 
 @atexit.register
 def realExit():
-    xbmc.log('Main: script.plex: REALLY FINISHED', xbmc.LOGINFO)
+    xbmc.log('Main: script.plexmod: REALLY FINISHED', xbmc.LOGINFO)
     if quitKodi:
-        xbmc.log('Main: script.plex: QUITTING KODI', xbmc.LOGINFO)
+        xbmc.log('Main: script.plexmod: QUITTING KODI', xbmc.LOGINFO)
         xbmc.executebuiltin('Quit')
 
     elif restart:

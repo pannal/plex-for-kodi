@@ -2847,7 +2847,7 @@ msgstr "CoreELEC：恢复修复等待跳转"
 #: 
 msgctxt "#33650"
 msgid "This adjusts the delay between seek-tries on CoreELEC, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. 100ms should be stable as well. Default: 350ms"
-msgstr "调整 CoreELEC 上跳转尝试之间的延迟，修复恢复播放不总是有效或双重跳转的问题。当出现恢复/双重跳转问题时，请增加此值。100ms 也应是稳定的。默认值：350ms"
+msgstr "调整 CoreELEC 上跳转尝试之间的延迟，修复恢复播放不总是有效或双重跳转的问题。当出现恢复/双重跳转问题时，请增加此值。默认值：500ms"
 
 #: 
 msgctxt "#33651"

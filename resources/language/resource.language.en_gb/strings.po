@@ -2259,7 +2259,7 @@ msgid "CoreELEC: Resume-fix wait for seek"
 msgstr ""
 
 msgctxt "#33650"
-msgid "This adjusts the delay between seek-tries on CoreELEC, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. 100ms should be stable as well. Default: 350ms"
+msgid "This adjusts the delay between seek-tries on CoreELEC, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. Default: 500ms"
 msgstr ""
 
 msgctxt "#33651"
@@ -2269,3 +2269,134 @@ msgstr ""
 msgctxt "#33652"
 msgid "Never show Post Play"
 msgstr ""
+
+msgctxt "#33653"
+msgid "Background image resolution scaling %"
+msgstr ""
+
+msgctxt "#33654"
+msgid "In percent, based on 1080p. Scales the resolution of all backgrounds for better image quality. May impact PMS/PM4K performance, will increase the cache usage accordingly. Can lead to crashes if your hardware is low on RAM. Needs addon restart. Use 400% for 4K. ATTENTION: In order for this to work you need to add <fanartres>2160</fanartres> and <imageres>2160</imageres> to your advancedsettings.xml."
+msgstr ""
+
+msgctxt "#33655"
+msgid "Auto-Sync Subtitles"
+msgstr ""
+
+msgctxt "#33656"
+msgid "Only for External SRT subtitles. The PMS setting for voice activity detection has to be enabled for this to work."
+msgstr ""
+
+#: in player quick settings UI, needs to be short
+msgctxt "#33657"
+msgid "Enable Auto-Sync"
+msgstr ""
+
+#: in player quick settings UI, needs to be short
+msgctxt "#33658"
+msgid "Disable Auto-Sync"
+msgstr ""
+
+msgctxt "#33659"
+msgid "Hide hub: {}"
+msgstr ""
+
+msgctxt "#33660"
+msgid "Disable HDR"
+msgstr ""
+
+msgctxt "#33661"
+msgid "If you don't want your client to handle HDR (or HDR-fallback), enable this to force transcoding. Doesn't apply to DV Profile 5."
+msgstr ""
+
+msgctxt "#33662"
+msgid "Remove from Continue Watching"
+msgstr ""
+
+msgctxt "#33663"
+msgid "Home: Confirm item actions"
+msgstr ""
+
+msgctxt "#33664"
+msgid "When acting on items in the Home view, such as mark played, hide from continue watching etc., show a confirmation dialog."
+msgstr ""
+
+msgctxt "#33665"
+msgid "Disable audio codecs"
+msgstr ""
+
+msgctxt "#33666"
+msgid "Audio codecs you can't play back. Disables Direct Play for such media items, enables Direct Stream if possible, transcodes audio stream to compatible format."
+msgstr ""
+
+msgctxt "#33667"
+msgid "CoreELEC: Use alternate seek"
+msgstr ""
+
+msgctxt "#33668"
+msgid "Enables an alternate method to seek on CoreELEC due to a seemingly buggy implementation. Use this if you have audio issues after seeking/resuming."
+msgstr ""
+
+msgctxt "#33669"
+msgid "Really sign out?"
+msgstr ""
+
+msgctxt "#33670"
+msgid "Update available"
+msgstr ""
+
+msgctxt "#33671"
+msgid "Current: {current_version}\nNew: {new_version}"
+msgstr ""
+
+msgctxt "#33672"
+msgid "Check for updates"
+msgstr ""
+
+msgctxt "#33673"
+msgid "Automatically check for updates periodically. If installed from a Kodi repository and the Update Source setting is set to Repository, Kodi itself will handle the updating of this addon. Needs a Kodi restart when changed."
+msgstr ""
+
+msgctxt "#33674"
+msgid "Check for updates on start"
+msgstr ""
+
+msgctxt "#33675"
+msgid "Automatically check for updates on startup. Doesn't do much when Update source is Repository. Needs a Kodi restart when changed."
+msgstr ""
+
+msgctxt "#33676"
+msgid "Update source"
+msgstr ""
+
+msgctxt "#33677"
+msgid "Specifies the update mode. Will immediately check for a new version when changed and closing settings.\nDefault: Repository\n\nBeta: Bleeding edge (possibly unstable)\nStable: Stable branch (faster than Repository)\nRepository: Kodi repository (official (slow) or Don't Panic)"
+msgstr ""
+
+msgctxt "#33678"
+msgid "Beta"
+msgstr ""
+
+#: Update mode as in (beta, stable, repository)
+msgctxt "#33679"
+msgid "Stable"
+msgstr "Stable"
+
+msgctxt "#33680"
+msgid "Repository"
+msgstr "Repository"
+
+msgctxt "#33681"
+msgid "Major changes detected"
+msgstr "Signifikante Änderungen vorhanden"
+
+msgctxt "#33682"
+msgid "The update {} has major changes. A Kodi restart could be necessary. You can still try running the addon, but it isn't guaranteed to be stable, especially when you've downgraded. Do you still want to run the addon?"
+msgstr "Das Update {} beinhaltet signifikante Änderungen. Ein Kodi-Neustart könnte notwendig sein. Das Addon kann trotzdem ausgeführt werden, das kann allerdings zu Fehlern führen, insbesondere wenn ein Downgrade durchgeführt wurde. Das Addon trotzdem starten?"
+
+msgctxt "#33683"
+msgid "Exit, download and install"
+msgstr "Beenden, herunterladen und installieren"
+
+msgctxt "#33684"
+msgid "Later"
+msgstr "Später"

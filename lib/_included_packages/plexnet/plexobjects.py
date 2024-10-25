@@ -51,6 +51,12 @@ class PlexValue(six.text_type):
     def __deepcopy__(self, memodict=None):
         return self.__class__(self)
 
+    def __gt__(self, other):
+        return self.asInt() > other
+
+    def __lt__(self, other):
+        return self.asInt() < other
+
     def asBool(self):
         return self == '1'
 
@@ -568,9 +574,9 @@ def listItems(server, path, libtype=None, watched=None, bytag=False, data=None, 
         for elem in data:
             if libtype and elem.attrib.get('type') != libtype:
                 continue
-            if watched is True and elem.attrib.get('viewCount', 0) == 0:
+            if watched is True and PlexValue(elem.attrib.get('viewCount', "0")).asInt() == 0:
                 continue
-            if watched is False and elem.attrib.get('viewCount', 0) >= 1:
+            if watched is False and PlexValue(elem.attrib.get('viewCount', "0")).asInt() >= 1:
                 continue
             try:
                 items.append(buildItem(server, elem, path, bytag, container, tag_fallback))

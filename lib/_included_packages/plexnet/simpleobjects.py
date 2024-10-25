@@ -1,3 +1,5 @@
+import copy
+
 class Res(tuple):
     def __str__(self):
         return '{0}x{1}'.format(*self[:2])
@@ -19,3 +21,6 @@ class AttributeDict(dict):
 
     def __repr__(self):
         return '<{0}:{1}:{2}>'.format(self.__class__.__name__, self.id, self.get('title', 'None').encode('utf8'))
+
+    def copy(self):
+        return AttributeDict(copy.deepcopy(super(AttributeDict, self).copy()))

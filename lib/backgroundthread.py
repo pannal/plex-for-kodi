@@ -254,5 +254,4 @@ class ThreaderManager:
     def kill(self):
         self.threader.kill()
 
-
-BGThreader = ThreaderManager(worker_count=util.getSetting('worker_count', 5))
+BGThreader = ThreaderManager(worker_count=util.getSetting('worker_count', 3))

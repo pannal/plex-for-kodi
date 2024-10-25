@@ -21,6 +21,7 @@ class AudioCodecMixin(object):
 
         codec = (codec or (streamBase.codec or '')).lower()
         title = streamBase.title.lower()
+        fn = ((mc and mc.part.file) or (self.part and getattr(self.part, "file")) or '').lower()
 
         if codec == "dca-ma" or (codec == "dca" and streamBase.profile == "ma"):
             codec = "DTS-HD MA"
@@ -38,10 +39,17 @@ class AudioCodecMixin(object):
             codec = "TrueHD"
             if EAC3JOC_STR in title:
                 codec = "TrueHD {}".format(EAC3JOC_STR.capitalize())
+            elif EAC3JOC_STR in fn:
+                codec = "TrueHD {}?".format(EAC3JOC_STR.capitalize())
             return codec
         elif codec == "eac3":
-            if streamBase and streamBase.bitrate.asInt() >= 768:
-                codec = "DD+ {}".format(EAC3JOC_STR.capitalize())
+            definitely_ertmers = (streamBase and streamBase.bitrate.asInt() >= 768) or EAC3JOC_STR in title
+            possible_ertmers = False
+            if not definitely_ertmers:
+                possible_ertmers = EAC3JOC_STR in fn
+
+            if definitely_ertmers or possible_ertmers:
+                codec = "DD+ {}".format(EAC3JOC_STR.capitalize() + (possible_ertmers and "?" or ""))
                 return codec
 
         return codec.upper()

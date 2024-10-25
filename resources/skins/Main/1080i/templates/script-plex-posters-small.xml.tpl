@@ -1,5 +1,5 @@
 {% extends "library_posters.xml.tpl" %}
-{% block header_animation %}<animation effect="slide" end="0,{{ vscale(-135, negpos=True) }}" time="200" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),9) + !ControlGroup(200).HasFocus(0)">Conditional</animation>{% endblock %}
+{% block header_animation %}<animation effect="slide" end="0,{{ vscale(-135, negpos=True) }}" time="200" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),9) + !ControlGroup(200).HasFocus(0) + String.IsEmpty(Window.Property(content.filling))">Conditional</animation>{% endblock %}
 {% block header_bg %}
 <control type="image">
     <animation effect="fade" start="0" end="100" time="200" tween="quadratic" easing="out" reversible="true">VisibleChange</animation>
@@ -14,7 +14,7 @@
 {% endblock %}
 {% block content %}
 <control type="group" id="50">
-    <animation effect="slide" time="200" end="0,-218" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),9)">Conditional</animation>
+    <animation effect="slide" time="200" end="0,-218" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),9) + String.IsEmpty(Window.Property(content.filling))">Conditional</animation>
     <posx>0</posx>
     <posy>{{ vscale(135) }}</posy>
     <defaultcontrol>101</defaultcontrol>
@@ -119,7 +119,7 @@
                             <font>font10</font>
                             <align>center</align>
                             <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label] ($INFO[ListItem.Property(year)])</label>
+                            <label>$INFO[ListItem.Label] [COLOR A0FFFFFF]($INFO[ListItem.Property(year)])[/COLOR]</label>
                         </control>
                         <control type="label">
                             <visible>String.IsEmpty(ListItem.Property(subtitle)) + String.IsEmpty(ListItem.Property(year))</visible>
@@ -210,6 +210,7 @@
                             <control type="label">
                                 <visible>String.IsEmpty(ListItem.Property(subtitle)) + !String.IsEmpty(ListItem.Property(year))</visible>
                                 <scroll>true</scroll>
+                                <scrollspeed>15</scrollspeed>
                                 <posx>0</posx>
                                 <posy>{{ vscale(218) }}</posy>
                                 <width>144</width>
@@ -217,11 +218,12 @@
                                 <font>font10</font>
                                 <align>center</align>
                                 <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label] ($INFO[ListItem.Property(year)])</label>
+                                <label>$INFO[ListItem.Label] [COLOR A0FFFFFF]($INFO[ListItem.Property(year)])[/COLOR]</label>
                             </control>
                             <control type="label">
                                 <visible>String.IsEmpty(ListItem.Property(subtitle)) + String.IsEmpty(ListItem.Property(year))</visible>
                                 <scroll>true</scroll>
+                                <scrollspeed>15</scrollspeed>
                                 <posx>0</posx>
                                 <posy>{{ vscale(218) }}</posy>
                                 <width>144</width>
@@ -234,6 +236,7 @@
                             <control type="label">
                                 <visible>!String.IsEmpty(ListItem.Property(subtitle))</visible>
                                 <scroll>true</scroll>
+                                <scrollspeed>15</scrollspeed>
                                 <posx>0</posx>
                                 <posy>{{ vscale(218) }}</posy>
                                 <width>144</width>

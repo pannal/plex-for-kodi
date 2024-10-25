@@ -215,6 +215,7 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
                 if hasattr(self, "onFirstInit"):
                     self.onFirstInit()
                 self.finishedInit = True
+            util.setGlobalProperty('active_window', self.__class__.__name__)
 
         except util.NoDataException:
             self.exitCommand = "NODATA"
@@ -261,8 +262,8 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
 
     def updateBackgroundFrom(self, ds):
         if util.addonSettings.dynamicBackgrounds:
-            return self.windowSetBackground(util.backgroundFromArt(ds.art, width=self.width,
-                                                                   height=self.height))
+            w, h = util.scaleResolution(self.width, self.height, by=util.addonSettings.backgroundResolutionScalePerc)
+            return self.windowSetBackground(util.backgroundFromArt(ds.art, width=w, height=h))
 
     def windowSetBackground(self, value):
         if not util.addonSettings.dbgCrossfade:

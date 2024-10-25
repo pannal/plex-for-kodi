@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import gc
+import threading
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -96,15 +97,17 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         self.setFocusId(self.PLAY_BUTTON_ID)
 
-    def onInit(self):
-        super(ShowWindow, self).onInit()
+    def onInit(self, *args, **kwargs):
+        super(ShowWindow, self).onInit(*args, **kwargs)
         if self.mediaItem.theme and (not self.cameFrom or self.cameFrom != self.mediaItem.ratingKey) \
                 and not util.getSetting("slow_connection", False):
             self.cameFrom = self.mediaItem.ratingKey
             volume = self.mediaItem.settings.getThemeMusicValue()
             if volume > 0:
-                player.PLAYER.playBackgroundMusic(self.mediaItem.theme.asURL(True), volume,
-                                                  self.mediaItem.ratingKey)
+                t = threading.Thread(target=player.PLAYER.playBackgroundMusic,
+                                     args=(self.mediaItem.theme.asURL(True), volume, self.mediaItem.ratingKey),
+                                     name="bgm")
+                t.start()
 
     def onReInit(self):
         PlaybackBtnMixin.onReInit(self)
@@ -132,6 +135,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         self.setProperty('date', self.mediaItem.year)
         if not self.mediaItem.isWatched:
             self.setProperty('unwatched.count', str(self.mediaItem.unViewedLeafCount) or '')
+            self.setBoolProperty('unwatched.count.large', self.mediaItem.unViewedLeafCount > 999)
         else:
             self.setBoolProperty('watched', self.mediaItem.isWatched)
 
@@ -413,7 +417,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         if self.playBtnClicked:
             return
 
-        items = self.mediaItem.all()
+        items = self.mediaItem.all(unwatched=True)
         pl = playlist.LocalPlaylist(items, self.mediaItem.getServer())
         resume = False
         if not shuffle and self.mediaItem.type == 'show':

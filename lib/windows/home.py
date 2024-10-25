@@ -416,6 +416,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self._restarting = False
         self._anyItemAction = False
         self._odHubsDirty = False
+        self._updateSourceChanged = False
         self.librarySettings = None
         self.hubSettings = None
         self.anyLibraryHidden = False
@@ -639,8 +640,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if len(self.hubControls) > hub_focus and self.hubControls[hub_focus]:
             hub_control = self.hubControls[hub_focus]
             hub = hub_control.dataSource
-            if not hub or hub.hubIdentifier == "home.continue":
-                return
             return hub
 
     @property
@@ -693,6 +692,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         plexapp.util.APP.on('change:hubs_use_new_continue_watching', self.setDirty)
         plexapp.util.APP.on('change:path_mapping_indicators', self.setDirty)
         plexapp.util.APP.on('change:debug', self.setDebugFlag)
+        plexapp.util.APP.on('change:update_source', self.updateSourceChanged)
         plexapp.util.APP.on('theme_relevant_setting', self.setThemeDirty)
 
         player.PLAYER.on('session.ended', self.updateOnDeckHubs)
@@ -720,6 +720,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         plexapp.util.APP.off('change:hubs_use_new_continue_watching', self.setDirty)
         plexapp.util.APP.off('change:path_mapping_indicators', self.setDirty)
         plexapp.util.APP.off('change:debug', self.setDebugFlag)
+        plexapp.util.APP.off('change:update_source', self.updateSourceChanged)
         plexapp.util.APP.off('theme_relevant_setting', self.setThemeDirty)
 
         player.PLAYER.off('session.ended', self.updateOnDeckHubs)
@@ -730,7 +731,47 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         util.MONITOR.off('system.sleep', self.disableUpdates)
         util.MONITOR.off('system.wakeup', self.onWake)
 
+
+    def updateSourceChanged(self, value, **kwargs):
+        self._updateSourceChanged = value
+
+
+    def service_responder(self):
+        if util.getGlobalProperty('update_available'):
+            is_downgrade = bool(util.getGlobalProperty('update_is_downgrade', consume=True))
+            button = optionsdialog.show(
+                T(33670, 'Update available'),
+                T(33671, 'Current: {current_version}\nNew: {new_version}').format(
+                    current_version=util.ADDON.getAddonInfo('version'),
+                    new_version=util.getGlobalProperty('update_available'),
+                ),
+                T(33683, 'Exit, download and install'),
+                T(33684, 'Later') if not is_downgrade else T(32329, 'No')
+            )
+            if button == 0:
+                resp = "commence"
+            else:
+                resp = "cancel"
+            util.setGlobalProperty('update_response', resp, wait=True)
+            util.setGlobalProperty('update_available', '', wait=True)
+
+            if resp == "commence":
+                # wait for it to be consumed
+                util.waitForConsumption('update_response', timeout=20)
+
+                self._shuttingDown = True
+                #self.closeOption = "update"
+                self.doClose()
+                return True
+
     def tick(self):
+        if self.service_responder():
+            return
+
+        if self.is_active and self._updateSourceChanged:
+            util.setGlobalProperty('update_source_changed', self._updateSourceChanged, wait=True)
+            self._updateSourceChanged = False
+
         if not self.lastSection or self._ignoreTick:
             return
 
@@ -858,7 +899,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                     self.hubItemClicked(controlID, auto_play=True)
                     return
                 elif action == xbmcgui.ACTION_CONTEXT_MENU:
-                    show_section = self.hubMenu()
+                    show_section = self.hubMenu(controlID)
                     if not show_section:
                         return
                     else:
@@ -1070,7 +1111,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self.enableUpdates()
         if not xbmc.Player().isPlayingVideo():
             util.LOG("Refreshing last section after wake events")
-            self.showHubs(self.lastSection, force=True)
+            self.showHubs(self.lastSection, force=True, update=True)
 
     def onWake(self, *args, **kwargs):
         wakeAction = util.getSetting('action_on_wake', util.isCoreELEC and 'wait_5' or 'wait_1')
@@ -1269,7 +1310,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                            {'key': 'analyze', 'display': T(33084, "Analyze")},
                            dropdown.SEPARATOR]
 
-            if section.locations:
+            if section.locations and util.getSetting('path_mapping', True):
                 for loc in section.locations:
                     source, target = section.getMappedPath(loc)
                     loc_is_mapped = source and target
@@ -1375,9 +1416,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 section.analyze()
             return
 
-    def hubMenu(self):
+    def hubMenu(self, hubControlID):
         hub = self.currentHub
         if not hub:
+            return
+
+        control = self.hubControls[hubControlID - 400]
+        mli = control.getSelectedItem()
+        if not mli:
+            return
+
+        if mli.dataSource is None:
             return
 
         section_hub_key = "{}:{}".format(self.lastSection.key, hub.hubIdentifier)
@@ -1387,7 +1436,44 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             hub_title = plexapp.SERVERMANAGER.selectedServer.currentHubs.get(section_hub_key,
                                                                              section_hub_key)
 
-        options = [{'key': 'hide', 'display': "Hide Hub: {}".format(hub_title)}]
+        select_base = 0
+
+        options = []
+        has_prev = False
+        if hub.hubIdentifier not in ("home.continue", "continueWatching"):
+            options.append({'key': 'hide', 'display': T(33659, "Hide Hub: {}").format(hub_title)})
+            has_prev = True
+
+        if mli.dataSource.TYPE in ('episode', 'season', 'movie', 'show'):
+            if has_prev:
+                options.append(dropdown.SEPARATOR)
+
+            has_mp = False
+            if not mli.getProperty('watched'):
+                options.append({'key': 'mark_watched', 'display': T(32319, "Mark Played")})
+                select_base = has_prev and 1 or 0
+                has_mp = True
+
+            if (mli.dataSource.isFullyWatched or mli.dataSource.isWatched or
+                    mli.dataSource.viewedLeafCount.asInt() > 0):
+                options.append({'key': 'mark_unwatched', 'display': T(32318, "Mark Unplayed")})
+                select_base = has_prev and 1 or has_mp and 0
+                has_mp = True
+
+            if mli.dataSource.TYPE in ('episode', 'movie'):
+                    #hub.hubIdentifier == "continueWatching"):
+                if hub.hubIdentifier in ("home.continue", "continueWatching", "home.ondeck"):
+                    # allow removing items from CW
+                    options.append(dropdown.SEPARATOR)
+                    options.append({'key': 'remove_cw', 'display': T(33662, "Remove from Continue Watching")})
+                    if not has_mp:
+                        select_base = 1
+
+            if mli.dataSource.TYPE in ('episode', 'season'):
+                options.append(dropdown.SEPARATOR)
+                options.append({'key': 'to_show', 'display': T(32323, "Go To Show")})
+                if mli.dataSource.TYPE == 'episode':
+                    options.append({'key': 'to_season', 'display': T(32400, "Go To Season")})
 
         choice = dropdown.showDropdown(
             options,
@@ -1395,7 +1481,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             close_direction='none',
             set_dropdown_prop=False,
             header=T(33030, 'Choose action for: {}').format(hub.title),
-            select_index=0,
+            select_index=select_base,
             align_items="left",
             dialog_props=self.carriedProps
         )
@@ -1409,6 +1495,53 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             self.hubSettings[section_hub_key]['show'] = False
             self.saveHubSettings()
             return self.lastSection
+
+        elif choice["key"] in ("mark_watched", "mark_unwatched"):
+            if util.getSetting('home_confirm_actions', True):
+                button = optionsdialog.show(
+                    T(32319, "Mark Played") if choice["key"] == "mark_watched" else T(32318, "Mark Unplayed"),
+                    u"{} {}".format(mli.label, mli.label2),
+                    T(32328, 'Yes'),
+                    T(32329, 'No'),
+                    dialog_props=self.carriedProps
+                )
+
+                if button != 0:
+                    return
+
+            if choice["key"] == "mark_watched":
+                mli.dataSource.markWatched()
+                self._updateOnDeckHubs()
+
+            elif choice["key"] == "mark_unwatched":
+                mli.dataSource.markUnwatched()
+                self._updateOnDeckHubs()
+
+        elif choice["key"] == "remove_cw":
+            if util.getSetting('home_confirm_actions', True):
+                button = optionsdialog.show(
+                    T(33662, "Remove from Continue Watching"),
+                    u"{} {}".format(mli.label, mli.label2),
+                    T(32328, 'Yes'),
+                    T(32329, 'No'),
+                    dialog_props=self.carriedProps
+                )
+
+                if button != 0:
+                    return
+
+            mli.dataSource.removeFromContinueWatching()
+            self._updateOnDeckHubs()
+
+        elif choice["key"] in ("to_season", "to_show"):
+            target = mli.dataSource.show() if choice["key"] == "to_show" else mli.dataSource.season()
+            try:
+                command = opener.open(target, dialog_props=self.carriedProps)
+                if command == "NODATA":
+                    raise util.NoDataException
+            except util.NoDataException:
+                util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+                return
 
     def sectionMover(self, item, action):
         def stop_moving(reset=False):
@@ -1891,7 +2024,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             title = u'{0} - {1}'.format(obj.parentTitle, obj.title)
         else:
             title = obj.parentTitle or obj.title or ''
+
         mli = kodigui.ManagedListItem(title, thumbnailImage=obj.defaultThumb.asTranscodedImageURL(thumb_w, thumb_h), data_source=obj)
+
         return mli
 
     def createSimpleListItem(self, obj, thumb_w, thumb_h):
@@ -1920,8 +2055,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         mli = self.createParentedListItem(obj, *self.THUMB_POSTER_DIM)
         # mli.setLabel2('Season {0}'.format(obj.index))
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/show.png')
+        mli.setLabel2(obj.title)
+
         if not obj.isWatched:
             mli.setProperty('unwatched.count', str(obj.unViewedLeafCount))
+            mli.setBoolProperty('unwatched.count.large', obj.unViewedLeafCount > 999)
         mli.setBoolProperty('watched', obj.isFullyWatched)
         return mli
 
@@ -1938,6 +2076,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/show.png')
         if not obj.isWatched:
             mli.setProperty('unwatched.count', str(obj.unViewedLeafCount))
+            mli.setBoolProperty('unwatched.count.large', obj.unViewedLeafCount > 999)
         mli.setBoolProperty('watched', obj.isFullyWatched)
         return mli
 
@@ -2019,7 +2158,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
         if not hub.items and not hubitems:
             control.reset()
-            if self.lastFocusID == index + 400:
+            if self.lastFocusID == index + 400 and not self._anyItemAction:
                 util.DEBUG_LOG("Hub {} was focused but is gone.", identifier)
                 hubControlIndex = self.lastFocusID - 400
                 self.focusFirstValidHub(hubControlIndex)
@@ -2179,6 +2318,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 mli.setProperty('unwatched.count', '')
             else:
                 mli.setProperty('unwatched.count', str(obj.unViewedLeafCount))
+                mli.setBoolProperty('unwatched.count.large', obj.unViewedLeafCount > 999)
 
     def sectionClicked(self):
         item = self.sectionList.getSelectedItem()
@@ -2344,6 +2484,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         elif option == 'refresh_users':
             plexapp.ACCOUNT.updateHomeUsers(refreshSubscription=True)
             return True
+        elif option == 'signout':
+            button = optionsdialog.show(
+                T(32344, 'Sign Out'),
+                T(33669, 'Really sign out?'),
+                T(32329, 'No'),
+                T(32328, 'Yes'),
+                dialog_props=self.carriedProps
+            )
+
+            if button != 1:
+                return
+            self.closeOption = option
+            self.doClose()
         else:
             self.closeOption = option
             self.doClose()

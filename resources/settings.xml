@@ -30,6 +30,18 @@
                         <popup>false</popup>
                     </control>
                 </setting>
+                <setting id="background_resolution_scale_perc" type="integer" label="33653" help="33654">
+                    <level>0</level>
+                    <default>100</default>
+                    <constraints>
+                        <minimum>25</minimum>
+                        <step>25</step>
+                        <maximum>750</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
                 <setting id="retrieve_all_media_up_front" type="boolean" label="32969" help="32970">
                     <level>0</level>
                     <default>false</default>
@@ -116,7 +128,7 @@
                 </setting>
                 <setting id="coreelec_resume_seek_wait" type="integer" label="33649" help="33650">
                     <level>0</level>
-                    <default>350</default>
+                    <default>500</default>
                     <constraints>
                         <minimum>100</minimum>
                         <step>50</step>
@@ -125,6 +137,9 @@
                     <control type="slider" format="integer">
                         <popup>false</popup>
                     </control>
+                    <dependencies>
+                        <dependency type="enable" setting="use_alternate_seek">true</dependency>
+                    </dependencies>
                 </setting>
                 <setting id="show_media_ends_info" type="boolean" label="32540" help="32541">
                     <level>0</level>
@@ -359,8 +374,13 @@
                 <setting id="postplay_timeout" type="integer" label="32501" help="32904">
                     <level>0</level>
                     <default>16</default>
-                    <control type="edit" format="integer">
-                        <heading>32501</heading>
+                    <constraints>
+                        <minimum>2</minimum>
+                        <step>1</step>
+                        <maximum>60</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
                     </control>
                 </setting>
                 <setting id="postplay_cancel" type="boolean" label="32905">

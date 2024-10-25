@@ -272,10 +272,12 @@ class DPAttributeExists(DPAttribute):
 
 
 class DPAttributeEqualsValue(DPAttribute):
-    def __init__(self, attr, compareTo, retVal, source="details.session"):
+    def __init__(self, attr, compareTo, retVal, retValFalse=None, source="details.session", fallback=None):
         DPAttribute.__init__(self, attr, source=source)
         self.compareTo = compareTo
         self.retVal = retVal
+        self.retValFalse = retValFalse
+        self.fallback = fallback
 
     def value(self, obj):
         """
@@ -288,6 +290,10 @@ class DPAttributeEqualsValue(DPAttribute):
         result = DPAttribute.value(self, obj)
         if result == self.resolve(self.compareTo, obj):
             return self.resolve(self.retVal, obj)
+        elif result is None and self.fallback is not None:
+            return self.resolve(self.fallback, obj)
+        elif self.retValFalse is not None:
+            return self.resolve(self.retValFalse, obj)
 
 
 class DPAttributeMapped(DPAttribute):
@@ -337,7 +343,13 @@ class ModePPI(ComputedPPIValue):
     name = "Mode"
     dataPoints = [
         DPAttributeSession("partDecision"),
-        DPAttributeExists("local", source="session.player", returnValue="local"),
+        DPAttributeEqualsValue("local", "1",
+                               DPAttribute("server_is_local", source="details"),
+                               DPAttribute("server_is_local", source="details"),
+                               source="session.player",
+                               fallback=DPAttribute("server_is_local", source="details")),
+        #DPAttribute("location", source="session.session"),
+        #DPAttribute("server_is_local", source="details"),
         DPAttributeMapped()
     ]
 
@@ -426,11 +438,11 @@ class SessionAttributes(OrderedDict):
 
 
 class VideoSessionInfo:
-    def __init__(self, sessionMediaContainer, mediaContainer, incompleteSessionData=False):
+    def __init__(self, sessionMediaContainer, mediaContainer, server_is_local, incompleteSessionData=False):
         self.mediaItem = mediaContainer
         self.session = sessionMediaContainer
         self.details = MediaDetailsHolder(self.mediaItem, self.session, mediaContainer.mediaChoice,
                                           incompleteSessionData=incompleteSessionData)
-
+        self.details.server_is_local = server_is_local and "lan (verified)" or "remote"
         self.attributes = SessionAttributes(self)
 

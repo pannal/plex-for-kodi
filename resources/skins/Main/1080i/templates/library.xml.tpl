@@ -3,7 +3,7 @@
 
 {% block header %}
 <control type="group" id="200">
-    {% block header_animation %}<animation effect="slide" end="0,{{ vscale(-135) }}" time="200" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),5) + !ControlGroup(200).HasFocus(0)">Conditional</animation>{% endblock %}
+    {% block header_animation %}<animation effect="slide" end="0,{{ vscale(-135) }}" time="200" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),5) + !ControlGroup(200).HasFocus(0) + String.IsEmpty(Window.Property(content.filling))">Conditional</animation>{% endblock %}
     <defaultcontrol always="true">201</defaultcontrol>
     <posx>0</posx>
     <posy>0</posy>

@@ -56,6 +56,7 @@
         </control>
         {% else %}
         <control type="image">
+            <visible>String.IsEmpty({{ itemref|default("ListItem") }}.Property(unwatched.count.large))</visible>
             <posx>{{ xoff - wbg_w }}</posx>
             <posy>{{ yoff|vscale }}</posy>
             <width>{{ wbg_w }}</width>
@@ -63,12 +64,35 @@
             <texture>{{ wbg|default("script.plex/white-square-bl-rounded_w.png") }}</texture>
             <colordiffuse>{{ indicators.unwatched_count_bg|default("FFCC7B19") }}</colordiffuse>
         </control>
+        <control type="image">
+            <visible>!String.IsEmpty({{ itemref|default("ListItem") }}.Property(unwatched.count.large))</visible>
+            <posx>{{ xoff - wbg_w - 16 }}</posx>
+            <posy>{{ yoff|vscale }}</posy>
+            <width>{{ wbg_w + 16 }}</width>
+            <height>{{ wbg_h|vscale }}</height>
+            <texture>{{ wbg|default("script.plex/white-square-bl-rounded_w.png") }}</texture>
+            <colordiffuse>{{ indicators.unwatched_count_bg|default("FFCC7B19") }}</colordiffuse>
+        </control>
         {% endif %}
         <control type="label">{# this label uses a nasty hack to get a smaller fitting font size: use a larger font, increase the label size, then zoom it down #}
             <animation effect="zoom" start="40" end="40" time="0" reversible="false" center="auto" condition="true">Conditional</animation>
-            <posx>{{ xoff - wbg_w - 16 }}</posx>
+            <visible>String.IsEmpty({{ itemref|default("ListItem") }}.Property(unwatched.count.large))</visible>
+            <posx>{{ xoff - wbg_w - 20 }}</posx>
             <posy>{{ (yoff - 8)|vscale }}</posy>
-            <width>{{ wbg_w + 32 }}</width>
+            <width>{{ wbg_w + 40 }}</width>
+            <height>{{ (wbg_h + 16)|vscale }}</height>
+            <font>font32_title</font>
+            <align>center</align>
+            <aligny>center</aligny>
+            <textcolor>{{ indicators.textcolor|default("FF000000") }}</textcolor>
+            <label>$INFO[{{ itemref|default("ListItem") }}.Property(unwatched.count)]</label>
+        </control>
+        <control type="label">{# this label uses a nasty hack to get a smaller fitting font size: use a larger font, increase the label size, then zoom it down #}
+            <animation effect="zoom" start="40" end="40" time="0" reversible="false" center="auto" condition="true">Conditional</animation>
+            <visible>!String.IsEmpty({{ itemref|default("ListItem") }}.Property(unwatched.count.large))</visible>
+            <posx>{{ xoff - wbg_w - 36 }}</posx>
+            <posy>{{ (yoff - 8)|vscale }}</posy>
+            <width>{{ wbg_w + 56 }}</width>
             <height>{{ (wbg_h + 16)|vscale }}</height>
             <font>font32_title</font>
             <align>center</align>

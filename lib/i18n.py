@@ -6,4 +6,5 @@ ADDON = xbmcaddon.Addon()
 
 
 def T(ID, eng=''):
-    return ADDON.getLocalizedString(ID)
+    s = ADDON.getLocalizedString(ID)
+    return s if s != "" else eng

@@ -1,8 +1,4 @@
-[-0.7.9-rev4-]
-- Episodes: Clear VIDEO_PROGRESS onFirstInit; Only redirect to episode from progress if shows match
-- Collections: Fix shuffle play
-- Core/Playback/CoreELEC: Increase CoreELEC resume seek wait fix to 350ms (was 250ms)
-- Playlists: Fix shuffle/play button behaviour
+[-0.7.9-rev3-]
 - Player: Only send timeline events if playstate has changed or we haven't sent one for 15 seconds; fixes #137
 - AddonSettings: Fix default cert bundle setting
 - Core/plexnet/http: Fix session cert bundle usage by using the correct attribute (verify vs cert); should fix kodi 18 connectivity

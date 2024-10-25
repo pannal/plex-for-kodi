@@ -19,7 +19,10 @@ ATTR_MAP = {
     "c": "auto_skip_credits",
     "e": "show_intro_skip_early",
     "p": "skip_post_play_tv",
+    "v": "media_version",
 }
+
+VIRTUAL_ATTRS = ("media_version",)
 
 # I know dicts are ordered in py3, but we want to be compatible with py2.
 TRANS_MAP = OrderedDict((
@@ -55,7 +58,9 @@ class PlaybackManager(object):
     def __init__(self):
         self.reset()
         # bind settings change signals
-        for v in ATTR_MAP.values():
+        for k, v in ATTR_MAP.items():
+            if k in VIRTUAL_ATTRS:
+                continue
             plexapp.util.APP.on('change:{}'.format(v), lambda **kwargs: self.setGlob(**kwargs))
 
         plexapp.util.APP.on('change:selectedServer', lambda **kwargs: self.setServerUUID(**kwargs))
@@ -64,6 +69,12 @@ class PlaybackManager(object):
         plexapp.util.APP.on('init', lambda **kwargs: self.setUserID(**kwargs))
 
     def deinit(self):
+        # unbind settings change signals
+        for k, v in ATTR_MAP.items():
+            if k in VIRTUAL_ATTRS:
+                continue
+            plexapp.util.APP.off('change:{}'.format(v), lambda **kwargs: self.setGlob(**kwargs))
+
         plexapp.util.APP.off('change:selectedServer', lambda **kwargs: self.setServerUUID(**kwargs))
         plexapp.util.APP.off("loaded:cached_user", lambda **kwargs: self.setUserID(**kwargs))
         plexapp.util.APP.off("change:user", lambda **kwargs: self.setUserID(**kwargs))

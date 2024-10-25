@@ -1,9 +1,13 @@
 from __future__ import absolute_import
 
 import requests.exceptions
+import copy
+import threading
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import plexapp, playlist, plexplayer
+from collections import OrderedDict
+
+from plexnet import plexapp, playlist, plexplayer, util as pnUtil
 
 from lib import backgroundthread
 from lib import metadata
@@ -28,10 +32,11 @@ VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1
 
 
 class EpisodeReloadTask(backgroundthread.Task):
-    def setup(self, episode, callback, with_progress=False):
+    def setup(self, episode, callback, with_progress=False, set_item_info=False):
         self.episode = episode
         self.callback = callback
         self.withProgress = with_progress
+        self.setItemInfo = set_item_info
         return self
 
     def run(self):
@@ -46,7 +51,7 @@ class EpisodeReloadTask(backgroundthread.Task):
             self.episode.reload(checkFiles=1, includeChapters=1, fromMediaChoice=self.episode.mediaChoice is not None)
             if self.isCanceled():
                 return
-            self.callback(self, self.episode, with_progress=self.withProgress)
+            self.callback(self, self.episode, with_progress=self.withProgress, set_item_info=self.setItemInfo)
         except requests.exceptions.RequestException:
             raise util.NoDataException
         except:
@@ -73,6 +78,7 @@ class EpisodesPaginator(pagination.MCLPaginator):
         mli.setBoolProperty('watched', mli.dataSource.isFullyWatched)
         if not mli.dataSource.isWatched:
             mli.setProperty('unwatched.count', str(mli.dataSource.unViewedLeafCount))
+            mli.setBoolProperty('unwatched.count.large', mli.dataSource.unViewedLeafCount.asInt() > 999)
             mli.setProperty('unwatched', '1')
         mli.setProperty('progress', util.getProgressImage(mli.dataSource))
 
@@ -182,8 +188,7 @@ class RedirectToEpisode(Exception):
         self.select_episode = select_episode
 
 
-VIDEO_PROGRESS = {}
-
+VIDEO_PROGRESS = OrderedDict()
 
 class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, RatingsMixin, SpoilersMixin,
                      PlaybackBtnMixin, playbacksettings.PlaybackSettingsMixin):
@@ -255,6 +260,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.seasons = None
         self.manuallySelected = False
         self.manuallySelectedSeason = False
+        self.hadUserInteraction = False
         self.currentItemLoaded = False
         self.lastItem = None
         self.lastFocusID = None
@@ -312,8 +318,10 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                 not self.openedWithAutoPlay:
             volume = self.show_.settings.getThemeMusicValue()
             if volume > 0:
-                player.PLAYER.playBackgroundMusic(self.show_.theme.asURL(True), volume,
-                                                  self.show_.ratingKey)
+                t = threading.Thread(target=player.PLAYER.playBackgroundMusic,
+                                     args=(self.show_.theme.asURL(True), volume, self.show_.ratingKey),
+                                     name="bgm")
+                t.start()
                 self.useBGM = True
 
         self.openedWithAutoPlay = False
@@ -325,7 +333,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         if not self.tasks:
             self.tasks = backgroundthread.Tasks()
 
-        vp = VIDEO_PROGRESS.copy()
+        vp = VIDEO_PROGRESS.get(self.show_.ratingKey, {}).get(self.season.ratingKey, {})
 
         if self.manuallySelected and not VIDEO_PROGRESS:
             util.DEBUG_LOG("Episodes: ReInit: Not doing anything, as we've previously manually selected "
@@ -349,6 +357,9 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         except AttributeError:
             raise util.NoDataException
 
+        if self.cameFrom == "info":
+            self.cameFrom = None
+
         # keep progress data if we've been opened from another view, as parent views might need the updates as well
         if not self.cameFrom:
             VIDEO_PROGRESS.clear()
@@ -361,32 +372,39 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         skip_progress_for = None
         if vp:
             skip_progress_for = []
+            break_next = False
             for m in self.episodeListControl:
                 # pagination boundary
                 if not m.dataSource:
                     continue
 
-                if m.dataSource.ratingKey in vp:
+                if m.dataSource.ratingKey in vp or break_next:
                     reload_items.append(m)
-                    skip_progress_for.append(m.dataSource.ratingKey)
-                    del vp[m.dataSource.ratingKey]
+                    if not break_next:
+                        skip_progress_for.append(m.dataSource.ratingKey)
+                        del vp[m.dataSource.ratingKey]
+                    else:
+                        break
                 if not vp:
-                    break
+                    # for multi-episode videos reload the next one after this progress event as well
+                    break_next = True
 
         reload_items = list(set(reload_items))
-        select_episode = reload_items and reload_items[-1] or mli
+        #select_episode = reload_items and reload_items[-1] or mli
 
-        self.episodesPaginator.setEpisode(select_episode.dataSource)
+        #self.episodesPaginator.setEpisode(select_episode.dataSource)
         if not reload_items:
             self.selectPlayButton()
-        self.reloadItems(items=reload_items, with_progress=True, skip_progress_for=skip_progress_for)
+        self.reloadItems(items=reload_items, with_progress=True, skip_progress_for=skip_progress_for,
+                         set_item_info=True)
         self.fillSeasons(self.show_, seasonsFilter=lambda x: len(x) > 1, selectSeason=self.season, update=True,
                          do_focus=not self.manuallySelectedSeason)
         self.fillRelated()
 
     def postSetup(self):
         self.checkForHeaderFocus(xbmcgui.ACTION_MOVE_DOWN, initial=True)
-        self.selectPlayButton()
+        if not self.hadUserInteraction:
+            self.selectPlayButton()
         self.initialized = True
 
     def selectPlayButton(self):
@@ -429,99 +447,122 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.fillRoles(hasPrev)
 
     def selectEpisode(self, from_reinit=False):
-        util.DEBUG_LOG("SelectEpisode called: {}, {}, {}, {}", from_reinit, self.episode, VIDEO_PROGRESS, self.cameFrom)
+        util.DEBUG_LOG("SelectEpisode called: {}, {}, {}, {}, {}, {}", from_reinit, self.episode, self.season,
+                       self.show_, VIDEO_PROGRESS, self.cameFrom)
         if not self.episodesPaginator:
             return
 
-        had_progress_data = bool(VIDEO_PROGRESS)
+        had_progress_data = False
         progress_data_left = None
-        if had_progress_data:
-            progress_data_left = VIDEO_PROGRESS.copy()
+        progress_data = None
+        if self.show_.ratingKey in VIDEO_PROGRESS:
+            # access progress data for current show only
+            progress_data = copy.deepcopy(VIDEO_PROGRESS[self.show_.ratingKey])
 
         set_main_progress_to = None
         selected_new = False
 
         last_mli_seen = None
-        was_last_mli = False
+        progress_for_last_mli = False
 
-        for mli in self.episodeListControl:
-            # pagination boundary
-            if not mli.dataSource:
-                continue
+        mli = self.episodeListControl[0]
 
-            is_last_mli = was_last_mli = self.episodeListControl.isLastItem(mli)
+        if progress_data or not self.season.isFullyWatched:
+            if progress_data:
+                # check for progress data in current season
+                progress_data_left = progress_data.pop(self.season.ratingKey, None)
+                had_progress_data = bool(progress_data_left)
 
-            just_fully_watched = False
-
-            if progress_data_left and mli.dataSource:
-                progress = progress_data_left.pop(mli.dataSource.ratingKey, False)
-                # progress can be False (no entry), a number (progress), or True (fully watched just now)
-                # select it if it's not watched or in progress
-                if progress is True:
-                    # ep was just watched
-                    just_fully_watched = True
-                    mli.setProperty('unwatched', '')
-                    mli.setProperty('watched', '1')
-                    mli.setProperty('progress', '')
-                    mli.setProperty('unwatched.count', '')
-                    mli.dataSource.set('viewCount', mli.dataSource.get('viewCount', 0).asInt() + 1)
-                    mli.dataSource.set('viewOffset', 0)
-                    self.setUserItemInfo(mli, fully_watched=True)
-
-                elif progress and progress > 60000:
-                    # ep has progress
-                    mli.setProperty('watched', '')
-                    mli.setProperty('progress', util.getProgressImage(mli.dataSource, view_offset=progress))
-                    mli.dataSource.set('viewOffset', progress)
-                    self.setUserItemInfo(mli, watched=True)
-                    set_main_progress_to = progress
-
-                elif progress and progress <= 60000:
-                    # reset progress as we might've had progress before
-                    mli.setProperty('progress', '')
-                    mli.dataSource.set('viewOffset', '')
-                    self.setUserItemInfo(mli)
-
-                # after immediately updating the watched state, if we still have data left, continue
-                if progress is True and progress_data_left:
+            for mli in self.episodeListControl:
+                # pagination boundary
+                if not mli.dataSource:
                     continue
 
-            last_mli_seen = mli
+                is_last_mli = self.episodeListControl.isLastItem(mli)
 
-            # first condition: we select self.episode if we've got no progress data, or we haven't watched it just now.
-            # second condition: we've just come from playback with progress upon reinit. select the next available
-            # episode that's either unwatched or in progress. if we're at the last item in the list, select it as well.
-            # third condition: select the next unwatched episode if we don't have self.episode and didn't have any
-            # player progress, which happens when being called without an episode (season view, show view).
-            if (mli.dataSource == self.episode and not just_fully_watched and not progress_data_left) or \
-               (had_progress_data and not progress_data_left and ((not just_fully_watched
-                and not mli.dataSource.isFullyWatched) or (just_fully_watched and is_last_mli))) or \
-               ((not had_progress_data or not from_reinit) and not self.episode and not mli.dataSource.isFullyWatched):
-                if self.episodeListControl.getSelectedPosition() < mli.pos():
+                just_fully_watched = False
+
+                if progress_data_left and mli.dataSource:
+                    progress = progress_data_left.pop(mli.dataSource.ratingKey, False)
+                    progress_for_last_mli = progress and is_last_mli
+
+                    # progress can be False (no entry), a number (progress), or True (fully watched just now)
+                    # select it if it's not watched or in progress
+                    if progress is True:
+                        # ep was just watched
+                        just_fully_watched = True
+                        mli.setProperty('unwatched', '')
+                        mli.setProperty('watched', '1')
+                        mli.setProperty('progress', '')
+                        mli.setProperty('unwatched.count', '')
+                        mli.setProperty('unwatched.count.large', '')
+                        mli.dataSource.set('viewCount', mli.dataSource.get('viewCount', 0).asInt() + 1)
+                        mli.dataSource.set('viewOffset', 0)
+                        self.setUserItemInfo(mli, fully_watched=True)
+
+                    elif progress and progress > 60000:
+                        # ep has progress
+                        mli.setProperty('watched', '')
+                        mli.setProperty('progress', util.getProgressImage(mli.dataSource, view_offset=progress))
+                        mli.dataSource.set('viewOffset', progress)
+                        self.setUserItemInfo(mli, watched=True)
+                        set_main_progress_to = progress
+
+                    elif progress and progress <= 60000:
+                        # reset progress as we might've had progress before
+                        mli.setProperty('progress', '')
+                        mli.dataSource.set('viewOffset', '')
+                        self.setUserItemInfo(mli)
+                        set_main_progress_to = 0
+
+                    # after immediately updating the watched state, if we still have data left, continue
+                    if progress is True and progress_data_left:
+                        continue
+
+                last_mli_seen = mli
+
+                # first condition: we select self.episode if we've got no progress data, or we haven't watched it just now.
+                # second condition: we've just come from playback with progress upon reinit. select the next available
+                # episode that's either unwatched or in progress. if we're at the last item in the list, select it as well.
+                # third condition: select the next unwatched episode if we don't have self.episode and didn't have any
+                # player progress, which happens when being called without an episode (season view, show view).
+                if (mli.dataSource == self.episode and not just_fully_watched and not progress_data_left) or \
+                   (had_progress_data and not progress_data_left and ((not just_fully_watched
+                    and not mli.dataSource.isFullyWatched) or (just_fully_watched and is_last_mli))) or \
+                   ((not had_progress_data or not from_reinit) and not self.episode and not mli.dataSource.isFullyWatched):
+                    #if self.episodeListControl.getSelectedPosition() < mli.pos():
                     self.episodeListControl.selectItem(mli.pos())
                     self.episodesPaginator.setEpisode(self.episode or mli.dataSource)
                     self.lastItem = mli
                     selected_new = True
-                if just_fully_watched:
-                    set_main_progress_to = 0
+                    if just_fully_watched:
+                        set_main_progress_to = 0
 
-                # this is a little counter-intuitive - None is actually valid here, and if set to None, setProgress will
-                # use the actual item progress, not ours
-                self.setProgress(mli, view_offset=set_main_progress_to)
-                break
-        else:
-            # no matching episode found
-            mli = self.episodeListControl.getSelectedItem()
-            self.setProgress(mli, view_offset=0)
+                    # this is a little counter-intuitive - None is actually valid here, and if set to None, setProgress will
+                    # use the actual item progress, not ours
+                    self.setProgress(mli, view_offset=set_main_progress_to)
+                    break
+            else:
+                # no matching episode found
+                mli = self.episodeListControl.getSelectedItem()
+                self.setProgress(mli, view_offset=0)
+        elif self.season.isFullyWatched and not self.episode:
+            self.episodeListControl.selectItem(mli.pos())
+            self.episodesPaginator.setEpisode(mli)
+            self.lastItem = mli
 
-        if from_reinit and not self.cameFrom:
-            if progress_data_left:
+        if from_reinit and had_progress_data:
+            # we had progress data for our current season and still have progress data for the current TV show
+            if progress_data:
                 # we've probably watched something in the next season
-                key = '/library/metadata/{0}'.format(list(progress_data_left.keys())[-1])
+                ns = progress_data[list(progress_data.keys())[-1]]
+                key = '/library/metadata/{0}'.format(list(ns.keys())[-1])
                 ep = plexapp.SERVERMANAGER.selectedServer.getObject(key)
                 if ep.parentIndex != self.season.index and ep.grandparentRatingKey == self.show_.ratingKey:
+                    util.LOG("Progress data left for TV show, going to season of "
+                             "remaining episode with progress data: {}", ep)
                     raise RedirectToEpisode(ep)
-            elif was_last_mli and last_mli_seen.dataSource.isFullyWatched and self.getSeasons():
+            elif progress_for_last_mli and last_mli_seen.dataSource.isFullyWatched and self.getSeasons():
                 # check if we need to go to the next season
                 remaining_seasons = self.seasons[self.seasons.index(self.season)+1:]
                 if remaining_seasons:
@@ -554,6 +595,9 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                 self.prev()
             elif action == xbmcgui.ACTION_PREV_ITEM:
                 self.prev()
+
+            if action in (xbmcgui.ACTION_MOVE_DOWN, xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT):
+                self.hadUserInteraction = True
 
             if action == xbmcgui.ACTION_MOVE_UP and controlID in (self.EPISODE_LIST_ID, self.SEASONS_LIST_ID):
                 self.updateBackgroundFrom((self.show_ or self.season.show()))
@@ -620,7 +664,14 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             return
 
         util.DEBUG_LOG("Storing video progress data: {}", data)
-        VIDEO_PROGRESS[data[0]] = data[1]
+        gprk, prk, rk, state = data
+        if gprk not in VIDEO_PROGRESS:
+            VIDEO_PROGRESS[gprk] = OrderedDict()
+
+        if prk not in VIDEO_PROGRESS[gprk]:
+            VIDEO_PROGRESS[gprk][prk] = OrderedDict()
+
+        VIDEO_PROGRESS[gprk][prk][rk] = state
 
     def onBGMStarted(self, **kwargs):
         self.playBtnClicked = True
@@ -903,6 +954,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             is_16x9=True,
             video=episode
         )
+        self.cameFrom = "info"
 
     def episodeListClicked(self, force_episode=None, from_auto_play=False):
         if (not self.currentItemLoaded or self.playBtnClicked) and not from_auto_play:
@@ -1072,6 +1124,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
         ds.setMediaChoice(choice['key'])
         choice['key'].set('selected', 1)
+        pnUtil.INTERFACE.playbackManager(mli.dataSource, key="media_version", value=choice['key'].id)
         self.setPostReloadItemInfo(ds, mli)
 
     def delete(self, item):
@@ -1126,7 +1179,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
         if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_MOVE_LEFT) and lastItem:
             items = self.episodesPaginator.wrap(mli, lastItem, action)
-            xbmc.sleep(100)
+            #xbmc.sleep(100)
             mli = self.episodeListControl.getSelectedItem()
             if items:
                 self.reloadItems(items)
@@ -1345,7 +1398,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.selectEpisode()
         self.reloadItems(items, with_progress=True)
 
-    def reloadItems(self, items, with_progress=False, skip_progress_for=None):
+    def reloadItems(self, items, with_progress=False, skip_progress_for=None, set_item_info=False):
         tasks = []
         for mli in items:
             if not mli.dataSource:
@@ -1355,7 +1408,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             if skip_progress_for:
                 item_progress = False if mli.dataSource.ratingKey in skip_progress_for else with_progress
 
-            task = EpisodeReloadTask().setup(mli.dataSource, self.reloadItemCallback, with_progress=item_progress)
+            task = EpisodeReloadTask().setup(mli.dataSource, self.reloadItemCallback, with_progress=item_progress,
+                                             set_item_info=set_item_info)
             self.tasks.add(task)
             tasks.append(task)
 
@@ -1364,7 +1418,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
     def getPlayButtonID(self, mli, base=None):
         return (base and base or self.PLAY_BUTTON_ID) + (mli.getProperty('media.multiple') and 1000 or 0)
 
-    def reloadItemCallback(self, task, episode, with_progress=False):
+    def reloadItemCallback(self, task, episode, with_progress=False, set_item_info=False):
         self.tasks.remove(task)
         del task
 
@@ -1380,6 +1434,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
                 try:
                     self.setPostReloadItemInfo(episode, mli)
+                    if set_item_info:
+                        self.setUserItemInfo(mli)
                 except:
                     util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
                     self.doClose()

@@ -85,7 +85,7 @@ def render_templates(theme=None, templates=None, force=False):
     lastRes = getSetting('last_resolution', "1920x1080").split("x")
     lastSeenRes = [int(lastRes[0]), int(lastRes[1])]
 
-    if curThemeVer < THEME_VERSION or (force or
+    if curThemeVer != THEME_VERSION or (force or
                                        lastSeenRes != DISPLAY_RESOLUTION or
                                        addonSettings.alwaysCompileTemplates or
                                        len(fast_glob(os.path.join(engine.template_dir, "script-plex-*.xml.tpl"))) !=

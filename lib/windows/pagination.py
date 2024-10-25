@@ -29,7 +29,7 @@ class MCLPaginator(object):
     def __init__(self, control, parent_window, page_size=None, orphans=None, leaf_count=None):
         self.control = control
         self.pageSize = page_size if page_size is not None else self.pageSize
-        self.orphans = orphans if orphans is not None else self.orphans
+        self.orphans = orphans if orphans is not None else self.pageSize
         self.leafCount = leaf_count
         self.parentWindow = parent_window
 
@@ -227,7 +227,7 @@ class MCLPaginator(object):
         onlyTwo = self._currentAmount == 2
 
         items = None
-        if action == xbmcgui.ACTION_MOVE_LEFT and index == 0:
+        if action == xbmcgui.ACTION_MOVE_LEFT and index == 0 and last_mli_index == 0:
             if onlyTwo and last_mli_index == self._currentAmount - 1:
                 return
 
@@ -271,6 +271,7 @@ class BaseRelatedPaginator(MCLPaginator):
         if data.type in ('season', 'show'):
             if not mli.dataSource.isWatched:
                 mli.setProperty('unwatched.count', str(mli.dataSource.unViewedLeafCount) or '')
+                mli.setBoolProperty('unwatched.count.large', mli.dataSource.unViewedLeafCount > 999)
             else:
                 mli.setBoolProperty('watched', mli.dataSource.isWatched)
         else:

@@ -24,7 +24,7 @@ class AdvancedSettings(object):
                 self._data = f.read()
                 f.close()
             except:
-                LOG('script.plex: No advancedsettings.xml found')
+                LOG('script.plexmod: No advancedsettings.xml found')
 
     def write(self, data=None):
         self._data = data = data or self._data

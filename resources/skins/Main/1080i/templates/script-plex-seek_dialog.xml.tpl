@@ -428,31 +428,31 @@
         <shadowcolor>black</shadowcolor>
     </control>
 </control>
+<control type="group" id="300">
+    <visible>!String.IsEmpty(Window.Property(has.bif)) + !String.IsEmpty(Window.Property(bif.image)) + String.IsEmpty(Window.Property(show.chapters) + [Control.HasFocus(100) | Control.HasFocus(501) | !String.IsEmpty(Window.Property(button.seek))]</visible>
+    <animation effect="fade" time="100" delay="100" end="100">Visible</animation>
+    <posx>0</posx>
+    <posy>752</posy>
+    <control type="image">
+        <posx>0</posx>
+        <posy>0</posy>
+        <width>324</width>
+        <height>{{ vscale(184) }}</height>
+        <texture>script.plex/white-square.png</texture>
+        <colordiffuse>FF000000</colordiffuse>
+    </control>
+    <control type="image">
+        <posx>2</posx>
+        <posy>2</posy>
+        <width>320</width>
+        <height>{{ vscale(180) }}</height>
+        <fadetime>10</fadetime>
+        <texture>$INFO[Window.Property(bif.image)]</texture>
+    </control>
+</control>
 <control type="group" id="801">
     <visible>!String.IsEmpty(Window.Property(show.OSD)) + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
     <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
-    <control type="group" id="300">
-        <visible>!String.IsEmpty(Window.Property(has.bif)) + [Control.HasFocus(100) | Control.HasFocus(501) | !String.IsEmpty(Window.Property(button.seek))]</visible>
-        <animation effect="fade" time="100" delay="100" end="100">Visible</animation>
-        <posx>0</posx>
-        <posy>752</posy>
-        <control type="image">
-            <posx>0</posx>
-            <posy>0</posy>
-            <width>324</width>
-            <height>{{ vscale(184) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>FF000000</colordiffuse>
-        </control>
-        <control type="image">
-            <posx>2</posx>
-            <posy>2</posy>
-            <width>320</width>
-            <height>{{ vscale(180) }}</height>
-            <fadetime>10</fadetime>
-            <texture>$INFO[Window.Property(bif.image)]</texture>
-        </control>
-    </control>
 
     <control type="grouplist" id="400">
         <defaultcontrol>406</defaultcontrol>

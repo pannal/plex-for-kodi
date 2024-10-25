@@ -2850,7 +2850,7 @@ msgstr "CoreELEC: Reanudar y corregir la espera de búsqueda"
 #: 
 msgctxt "#33650"
 msgid "This adjusts the delay between seek-tries on CoreELEC, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. 100ms should be stable as well. Default: 350ms"
-msgstr "Ajusta el retardo entre los intentos de búsqueda en CoreELEC, lo que corrige la reanudación que no siempre funciona o la doble búsqueda. Cuando tenga problemas de reanudación/doble búsqueda, auméntelo. 100ms debería ser estable también. Por defecto: 350ms"
+msgstr "Ajusta el retardo entre los intentos de búsqueda en CoreELEC, lo que corrige la reanudación que no siempre funciona o la doble búsqueda. Cuando tenga problemas de reanudación/doble búsqueda, auméntelo. Por defecto: 500ms"
 
 #: 
 msgctxt "#33651"

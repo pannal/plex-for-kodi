@@ -417,7 +417,7 @@
             <control type="label">
                 <posx>60</posx>
                 <posy>0</posy>
-                <width>800</width>
+                <width>1600</width>
                 <height>{{ vscale(80) }}</height>
                 <font>font12</font>
                 <align>left</align>

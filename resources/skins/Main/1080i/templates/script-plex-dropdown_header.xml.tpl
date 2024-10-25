@@ -46,6 +46,8 @@
             <align>center</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
+            <scroll>true</scroll>
+            <scrollspeed>15</scrollspeed>
             <label>[B]$INFO[Window.Property(header)][/B]</label>
         </control>
     </control>

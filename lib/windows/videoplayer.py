@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import math
 import threading
 import time
+import traceback
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -12,6 +13,7 @@ from lib import kodijsonrpc
 from lib import player
 from lib import util
 from lib.util import T
+from plexnet.serverdecision import DecisionFailure
 from . import busy
 from . import dropdown
 from . import kodigui
@@ -34,6 +36,8 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
 
 
 class OnDeckPaginator(pagination.MCLPaginator):
+    initialPageSize = 8
+
     def readyForPaging(self):
         return self.parentWindow.postPlayInitialized
 
@@ -66,8 +70,13 @@ class OnDeckPaginator(pagination.MCLPaginator):
 
     def getData(self, offset, amount):
         data = (self.parentWindow.prev or self.parentWindow.next).sectionOnDeck(offset=offset, limit=amount)
+        skipRKs = []
         if self.parentWindow.next:
-            return list(filter(lambda x: x.ratingKey != self.parentWindow.next.ratingKey, data))
+            skipRKs.append(self.parentWindow.next.ratingKey)
+        if self.parentWindow.prev:
+            skipRKs.append(self.parentWindow.prev.ratingKey)
+        if skipRKs:
+            return list(filter(lambda x: x.ratingKey not in skipRKs, data))
         return data
 
 
@@ -124,12 +133,14 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
         self.lastNonOptionsFocusID = None
         self.playBackStarted = False
         self.handleBGM = kwargs.get('bgm')
+        self.lastItem = None
 
     def doClose(self):
         util.DEBUG_LOG('VideoPlayerWindow: Closing')
         self.timeout = None
         self.relatedPaginator = None
         self.onDeckPaginator = None
+        self.lastItem = None
         kodigui.ControlledWindow.doClose(self)
         player.PLAYER.handler.sessionEnded()
 
@@ -202,6 +213,22 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
                     if self.onDeckPaginator.boundaryHit:
                         self.onDeckPaginator.paginate()
                         return
+
+                    mli = self.onDeckListControl.getSelectedItem()
+                    if not mli or mli.getProperty("is.boundary"):
+                        return
+
+                    lastItem = self.lastItem
+
+                    if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_MOVE_LEFT) and lastItem:
+                        items = self.onDeckPaginator.wrap(mli, lastItem, action)
+                        xbmc.sleep(100)
+                        if items:
+                            # wrapped with new data
+                            return True
+
+                    if mli != self.lastItem and not mli.getProperty("is.boundary"):
+                        self.lastItem = mli
         except:
             util.ERROR()
 
@@ -361,12 +388,21 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
                 util.MONITOR.waitForAbort(0.1)
 
         self.setBackground()
-        if self.playQueue:
-            player.PLAYER.playVideoPlaylist(self.playQueue, resume=resume or self.resume, session_id=id(self),
-                                            handler=handler)
-        elif self.video:
-            player.PLAYER.playVideo(self.video, resume=resume or self.resume, force_update=True, session_id=id(self),
-                                    handler=handler)
+
+        try:
+            if self.playQueue:
+                player.PLAYER.playVideoPlaylist(self.playQueue, resume=resume or self.resume, session_id=id(self),
+                                                handler=handler)
+            elif self.video:
+                player.PLAYER.playVideo(self.video, resume=resume or self.resume, force_update=True, session_id=id(self),
+                                        handler=handler)
+        except DecisionFailure:
+            util.LOG("Can't play this media.")
+            self.doClose()
+
+        except Exception as e:
+            util.LOG("Playback failed: {}", traceback.format_exc())
+            self.doClose()
 
     def openItem(self, control=None, item=None):
         if not item:
@@ -429,7 +465,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
         vid = self.prev or self.next
         if vid.sectionOnDeckCount:
             self.onDeckPaginator = OnDeckPaginator(self.onDeckListControl,
-                                                   leaf_count=int(vid.sectionOnDeckCount),
+                                                   leaf_count=int(vid.sectionOnDeckCount) - 1 if self.next else 0,
                                                    parent_window=self)
 
         self.setInfo()
@@ -492,7 +528,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
             elif self.timeout is not None:
                 cd = min(abs(util.addonSettings.postplayTimeout - 1), int((self.timeout or now) - now))
                 base = 15 / float(util.addonSettings.postplayTimeout - 1)
-                self.setProperty('countdown', str(int(math.ceil(base*cd))))
+                self.setProperty('countdown', str(15 - int(math.ceil(base*cd))))
 
     def getHubs(self):
         try:

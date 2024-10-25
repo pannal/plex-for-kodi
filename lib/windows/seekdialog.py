@@ -50,6 +50,7 @@ MARKERS = OrderedDict([
         "countdown": None,
         "countdown_initial": None,
         "skipped": False,
+        "hidden": False,
 
         # attrs
         "markerAutoSkip": "autoSkipIntro",
@@ -65,6 +66,7 @@ MARKERS = OrderedDict([
         "countdown": None,
         "countdown_initial": None,
         "skipped": False,
+        "hidden": False,
 
         "markerAutoSkip": "autoSkipCredits",
         "markerAutoSkipped": False,
@@ -136,6 +138,7 @@ class SeekDialog(kodigui.BaseDialog):
 
     HIDE_DELAY = 4  # This uses the Cron tick so is +/- 1 second accurate
     OSD_HIDE_ANIMATION_DURATION = 0.2
+    OSD_HIDE_ACTION_THRESHOLD = 0.5
     SKIP_STEPS = {"negative": [-10000], "positive": [30000]}
 
     def __init__(self, *args, **kwargs):
@@ -529,9 +532,8 @@ class SeekDialog(kodigui.BaseDialog):
             self.timeFmtKodi = self.timeFmtKodi.replace("hh:", "")
         self._ignoreTick = False
         self._ignoreInput = False
-        if not self.showChapters:
-            self.bifURL = bif_url
-            self.hasBif = bool(self.bifURL)
+        self.bifURL = bif_url
+        self.hasBif = bool(self.bifURL)
 
         if self.hasBif:
             self.baseURL = re.sub(r'/\d+\?', '/{0}?', self.bifURL)
@@ -591,6 +593,11 @@ class SeekDialog(kodigui.BaseDialog):
                         self.player.playState == self.player.STATE_PLAYING:
                     self.hideOSD()
 
+                if action == xbmcgui.ACTION_CONTEXT_MENU:
+                    if self.getProperty('show.PPI'):
+                        self.showPPIDialog(real_ppi=True)
+                        return
+
                 passThroughMain = False
                 if controlID == self.SKIP_MARKER_BUTTON_ID:
                     if action == xbmcgui.ACTION_SELECT_ITEM:
@@ -630,17 +637,27 @@ class SeekDialog(kodigui.BaseDialog):
                         if self.getProperty('show.markerSkip') and not self.getProperty('show.markerSkip_OSDOnly'):
                             self.setProperty('show.markerSkip', '')
                             self.setProperty('show.markerSkip_OSDOnly', '1')
+                            markerDef = self._currentMarker
+                            if markerDef:
+                                markerDef["hidden"] = True
                             return
 
                 if controlID == self.MAIN_BUTTON_ID:
                     # we're seeking from the timeline with the OSD open - do an actual timeline seek
 
+                    # ignore seek actions for a split second when the OSD is hiding or was hiding
+                    if (action.getId() in KEY_MOVE_SET and self._osdHideAnimationTimeout and
+                            self._osdHideAnimationTimeout + self.OSD_HIDE_ACTION_THRESHOLD >= time.time()):
+                        return
+
                     if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_STEP_FORWARD):
+                        self.setProperty('show.chapters', '')
                         if self.useDynamicStepsForTimeline:
                             return self.skipForward()
                         return self.seekByOffset(10000, auto_seek=self.useAutoSeek)
 
                     elif action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_STEP_BACK):
+                        self.setProperty('show.chapters', '')
                         if self.useDynamicStepsForTimeline:
                             return self.skipBack()
                         return self.seekByOffset(-10000, auto_seek=self.useAutoSeek)
@@ -679,6 +696,11 @@ class SeekDialog(kodigui.BaseDialog):
                     self.resetSeeking()
 
                 elif controlID == self.NO_OSD_BUTTON_ID or passThroughMain:
+                    # ignore seek actions for a split second when the OSD is hiding or was hiding
+                    if (action.getId() in KEY_MOVE_SET and self._osdHideAnimationTimeout and
+                            self._osdHideAnimationTimeout + self.OSD_HIDE_ACTION_THRESHOLD >= time.time()):
+                        return
+
                     if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_MOVE_LEFT):
                         # we're seeking from the timeline, with the OSD closed; act as we're skipping
                         if not self._seeking:
@@ -722,7 +744,6 @@ class SeekDialog(kodigui.BaseDialog):
                         else:
                             self.showPPIDialog()
                         return
-
                 elif controlID == self.BIG_SEEK_LIST_ID:
                     if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_BIG_STEP_FORWARD):
                         return self.updateBigSeek(changed=True)
@@ -900,12 +921,12 @@ class SeekDialog(kodigui.BaseDialog):
         elif controlID == self.SHUFFLE_BUTTON_ID:
             self.shuffleButtonClicked()
         elif controlID == self.PREV_BUTTON_ID:
-            self.sendTimeline(state=self.player.STATE_STOPPED)
+            self.sendTimeline(state=self.player.STATE_STOPPED, ensureFinalTimelineEvent=True)
             self._ignoreTick = True
             self.handler.prev()
         elif controlID == self.NEXT_BUTTON_ID:
             if not self.handler.queuingNext:
-                self.sendTimeline(state=self.player.STATE_STOPPED)
+                self.sendTimeline(state=self.player.STATE_STOPPED, ensureFinalTimelineEvent=True)
                 self.handler.queuingNext = True
                 self._ignoreTick = True
                 self._ignoreInput = True
@@ -949,7 +970,13 @@ class SeekDialog(kodigui.BaseDialog):
         finally:
             kodigui.BaseDialog.doClose(self)
 
-    def showPPIDialog(self):
+    def showPPIDialog(self, real_ppi=False):
+        if self.getProperty('show.PPI'):
+            if real_ppi:
+                self.setProperty('show.PPI', '')
+                xbmc.executebuiltin('Action(PlayerProcessInfo)')
+            return
+
         for attrib in SESSION_ATTRIBUTE_TYPES.values():
             self.setProperty('ppi.%s' % attrib.label, "")
 
@@ -987,7 +1014,7 @@ class SeekDialog(kodigui.BaseDialog):
                 elapsed += 0.5
 
             # fill attributes
-            info = VideoSessionInfo(videoSession, currentVideo)
+            info = VideoSessionInfo(videoSession, currentVideo, plexapp.SERVERMANAGER.selectedServer.anyLANConnection)
 
         except ServerNotOwned:
             # timeline response data fallback
@@ -1000,7 +1027,9 @@ class SeekDialog(kodigui.BaseDialog):
                     util.MONITOR.waitForAbort(0.1)
                     elapsed += 0.1
 
-                info = VideoSessionInfo(None, currentVideo, incompleteSessionData=self.lastTimelineResponse)
+                info = VideoSessionInfo(None, currentVideo,
+                                        plexapp.SERVERMANAGER.selectedServer.anyLANConnection,
+                                        incompleteSessionData=self.lastTimelineResponse)
             except NotFound:
                 self.setProperty('ppi.Status', 'Info not available (data not found)')
 
@@ -1230,6 +1259,8 @@ class SeekDialog(kodigui.BaseDialog):
     def subtitleButtonClicked(self):
         options = []
 
+        sss = self.player.video.selectedSubtitleStream()
+
         if self.isDirectPlay:
             options.append({'key': 'download', 'display': T(32405, 'Download Subtitles')})
 
@@ -1239,6 +1270,7 @@ class SeekDialog(kodigui.BaseDialog):
             selectIndex = 0
 
         if self.player.video.hasSubtitles:
+            subsEnabled = xbmc.getCondVisibility('VideoPlayer.SubtitlesEnabled') and self.player.video.hasSubtitle
             if self.player.video.hasSubtitle:
                 options.append({'key': 'delay', 'display': T(32406, 'Subtitle Delay')})
 
@@ -1264,12 +1296,22 @@ class SeekDialog(kodigui.BaseDialog):
                     elif self.lastSubtitleNavAction == "download":
                         selectIndex = 0
 
+            if subsEnabled:
+                if sss and sss.canAutoSync.asBool():
+                    options.append(
+                        {
+                            'key': 'auto_sync',
+                            'display':
+                                sss.should_auto_sync and
+                                T(33658, 'Disable Auto-Sync') or T(33657, 'Enable Auto-Sync')
+                        }
+                    )
+
             options.append(
                 {
                     'key': 'enable',
-                    'display':
-                        xbmc.getCondVisibility('VideoPlayer.SubtitlesEnabled') and self.player.video.hasSubtitle and
-                        T(32408, 'Disable Subtitles') or T(32409, 'Enable Subtitles')
+                    'display': subsEnabled and
+                               T(32408, 'Disable Subtitles') or T(32409, 'Enable Subtitles')
                 }
             )
 
@@ -1334,6 +1376,15 @@ class SeekDialog(kodigui.BaseDialog):
         elif choice['key'] == 'enable':
             enabled = self.toggleSubtitles()
             self.lastSubtitleNavAction = "forward"
+        elif choice['key'] == 'auto_sync':
+            sss.should_auto_sync = not sss.should_auto_sync
+            # self.player.video isn't the same as the mediachoice representation
+            self.player.playerObject.choice.subtitleStream.should_auto_sync = sss.should_auto_sync
+            if self.isDirectPlay:
+                self.setSubtitles(honor_forced_subtitles_override=False)
+            else:
+                self.doSeek(self.trueOffset(), settings_changed=True)
+            self.lastSubtitleNavAction = "auto_sync"
 
     def toggleSubtitles(self):
         """
@@ -1374,8 +1425,8 @@ class SeekDialog(kodigui.BaseDialog):
                 util.DEBUG_LOG("Waiting for seekOnStart to apply: {}", self.handler.seekOnStart)
 
             waited = 0
-            while self.handler.seekOnStart and waited < 20:
-                xbmc.sleep(100)
+            while self.handler.seekOnStart and waited < 20 and not util.MONITOR.abortRequested():
+                util.MONITOR.waitForAbort(0.1)
                 waited += 1
 
             if waited < 20:
@@ -1450,11 +1501,11 @@ class SeekDialog(kodigui.BaseDialog):
         if changed and not self.showChapters:
             self.bigSeekChanged = True
             self.selectedOffset = self.bigSeekControl.getSelectedItem().dataSource + self.bigSeekOffset
-            self.updateProgress(set_to_current=False)
+            self.updateProgress(set_to_current=False, no_osd=True)
         elif self.showChapters:
             # when hovering chapters, show its corresponding time on the timeline, but don't act like we're seeking
             self.updateProgress(set_to_current=False, offset=self.bigSeekControl.getSelectedItem().dataSource,
-                                onlyTimeIndicator=True)
+                                onlyTimeIndicator=True, no_osd=True)
         self.resetSkipSteps()
 
     def bigSeekSelected(self):
@@ -1719,7 +1770,7 @@ class SeekDialog(kodigui.BaseDialog):
             self._forcedLastSkipAmount = 1 - lastSelectedOffset
             self.selectedOffset = 1
 
-        self.updateProgress(set_to_current=False)
+        self.updateProgress(set_to_current=False, no_osd=without_osd)
         self.setBigSeekShift()
         if auto_seek:
             self.resetAutoSeekTimer()
@@ -1755,7 +1806,7 @@ class SeekDialog(kodigui.BaseDialog):
         except RuntimeError:  # Not playing
             return 1
 
-    def updateProgress(self, set_to_current=True, offset=None, onlyTimeIndicator=False):
+    def updateProgress(self, set_to_current=True, offset=None, onlyTimeIndicator=False, no_osd=False):
         """
         Updates the progress bars (seek and position) and the currently-selected-time-label for the current position or
         seek state on the timeline.
@@ -1794,12 +1845,19 @@ class SeekDialog(kodigui.BaseDialog):
             self.setProperty('time.selection', util.simplifiedTimeDisplay(offset))
             self.selectionIndicatorImage.setWidth(101)
 
+        self.setProperty('bif.image', "")
         if onlyTimeIndicator:
             return
 
-        if self.hasBif:
-            self.setProperty('bif.image', self.handler.player.playerObject.getBifUrl(offset))
-            self.bifImageControl.setPosition(bifx, 752)
+        if not no_osd or (no_osd and not self.no_time_no_osd_spoilers):
+            if self.hasBif:
+                bifUrl = self.handler.player.playerObject.getBifUrl(offset)
+                if "blur_chapters" in self.no_spoilers:
+                    bifUrl = self.player.video.server.getImageTranscodeURL(bifUrl,
+                                                                           *PlaylistDialog.LI_AR16X9_THUMB_DIM,
+                                                                           **{"blur": util.addonSettings.episodeNoSpoilerBlur})
+                self.setProperty('bif.image', bifUrl)
+                self.bifImageControl.setPosition(bifx, 752)
 
         self.seekbarControl.setPosition(0, self.seekbarControl.getPosition()[1])
         if set_to_current:
@@ -2092,6 +2150,7 @@ class SeekDialog(kodigui.BaseDialog):
             # this might be counter intuitive, but self._currentMarker is a reference to a dict
             if self._currentMarker:
                 self._currentMarker["countdown"] = None
+                setattr(self, self._currentMarker["markerAutoSkipShownTimer"], None)
             self._currentMarker = None
             return False
 
@@ -2121,6 +2180,7 @@ class SeekDialog(kodigui.BaseDialog):
         if cancelTimer and self.countingDownMarker:
             self.countingDownMarker = False
             markerDef["markerAutoSkipped"] = True
+            markerDef["hidden"] = True
             setattr(self, markerDef["markerAutoSkipShownTimer"], None)
             self.setProperty('show.markerSkip', '')
             return False
@@ -2179,6 +2239,7 @@ class SeekDialog(kodigui.BaseDialog):
 
         # got a marker, display logic
         # hide marker into OSD after a timeout
+        # fixme: "markerAutoSkipShownTimer" should be "markerSkipShownTimer"
         timer = getattr(self, markerDef["markerAutoSkipShownTimer"])
 
         if timer is None or self.player.playState == self.player.STATE_PAUSED:
@@ -2189,12 +2250,15 @@ class SeekDialog(kodigui.BaseDialog):
             if not self.getProperty('show.markerSkip_OSDOnly'):
                 if timer + getattr(self, markerDef["markerSkipBtnTimeout"]) <= time.time():
                     self.setProperty('show.markerSkip_OSDOnly', '1')
+                    markerDef["hidden"] = True
                 else:
                     self.setProperty('show.markerSkip_OSDOnly', '')
 
         # no marker auto skip and not yet skipped or not yet auto skipped, normal display
         if (markerAutoSkip and not markerAutoSkipped) or (not markerAutoSkip and not markerDef["skipped"]):
             self.setProperty('show.markerSkip', '1')
+            if not markerDef["hidden"]:
+                self.setProperty('show.markerSkip_OSDOnly', '')
         # marker auto skip and already skipped, or no autoskip and manually skipped - hide in OSD
         else:
             self.setProperty('show.markerSkip_OSDOnly', '1')

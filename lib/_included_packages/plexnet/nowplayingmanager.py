@@ -88,6 +88,10 @@ class NowPlayingManager(object):
     def updatePlaybackState(self, timelineType, itemData, state, t, playQueue=None, duration=0, force=False,
                             force_time=False):
         timeline = self.timelines[timelineType]
+        old_item_data = None
+        if timeline.itemData:
+            old_item_data = timeline.itemData.copy()
+
         timeline.itemData = itemData
         timeline.playQueue = playQueue
         old_time = timeline.attrs.get("time")
@@ -96,7 +100,8 @@ class NowPlayingManager(object):
         if state != "stopped" or force_time:
             timeline.attrs["time"] = str(t)
             time_updated = True
-        elif old_time:
+
+        elif old_time and (not old_item_data or old_item_data.ratingKey == itemData.ratingKey): # the second part might be unnecessary, check
             if old_state != "stopped":
                 # use old timeline state's time for stopped states
                 util.DEBUG_LOG("Using previous timeline state as we're stopped now: {}", old_time)

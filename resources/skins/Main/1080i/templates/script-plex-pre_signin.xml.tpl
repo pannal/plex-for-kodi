@@ -18,7 +18,7 @@
 
 <control type="button" id="100">
     <posx>1437</posx>
-    <posy>{{ vscale(801) }}</posy>
+    <posy>{{ vperc(vscale(1080)) + vscale(1080) - vscale(279) }}</posy>
     <width>275</width>
     <height>{{ vscale(104) }}</height>
     <onup>200</onup>

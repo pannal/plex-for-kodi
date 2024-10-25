@@ -68,6 +68,7 @@ class SeasonsMixin(object):
                 mli.setProperty('index', str(idx))
                 mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/show.png')
                 mli.setProperty('unwatched.count', not season.isWatched and str(season.unViewedLeafCount) or '')
+                mli.setBoolProperty('unwatched.count.large', not season.isWatched and season.unViewedLeafCount > 999)
                 mli.setBoolProperty('watched', season.isFullyWatched)
                 if not season.isWatched and focus is None and season.index.asInt() > 0:
                     focus = idx

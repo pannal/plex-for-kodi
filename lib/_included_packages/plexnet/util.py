@@ -398,4 +398,28 @@ class RepeatingCounterTimer(Timer):
         self.ticks = 0
 
 
+AUDIO_CODECS_VERB = {
+    'aac': 'AAC',
+    'ac3': 'AC3',
+    'alac': 'ALAC',
+    'dca': 'DTS',
+    'eac3': 'EAC3',
+    'flac': 'FLAC',
+    'mp2': 'MP2',
+    'mp3': 'MP3',
+    'opus': 'Opus',
+    'pcm': 'PCM',
+    'truehd': 'TrueHD',
+    'vorbis': 'Vorbis',
+    'wmapro': 'WMA Pro',
+    'wmav2': 'Windows Media Audio 2',
+    'wmavoice': 'WMA Voice'
+}
+
+AUDIO_CODECS = list(AUDIO_CODECS_VERB.keys())
+
+AUDIO_CODECS_TC = ['mp3', 'ac3', 'dca', 'aac', 'opus']
+
+
+
 TIMER = Timer
