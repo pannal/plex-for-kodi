@@ -1060,7 +1060,7 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
         updateUnwatchedAndProgress = False
 
         if mli.dataSource.TYPE == 'collection':
-            prevItemType = self.librarySettings.getItemType()
+            prevItemType = self.librarySettings.getItemType() or ITEM_TYPE
             self.processCommand(opener.open(mli.dataSource))
             self.librarySettings.setItemType(prevItemType)
         elif self.section.TYPE == 'show' or mli.dataSource.TYPE == 'show' or mli.dataSource.TYPE == 'season' or mli.dataSource.TYPE == 'episode':
@@ -1084,7 +1084,7 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
                 section.title = datasource.title
 
                 self.processCommand(opener.handleOpen(LibraryWindow, windows=self._windows, default_window=self._next, section=section, filter_=self.filter, subDir=True))
-                self.librarySettings.setItemType(self.librarySettings.getItemType())
+                self.librarySettings.setItemType(self.librarySettings.getItemType() or ITEM_TYPE)
             else:
                 self.processCommand(opener.handleOpen(preplay.PrePlayWindow, video=datasource, parent_list=self.showPanelControl))
                 updateUnwatchedAndProgress = True
@@ -1232,6 +1232,8 @@ class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.Ut
                     self.setBoolProperty('no.content.filtered', True)
                 else:
                     self.setBoolProperty('no.content', True)
+
+                return
             else:
                 for startPosition in range(0, totalSize, self.getDefChunkSize(totalSize)):
                     tasks.append(CreateDefaultItemsTask().setup(startPosition, self.getDefChunkSize(totalSize), totalSize, self.thumb_fallback, self._defaultItemsCallback))
