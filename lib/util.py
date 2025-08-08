@@ -40,6 +40,8 @@ from .addonsettings import addonSettings, AddonSettings
 from .settings_util import getSetting, getUserSetting, setSetting, USER_SETTINGS, JSON_SETTINGS, DEFAULT_SETTINGS
 from .monitor import MONITOR
 
+from lib.updater import CUSTOM_UPDATER_CHECK_IMMEDIATE
+
 
 DEBUG = True
 _SHUTDOWN = False
@@ -885,3 +887,7 @@ def shutdown():
     del MONITOR
     del T
     del ADDON
+
+def forced_update_check():
+    if getSetting('update_source', 'repository') == 'custom' and CUSTOM_UPDATER_CHECK_IMMEDIATE:
+        return True

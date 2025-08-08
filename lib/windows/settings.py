@@ -18,6 +18,7 @@ import lib.cache
 from lib import util
 from lib import genres
 from lib import actions
+from lib.updater import SHOW_CUSTOM_UPDATER_OPTION
 from lib.util import T
 from . import kodigui
 from . import windowutils
@@ -922,12 +923,17 @@ class Settings(object):
                     'update_source',
                     T(33676, 'Update source'),
                     'repository',
-                    (('beta', T(33678, 'Beta')), ('stable', T(33679, 'Stable')),
-                     ('repository', T(33680, 'Repository')))
+                    (
+                        ('beta', T(33678, 'Beta')),
+                        ('stable', T(33679, 'Stable')),
+                        ('repository', T(33680, 'Repository')),
+                        (('custom', T(33055, 'Custom')) if SHOW_CUSTOM_UPDATER_OPTION else ('', ''))
+                    )
                 ).description(T(33677, 'Specifies the update mode. Will immediately check for a new version '
                                        'when changed and closing settings.\nDefault: Repository\n\nBeta: Bleeding '
                                        'edge (possibly unstable)\nStable: Stable branch (faster than Repository)\n'
-                                       'Repository: Kodi repository (official (slow) or Don\'t Panic)')
+                                       'Repository: Kodi repository (official (slow) or Don\'t Panic)') + 
+                                       T(34020, '\nCustom: Custom branch') if SHOW_CUSTOM_UPDATER_OPTION else ''
                               ) if not util.FROM_KODI_REPOSITORY else None,
                 MultiOptionsSetting(
                     'cache_requests', T(33724, 'Cache Plex data for'),
@@ -1216,7 +1222,8 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
                 items.append(kodigui.ManagedListItem(label))
         elif setting.type in ('OPTIONS', 'MULTI'):
             for ID, label in setting.options:
-                items.append(kodigui.ManagedListItem(label, data_source=ID))
+                if ID and label:
+                    items.append(kodigui.ManagedListItem(label, data_source=ID))
 
         self.optionsList.reset()
         self.optionsList.addItems(items)

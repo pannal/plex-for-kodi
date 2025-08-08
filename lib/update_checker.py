@@ -9,11 +9,12 @@ import lib.kodi_util
 # noinspection PyUnresolvedReferences
 from lib.kodi_util import xbmc, xbmcgui, xbmcaddon, ICON_PATH, KODI_VERSION_MAJOR
 from lib.settings_util import getSetting, setSetting
-from lib.properties import IPCTimeoutException, waitForGPEmpty, setGlobalProperty, getGlobalProperty
+from lib.properties import IPCTimeoutException, waitForGPEmpty, setGlobalProperty, getGlobalProperty, setGlobalBoolProperty
 from lib.updater import get_updater, UpdateException, UpdaterSkipException
 from lib.addonsettings import addonSettings
 from lib.i18n import T
 from lib.logging import service_log as log
+
 
 class ServiceMonitor(xbmc.Monitor):
     def __init__(self, *args, **kwargs):
@@ -71,6 +72,11 @@ def update_loop():
         if getSetting('last_update_check', datetime.datetime.fromtimestamp(0)) != last_update_check:
             setSetting('last_update_check', last_update_check)
 
+        # Check if a forced update is requested
+        if getGlobalProperty('force_update'):
+            log('Forced update detected, setting check_immediate to True')
+            check_immediate = True
+
         if (last_update_check + check_interval <= now or check_immediate) and not MONITOR.device_sleeping:
             if not any([
                     xbmc.Player().isPlaying(),
@@ -85,7 +91,10 @@ def update_loop():
                     if check_immediate:
                         check_immediate = False
 
-                    log('Checking for updates')
+                    log('Checking for updates' +
+                        (' (forced)' if getGlobalProperty('force_update') else '') +
+                        ', mode: {}'.format(mode) +
+                        (', repo: {}, branch: {}'.format(updater.repo, updater.branch) if mode == 'custom' else ''))
                     update_version = updater.check(addon_version, allow_downgrade=allow_downgrade)
                     log('Current: {}, Latest: {}, Update/Sidegrade/Downgrade: {}'.format(addon_version,
                                                                                          updater.remote_version,
@@ -219,6 +228,8 @@ def update_loop():
                     setGlobalProperty('update_response', '')
                     setGlobalProperty('update_source_changed', '')
                     setGlobalProperty('update_is_downgrade', '')
+                    if getGlobalProperty('force_update'):
+                        setGlobalBoolProperty('force_update', False)
                     # lel
                     try:
                         if pd:

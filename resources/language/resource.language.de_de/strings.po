@@ -3283,33 +3283,37 @@ msgstr "Von Merkliste entfernen"
 
 msgctxt "#34012"
 msgid "Fast pause/resume"
-msgstr "Schnelles Pausieren/Fortsetzen"
+msgstr ""
 
 msgctxt "#34013"
 msgid "when paused"
-msgstr "wenn pausiert"
+msgstr ""
 
 msgctxt "#34014"
 msgid "when playing"
-msgstr "beim Abspielen"
+msgstr ""
 
 msgctxt "#34015"
 msgid "User-specific. Use OK/ENTER button to pause instead of showing the OSD (which can then only be accessed using DOWN), or resume when paused. Only works with 'Behave like official Plex clients' enabled."
-msgstr "Benutzerspezifisch. OK/ENTER Knopf zum schnellen Pausieren verwenden anstatt das OSD anzuzeigen (welches dann nur noch über den RUNTER Knopf erreichbar ist), oder zum Fortsetzen, wenn pausiert. Funktioniert nur, wenn 'Verhalten wie Plex Clients' aktiviert ist."
+msgstr ""
 
 msgctxt "#34016"
 msgid "Max shutdown wait"
-msgstr "Max. Herunterfahrzeit"
+msgstr ""
 
 msgctxt "#34017"
 msgid "The plugin will try to hard exit once this time limit is reached (default: 5 seconds)"
-msgstr "Das Plugin versucht sich nach dem Ablauf dieser Zeit hart zu beenden"
+msgstr ""
 
 msgctxt "#34018"
 msgid "Related Media"
-msgstr "Ähnliche Medien"
+msgstr ""
 
 #: watchlist discover hub title prefix
 msgctxt "#34019"
 msgid "Discover: {}"
+msgstr ""
+
+msgctxt "#34020"
+msgid "\nCustom: Custom branch"
 msgstr ""

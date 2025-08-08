@@ -32,6 +32,9 @@ from . import util
 from .logging import KodiLogProxyHandler
 from .data_cache import dcm
 
+from .updater import SHOW_CUSTOM_UPDATER_OPTION
+from .settings_util import getSetting, setSetting
+
 BACKGROUND = None
 quitKodi = False
 restart = False
@@ -139,6 +142,12 @@ def main(force_render=False):
 
 def _main():
     global quitKodi, restart
+
+    # Check if SHOW_CUSTOM_UPDATER_OPTION is set to false and update_source is set to "custom"
+    # If so, reset it back to its default value
+    if not SHOW_CUSTOM_UPDATER_OPTION and getSetting('update_source', 'repository') == 'custom':
+        setSetting('update_source', 'repository')
+        util.LOG('Custom updater is disabled but also selected, resetting to default')
 
     # uncomment to profile code #1
     #pr = cProfile.Profile()

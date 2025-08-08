@@ -13,6 +13,11 @@ from .version import version_compare
 from .kodi_util import translatePath, xbmc, ADDON
 from .kodijsonrpc import rpc
 
+# Variables for custom repository and branch (must be updated here in the code)
+SHOW_CUSTOM_UPDATER_OPTION = False  # Control whether the "custom" option shows up in the update source setting
+CUSTOM_UPDATER_CHECK_IMMEDIATE = True  # Control whether we always want to immediately check for updates (requires 'update_source' to be set to custom)
+CUSTOM_UPDATER_REPO = "pannal/plex-for-kodi"  # Set the Github repo for the custom repository
+CUSTOM_UPDATER_BRANCH = "develop_kodi21"  # Set the branch for the custom repository
 
 VERSION_RE = re.compile(r'<addon id="script\.plexmod".*version="([A-Za-z0-9.+:~-]+)".*?<requires>',
                         re.MULTILINE | re.DOTALL | re.S)
@@ -247,6 +252,18 @@ class RepositoryUpdater(Updater):
         xbmc.executebuiltin('UpdateAddonRepos', True)
         xbmc.executebuiltin('UpdateLocalAddons', True)
         return False
+
+
+@register_updater
+class CustomUpdater(Updater):
+    mode = "custom"
+    repo = CUSTOM_UPDATER_REPO
+    branch = CUSTOM_UPDATER_BRANCH
+
+    def __init__(self, branch=CUSTOM_UPDATER_BRANCH, mode="custom"):
+        super(CustomUpdater, self).__init__(branch=branch, mode=mode)
+        self.repo = CUSTOM_UPDATER_REPO
+        self.branch = branch
 
 
 def get_updater(mode):

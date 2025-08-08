@@ -2726,3 +2726,7 @@ msgstr ""
 msgctxt "#34019"
 msgid "Discover: {}"
 msgstr ""
+
+msgctxt "#34020"
+msgid "\nCustom: Custom branch"
+msgstr ""
