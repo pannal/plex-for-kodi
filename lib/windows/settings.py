@@ -1347,6 +1347,9 @@ class SchnorchelDialog(xbmcgui.WindowXMLDialog):
             xbmcgui.WindowXML.setProperty(self, key, value)
         except RuntimeError:
             xbmc.log('kodigui.BaseWindow.setProperty: Missing window', xbmc.LOGDEBUG)
+        except TypeError:
+            # python 2.7
+            pass
 
     def onAction(self, action):
         code = action.getButtonCode()

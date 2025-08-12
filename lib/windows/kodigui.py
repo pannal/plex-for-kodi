@@ -1067,6 +1067,14 @@ class MultiWindow(object):
         self._allClosed = True
         self._current.doClose()
 
+    def goHomeAction(self, action):
+        if (util.HOME_BUTTON_MAPPED is not None
+                and action.getButtonCode() == int(util.HOME_BUTTON_MAPPED) and hasattr(self, "goHome")):
+            util.DEBUG_LOG("MultiWindow: Going home action")
+            self.goHome(with_root=True)
+            return True
+        return
+
     def onFirstInit(self):
         pass
 
@@ -1076,7 +1084,7 @@ class MultiWindow(object):
     def onAction(self, action):
         if action == xbmcgui.ACTION_PREVIOUS_MENU or action == xbmcgui.ACTION_NAV_BACK:
             self.doClose()
-        elif XMLBase.goHomeAction(self, action):
+        elif self.goHomeAction(action):
             return
         self._currentOnAction(action)
 

@@ -2,8 +2,6 @@
 
 import math
 import os
-import threading
-import six
 from six import ensure_str
 from plexnet import util as pnUtil
 from plexnet import plexapp
@@ -12,9 +10,7 @@ from plexnet import plexobjects
 from kodi_six import xbmcvfs
 from kodi_six import xbmc
 
-from collections import OrderedDict
 from lib import util
-from lib import player
 from lib import backgroundthread
 from lib.data_cache import dcm
 from lib.util import T
@@ -23,7 +19,6 @@ from lib.genres import GENRES_TV_BY_SYN
 from . import busy
 from . import kodigui
 from . import optionsdialog
-from . import playersettings
 
 
 class SeasonsMixin(object):
@@ -281,6 +276,7 @@ class ThemeMusicTask(backgroundthread.Task):
         return self
 
     def run(self):
+        from lib import player
         player.PLAYER.playBackgroundMusic(self.url, self.volume, self.rating_key)
 
 
@@ -289,6 +285,7 @@ class ThemeMusicMixin(object):
     needs watchlistmixin as well to work
     """
     def isPlayingOurs(self, item):
+        from lib import player
         return (player.PLAYER.bgmPlaying and player.PLAYER.handler.currentlyPlaying in
                          [self.wl_ref, item.ratingKey]+self.wl_item_children)
 
@@ -307,6 +304,7 @@ class ThemeMusicMixin(object):
 
 
     def themeMusicReinit(self, item):
+        from lib import player
         if player.PLAYER.bgmPlaying and not self.isPlayingOurs(item):
             player.PLAYER.stopAndWait()
         self.useBGM = False
@@ -336,6 +334,7 @@ class ThemeMusicMixin(object):
             backgroundthread.BGThreader.addTask(task)
             self.useBGM = True
         else:
+            from lib import player
             if player.PLAYER.bgmPlaying:
                 player.PLAYER.stopAndWait()
 
@@ -392,6 +391,7 @@ class PlexSubtitleDownloadMixin(object):
                         provider_title=sub.providerTitle,
                         subtitle_score=sub.score,
                         subtitle_info=info), sub.title)))
+                from . import playersettings
                 choice = playersettings.showOptionsDialog(T(33700, "Download subtitles: {}").format(ensure_str(language.name)),
                                                           options, trim=False, non_playback=non_playback)
                 if choice is None:
@@ -444,7 +444,7 @@ class WatchlistCheckBaseTask(backgroundthread.Task):
 class AvailabilityCheckTask(WatchlistCheckBaseTask):
     def setup(self, *args, **kwargs):
         media_type = kwargs.pop('media_type', None)
-        super(AvailabilityCheckTask, self).setup(*args)
+        WatchlistCheckBaseTask.setup(self, *args)
         self.media_type = media_type
         return self
 

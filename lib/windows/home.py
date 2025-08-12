@@ -24,7 +24,6 @@ from . import opener
 from . import optionsdialog
 from . import playlists
 from . import search
-from . import windowutils
 from . import background
 from .mixins import SpoilersMixin, removeFromWatchlistBlind
 
@@ -446,6 +445,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self._initialMovingSectionPos = None
         self.block_section_change = False
         self.go_root = False
+
+        from . import windowutils
         windowutils.HOME = self
 
         self.lock = threading.Lock()
