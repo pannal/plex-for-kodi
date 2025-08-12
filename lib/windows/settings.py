@@ -1099,7 +1099,8 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
                 #     return
             elif action == xbmcgui.ACTION_MOVE_RIGHT:
                 if self.lastFocusID == self.SECTION_LIST_ID:
-                    self.setFocusId(self.SETTINGS_LIST_ID)
+                    if self.lastSection != 'about':
+                        self.setFocusId(self.SETTINGS_LIST_ID)
                     return
                 elif self.lastFocusID == self.SETTINGS_LIST_ID:
                     self.editSetting(from_right=True)
@@ -1111,7 +1112,8 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
 
     def onClick(self, controlID):
         if controlID == self.SECTION_LIST_ID:
-            self.setFocusId(self.SETTINGS_LIST_ID)
+            if self.lastSection != 'about':
+                self.setFocusId(self.SETTINGS_LIST_ID)
         elif controlID == self.SETTINGS_LIST_ID:
             self.editSetting()
         elif controlID == self.OPTIONS_LIST_ID:
