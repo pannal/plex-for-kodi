@@ -4,6 +4,8 @@ from __future__ import absolute_import
 import time
 import re
 import json
+
+import six
 import urllib3.exceptions
 
 from . import http
@@ -18,6 +20,7 @@ from . import plexresource
 from . import plexlibrary
 from . import asyncadapter
 from six.moves import range
+
 # from plexapi.client import Client
 # from plexapi.playqueue import PlayQueue
 
@@ -25,9 +28,12 @@ from six.moves import range
 TOTAL_QUERIES = 0
 DEFAULT_BASEURI = 'http://localhost:32400'
 
+CACHE_MAP = {}
+
 
 class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
     TYPE = 'PLEXSERVER'
+    DEFER_HUBS = False
 
     def __init__(self, data=None):
         signalsmixin.SignalsMixin.__init__(self)
@@ -67,6 +73,7 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
         self.transcodeSupport = False
         self.currentHubs = None
         self.dnsRebindingProtection = False
+        self.prefs = {}
 
         if data is None:
             return
@@ -79,7 +86,8 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
         self.name = data.attrib.get('name')
         self.platform = data.attrib.get('platform')
         self.rawVersion = data.attrib.get('productVersion')
-        self.versionNorm = util.normalizedVersion(self.rawVersion)
+        if self.rawVersion:
+            self.versionNorm = util.normalizedVersion(self.rawVersion)
         self.transcodeSupport = data.attrib.get('transcodeSupport') == '1'
         self.dnsRebindingProtection = data.attrib.get('dnsRebindingProtection') == '1'
 
@@ -121,9 +129,16 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
     def anyLANConnection(self):
         return any(c.localVerified for c in self.connections)
 
-    def getObject(self, key):
+    def getObject(self, key, assume_container=False):
         data = self.query(key)
-        return plexobjects.buildItem(self, data[0], key, container=self)
+
+        container = self
+        if not assume_container:
+            container = plexobjects.PlexContainer(data, initpath=key, server=self, address=key)
+        return plexobjects.buildItem(self, data[0], key, container=container)
+
+    def getPrefs(self):
+        return plexobjects.listItems(self, "/:/prefs", bytag=True, cachable=False, not_cachable=True)
 
     def hubs(self, section=None, count=None, search_query=None, section_ids=None, ignore_hubs=None):
         hubs = []
@@ -177,19 +192,20 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
             self.currentHubs[cdata[0].attrib.get('hubIdentifier')] = cdata[0].attrib.get('title')
             hubs.append(plexlibrary.Hub(cdata[0], server=self, container=ccontainer))
 
-        for elem in data:
-            hubIdent = elem.attrib.get('hubIdentifier')
-            self.currentHubs["{}:{}".format(section, hubIdent)] = elem.attrib.get('title')
+        if data:
+            for elem in data:
+                hubIdent = elem.attrib.get('hubIdentifier')
+                self.currentHubs["{}:{}".format(section, hubIdent)] = elem.attrib.get('title')
 
-            # if we've added continueWatching, which combines continue and ondeck, skip those two hubs
-            if newCW and hubIdent and \
-                    (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
-                continue
+                # if we've added continueWatching, which combines continue and ondeck, skip those two hubs
+                if newCW and hubIdent and \
+                        (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
+                    continue
 
-            if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:
-                continue
+                if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:
+                    continue
 
-            hubs.append(plexlibrary.Hub(elem, server=self, container=container))
+                hubs.append(plexlibrary.Hub(elem, server=self, container=container))
 
         if section_ids:
             # when we have hidden sections, apply the filter to the hubs keys for subsequent queries
@@ -230,11 +246,16 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
             util.WARN_LOG("Server connection is None, returning an empty url")
             return ""
 
-    def query(self, path, method=None, **kwargs):
-        method = method or self.session.get
+    def query(self, path, method=None, raw=False, **kwargs):
+        if method and isinstance(method, six.string_types):
+            method = getattr(self.session, method)
+        else:
+            method = method or self.session.get
 
         limit = kwargs.pop("limit", None)
         params = kwargs.pop("params", None)
+        cachable = kwargs.pop("cachable", False)
+        cache_ref = kwargs.pop("cache_ref", None)
         if params:
             if limit is None:
                 limit = params.get("limit", None)
@@ -260,12 +281,40 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
             url = http.addUrlParam(url, "X-Plex-Container-Start=%s" % offset)
             url = http.addUrlParam(url, "X-Plex-Container-Size=%s" % limit)
 
-        util.LOG('{0} {1}', method.__name__.upper(), re.sub('X-Plex-Token=[^&]+', 'X-Plex-Token=****', url))
+        with_cache = False
+        if cachable and cache_ref:
+            kwargs['with_cache'] = with_cache = True
+
+        util.LOG('{0} (cache enabled: {2}) {1}', method.__name__.upper(), re.sub('X-Plex-Token=[^&]+', 'X-Plex-Token=****', url), with_cache)
         try:
             response = method(url, **kwargs)
             if response.status_code not in (200, 201):
                 codename = http.status_codes.get(response.status_code, ['Unknown'])[0]
                 raise exceptions.BadRequest('({0}) {1}'.format(response.status_code, codename))
+
+            # caching
+            if hasattr(response, "from_cache") and with_cache:
+                if util.DEBUG_REQUESTS:
+                    util.LOG('{0} (from cache: {2}) {1}', method.__name__.upper(),
+                             re.sub('X-Plex-Token=[^&]+', 'X-Plex-Token=****', url), response.from_cache)
+
+                # scope for server+user; URLs itself don't need to be scoped as they differ on X-Plex-Token and domain
+                base_key = util.INTERFACE.getRCBaseKey()
+
+                if base_key not in util.CACHED_PLEX_URLS:
+                    util.CACHED_PLEX_URLS[base_key] = {}
+
+                base = util.CACHED_PLEX_URLS[base_key]
+
+                if cache_ref not in base:
+                    base[cache_ref] = []
+
+                # fixme: this could be faster with a dict
+                if url not in base[cache_ref]:
+                    base[cache_ref].append(url)
+                    if util.DEBUG_REQUESTS:
+                        util.DEBUG_LOG('Storing URL for cached response in {0}: {1}: {2}'.format(base_key, cache_ref, url))
+
             data = response.text.encode('utf8')
         except asyncadapter.TimeoutException:
             util.ERROR()
@@ -277,13 +326,15 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
         except asyncadapter.CanceledException:
             return None
 
+        if raw:
+            return data
         return ElementTree.fromstring(data) if data else None
 
     def getImageTranscodeURL(self, path, width, height, **extraOpts):
         if not path:
             return ''
 
-        eOpts = {"minSize": 1}
+        eOpts = {"minSize": 1, "upscale": 1}
         eOpts.update(extraOpts)
 
         params = ("&width=%s&height=%s" % (width, height)) + ''.join(["&%s=%s" % (key, eOpts[key]) for key in eOpts])
@@ -666,6 +717,9 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
 
         for i in range(len(serverObj.get('connections', []))):
             conn = serverObj['connections'][i]
+            if conn['address'].endswith(":None"):
+                continue
+
             isFallback = hasSecureConn and conn['address'][:5] != "https" and not util.LOCAL_OVER_SECURE
             sources = plexconnection.PlexConnection.SOURCE_BY_VAL[conn['sources']]
             connection = plexconnection.PlexConnection(sources, conn['address'], conn['isLocal'], conn['token'], isFallback)

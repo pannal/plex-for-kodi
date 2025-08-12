@@ -20,8 +20,6 @@ from . import videoplayer
 from . import windowutils
 
 PLAYLIST_PAGE_SIZE = 500
-PLAYLIST_INITIAL_SIZE = 100
-
 
 class ChunkRequestTask(backgroundthread.Task):
     WINDOW = None
@@ -199,7 +197,7 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             self.tasks.cancel()
             player.PLAYER.stop()  # Necessary because if audio is already playing, it will close the window when that is stopped
             if self.playlist.playlistType == 'audio':
-                if self.playlist.leafCount.asInt() <= PLAYLIST_INITIAL_SIZE:
+                if self.playlist.leafCount.asInt() <= util.addonSettings.playlistMaxSize:
                     self.playlist.setShuffle(shuffle)
                     self.playlist.setCurrent(mli and mli.pos() or 0)
                     self.showAudioPlayer(track=mli and mli.dataSource or self.playlist.current(), playlist=self.playlist)
@@ -212,9 +210,11 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             elif self.playlist.playlistType == 'video':
                 if not util.addonSettings.playlistVisitMedia or play:
                     if resume is None and mli and bool(mli.dataSource.viewOffset.asInt()):
-                        return self.plItemPlaybackMenu(select_choice='resume')
+                        if not util.getSetting('assume_resume'):
+                            return self.plItemPlaybackMenu(select_choice='resume')
+                        resume = True
 
-                    if self.playlist.leafCount.asInt() <= PLAYLIST_INITIAL_SIZE:
+                    if self.playlist.leafCount.asInt() <= util.addonSettings.playlistMaxSize:
                         self.playlist.setShuffle(shuffle)
                         self.playlist.setCurrent(mli and mli.pos() or 0)
                         videoplayer.play(play_queue=self.playlist, resume=resume)
@@ -347,7 +347,7 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         if total < len(self.playlist):
             total = actualPlaylistLength
 
-        endoffirst = min(PLAYLIST_INITIAL_SIZE, PLAYLIST_PAGE_SIZE, total)
+        endoffirst = min(util.addonSettings.playlistMaxSize, PLAYLIST_PAGE_SIZE, total)
         items = [self.updateListItem(i, pi, kodigui.ManagedListItem()) for i, pi in enumerate(self.playlist.extend(0, endoffirst))]
 
         items += [kodigui.ManagedListItem() for i in range(total - endoffirst)]
@@ -358,7 +358,7 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.playlist.setCurrent(self.playlist.getPosFromItem(self.playlist.userCurrent()))
         self.playlistListControl.setSelectedItemByDataSource(self.playlist.current())
 
-        if total <= min(PLAYLIST_INITIAL_SIZE, PLAYLIST_PAGE_SIZE):
+        if total <= min(util.addonSettings.playlistMaxSize, PLAYLIST_PAGE_SIZE):
             return
 
         for start in range(endoffirst, total, PLAYLIST_PAGE_SIZE):

@@ -4,36 +4,32 @@ import logging
 import tempfile
 import sys
 
-from lib.logging import log
+from lib.logging import log, KodiLogProxyHandler
 # noinspection PyUnresolvedReferences
-from lib.kodi_util import translatePath, xbmc, xbmcgui, setGlobalProperty, getGlobalProperty
+from lib.kodi_util import translatePath, xbmc, xbmcgui
+from lib.properties import getGlobalProperty, setGlobalProperty
 from tendo_singleton import SingleInstance, SingleInstanceException
-
 
 # tempfile's standard temp dirs won't work on specific OS's (android)
 tempfile.tempdir = translatePath("special://temp/")
 
-
-class KodiLogProxyHandler(logging.Handler):
-    def emit(self, record):
-        try:
-            log(self.format(record))
-        except:
-            self.handleError(record)
-
-
 # add custom logger for tendo.singleton, so we can capture its messages
 logger = logging.getLogger("tendo.singleton")
-logger.addHandler(KodiLogProxyHandler())
+logger.addHandler(KodiLogProxyHandler(level=logging.DEBUG))
 logger.setLevel(logging.DEBUG)
 
+
 from_kiosk = False
+kiosk_always = False
 boot_delay = False
 argvlen = len(sys.argv)
 if argvlen > 1:
-    from_kiosk = bool(int(sys.argv[1]))
+    from_kiosk = int(sys.argv[1]) > 0
+    kiosk_always = int(sys.argv[1]) > 1
     if argvlen > 2:
         boot_delay = int(sys.argv[2])
+        if argvlen > 3:
+            update_successful = bool(int(sys.argv[3]))
 
 started = False
 set_waiting_for_start = False
@@ -41,9 +37,12 @@ try:
     # reactivate/maximize
     if getGlobalProperty('running'):
         try:
+            log('Main: script.plexmod: Trying to reactivate minimized addon')
             xbmc.executebuiltin('NotifyAll({0},{1},{2})'.format('script.plexmod', 'RESTORE', '{}'))
         except:
-            log('Main: script.plexmod: Already running, couldn\'t reactivate other instance, exiting.')
+            log('Main: script.plexmod: Already running or faulty, couldn\'t reactivate other instance, exiting.')
+        else:
+            sys.exit(0)
     else:
         # addon not started
         if not getGlobalProperty('started'):
@@ -75,6 +74,9 @@ try:
                     if waited < boot_delay:
                         log('Main: script.plexmod: Forced start before auto-start delay ({:.1f}/{} s).',
                             waited, boot_delay)
+                        skip_ensure_home = True
+
+                    if kiosk_always:
                         skip_ensure_home = True
 
                     waited = 0

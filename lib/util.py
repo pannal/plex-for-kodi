@@ -29,15 +29,17 @@ from . import colors
 from .exceptions import NoDataException
 from .logging import log, log_error
 # noinspection PyUnresolvedReferences
-from .i18n import T
+from .i18n import T, TRANSLATED_ROLES
 from . import aspectratio
 # noinspection PyUnresolvedReferences
 from .kodi_util import (ADDON, xbmc, xbmcvfs, xbmcaddon, xbmcgui, translatePath, KODI_VERSION_MAJOR, KODI_VERSION_MINOR,
-                        KODI_BUILD_NUMBER, FROM_KODI_REPOSITORY, setGlobalProperty, setGlobalBoolProperty,
-                        waitForGPEmpty, waitForConsumption, getGlobalProperty)
+                        KODI_BUILD_NUMBER, FROM_KODI_REPOSITORY)
+from .properties import setGlobalProperty, setGlobalBoolProperty, waitForGPEmpty, waitForConsumption, getGlobalProperty
 # noinspection PyUnresolvedReferences
-from .settings_util import getSetting, getUserSetting, setSetting, USER_SETTINGS, JSON_SETTINGS
-from plexnet import signalsmixin
+from .addonsettings import addonSettings, AddonSettings
+from .settings_util import getSetting, getUserSetting, setSetting, USER_SETTINGS, JSON_SETTINGS, DEFAULT_SETTINGS
+from .monitor import MONITOR
+
 
 DEBUG = True
 _SHUTDOWN = False
@@ -47,7 +49,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 34
+THEME_VERSION = 50
 
 xbmc.log('script.plexmod: Kodi {0}.{1} (build {2})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER),
          xbmc.LOGINFO)
@@ -72,16 +74,16 @@ def getLanguageCode(add_def=None):
         base, variant = data.split("_")
         lang += "{}-{},{}".format(base, variant.upper(), base)
     else:
-        lang = data
+        lang = base = data
     if add_def and lang not in add_def:
         lang += ",{}".format(add_def)
-    return lang
+    return lang, base
 
 
 try:
-    ACCEPT_LANGUAGE_CODE = getLanguageCode(add_def='en-US,en')
+    ACCEPT_LANGUAGE_CODE, LANGUAGE_CODE = getLanguageCode(add_def='en-US,en')
 except:
-    ACCEPT_LANGUAGE_CODE = 'en-US,en'
+    ACCEPT_LANGUAGE_CODE, LANGUAGE_CODE = ('en-US,en', 'en')
 
 
 try:
@@ -98,6 +100,8 @@ NEEDS_SCALING = round(CURRENT_AR, 2) < round(1920 / 1080, 2)
 
 HOME_BUTTON_MAPPED = None
 
+HUB_ITEM_STATES = {}
+
 
 def homeButtonMapped(*args, **kwargs):
     global HOME_BUTTON_MAPPED
@@ -107,81 +111,6 @@ def homeButtonMapped(*args, **kwargs):
 
 homeButtonMapped()
 
-
-class AddonSettings(object):
-    """
-    @DynamicAttrs
-    """
-
-    _proxiedSettings = (
-        ("debug", False),
-        ("kodi_skip_stepping", False),
-        ("auto_seek", True),
-        ("auto_seek_delay", 1),
-        ("dynamic_timeline_seek", False),
-        ("fast_back", True),
-        ("dynamic_backgrounds", True),
-        ("background_art_blur_amount2", 0),
-        ("background_art_opacity_amount2", 20),
-        ("screensaver_quiz", False),
-        ("postplay_always", False),
-        ("postplay_timeout", 16),
-        ("skip_intro_button_timeout", 10),
-        ("skip_credits_button_timeout", 10),
-        ("playlist_visit_media", False),
-        ("intro_skip_early", False),
-        ("show_media_ends_info", True),
-        ("show_media_ends_label", True),
-        ("background_colour", None),
-        ("skip_intro_button_show_early_threshold1", 70),
-        ("requests_timeout_connect", 5.0),
-        ("requests_timeout_read", 10.0),
-        ("plextv_timeout_connect", 1.0),
-        ("plextv_timeout_read", 2.0),
-        ("local_reach_timeout", 10),
-        ("auto_skip_offset", 2.5),
-        ("conn_check_timeout", 2.5),
-        ("postplayCancel", True),
-        ("skip_marker_timer_cancel", True),
-        ("skip_marker_timer_immediate", False),
-        ("low_drift_timer", True),
-        ("player_show_buffer", True),
-        ("buffer_wait_max", 120),
-        ("buffer_insufficient_wait", 10),
-        ("continue_use_thumb", True),
-        ("use_bg_fallback", False),
-        ("dbg_crossfade", True),
-        ("subtitle_use_extended_title", True),
-        ("poster_resolution_scale_perc", 100),
-        ("consecutive_video_pb_wait", 0.0),
-        ("retrieve_all_media_up_front", False),
-        ("library_chunk_size", 240),
-        ("verify_mapped_files", True),
-        ("episode_no_spoiler_blur", 16),
-        ("ignore_docker_v4", True),
-        ("cache_home_users", True),
-        ("intro_marker_max_offset", 600),
-        ("hubs_rr_max", 250),
-        ("max_retries1", 3),
-        ("use_cert_bundle", "acme"),
-        ("cache_templates", True),
-        ("always_compile_templates", False),
-        ("tickrate", 1.0),
-        ("honor_plextv_dnsrebind", True),
-        ("honor_plextv_pam", True),
-        ("coreelec_resume_seek_wait", 500),
-        ("background_resolution_scale_perc", 100),
-    )
-
-    def __init__(self):
-        # register every known setting camelCased as an attribute to this instance
-        for setting, default in self._proxiedSettings:
-            name_split = setting.split("_")
-            setattr(self, name_split[0] + ''.join(x.capitalize() or '_' for x in name_split[1:]),
-                    getSetting(setting, default))
-
-
-addonSettings = AddonSettings()
 
 DEBUG = addonSettings.debug
 
@@ -209,105 +138,6 @@ def ERROR(txt='', hide_tb=False, notify=False, time_ms=3000):
 
 def TEST(msg):
     xbmc.log('---TEST: {0}'.format(msg), xbmc.LOGINFO)
-
-
-class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
-    def __init__(self, *args, **kwargs):
-        xbmc.Monitor.__init__(self, *args, **kwargs)
-        signalsmixin.SignalsMixin.__init__(self)
-
-    def watchStatusChanged(self):
-        self.trigger('changed.watchstatus')
-
-    def actionStop(self):
-        self.stopPlayback()
-
-    def actionQuit(self):
-        LOG('OnSleep: Exit Kodi')
-        xbmc.executebuiltin('Quit')
-
-    def actionReboot(self):
-        LOG('OnSleep: Reboot')
-        xbmc.restart()
-
-    def actionShutdown(self):
-        LOG('OnSleep: Shutdown')
-        xbmc.shutdown()
-
-    def actionHibernate(self):
-        LOG('OnSleep: Hibernate')
-        xbmc.executebuiltin('Hibernate')
-
-    def actionSuspend(self):
-        LOG('OnSleep: Suspend')
-        xbmc.executebuiltin('Suspend')
-
-    def actionCecstandby(self):
-        LOG('OnSleep: CEC Standby')
-        xbmc.executebuiltin('CECStandby')
-
-    def actionLogoff(self):
-        LOG('OnSleep: Sign Out')
-        xbmc.executebuiltin('System.LogOff')
-
-    def onNotification(self, sender, method, data):
-        LOG("Notification: {} {} {}".format(sender, method, data))
-        if sender == 'script.plexmod' and method.endswith('RESTORE'):
-            from .windows import kodigui, windowutils
-
-            def exit_mainloop():
-                LOG("Addon never properly started, can't reactivate")
-                windowutils.HOME.doClose()
-
-            if not kodigui.BaseFunctions.lastWinID:
-                exit_mainloop()
-                return
-            if kodigui.BaseFunctions.lastWinID > 13000:
-                reInitAddon()
-                setGlobalProperty('is_active', '1')
-                xbmc.executebuiltin('ActivateWindow({0})'.format(kodigui.BaseFunctions.lastWinID))
-            else:
-                exit_mainloop()
-                return
-
-        elif sender == "xbmc" and method == "System.OnSleep":
-            if getSetting('action_on_sleep', "none") != "none":
-                getattr(self, "action{}".format(getSetting('action_on_sleep', "none").capitalize()))()
-            self.trigger('system.sleep')
-
-        elif sender == "xbmc" and method == "System.OnWake":
-            self.trigger('system.wakeup')
-
-    def stopPlayback(self):
-        LOG('Monitor: Stopping media playback')
-        xbmc.Player().stop()
-
-    def onScreensaverActivated(self):
-        DEBUG_LOG("Monitor: OnScreensaverActivated")
-        self.trigger('screensaver.activated')
-        if getSetting('player_stop_on_screensaver', False) and xbmc.Player().isPlayingVideo():
-            self.stopPlayback()
-
-    def onScreensaverDeactivated(self):
-        DEBUG_LOG("Monitor: OnScreensaverDeactivated")
-        self.trigger('screensaver.deactivated')
-
-    def onDPMSActivated(self):
-        DEBUG_LOG("Monitor: OnDPMSActivated")
-        self.trigger('dpms.activated')
-        #self.stopPlayback()
-
-    def onDPMSDeactivated(self):
-        DEBUG_LOG("Monitor: OnDPMSDeactivated")
-        self.trigger('dpms.deactivated')
-        #self.stopPlayback()
-
-    def onSettingsChanged(self):
-        """ unused stub, but works if needed """
-        pass
-
-
-MONITOR = UtilityMonitor()
 
 
 hasCustomBGColour = False
@@ -841,12 +671,38 @@ def getCoreELEC():
         if match:
             return True
 
-        return False
     except:
-        return False
+        pass
+    return False
+
+def getWebOS():
+    try:
+        stdout = subprocess.check_output('uname -a', shell=True).decode()
+        match = re.search(r'webos', stdout, re.IGNORECASE)
+        if match:
+            return True
+
+    except:
+        pass
+    return False
 
 
-isCoreELEC = getCoreELEC() if platform in ['Linux', 'RaspberryPi'] else False
+def getPlatformFlavor():
+    # detected before?
+    flavor = getSetting('platform_flavor', None)
+    if flavor is None:
+        flavor = 'default'
+        if platform in ['Linux', 'RaspberryPi']:
+            flavor = "CoreELEC" if getCoreELEC() else "LG WebOS" if getWebOS() else 'default'
+        setSetting('platform_flavor', flavor)
+
+    if flavor != 'default':
+        LOG("{} detected".format(flavor))
+    return flavor
+
+
+platformFlavor = getPlatformFlavor()
+altSeekRecommended = platformFlavor != 'default'
 
 
 def getRunningAddons():
@@ -901,8 +757,10 @@ def getProgressImage(obj, perc=None, view_offset=None):
 def backgroundFromArt(art, width=1920, height=1080, background=colors.noAlpha.Background):
     if not art:
         return
+
+    w, h = scaleResolution(width, height, by=addonSettings.backgroundResolutionScalePerc)
     return art.asTranscodedImageURL(
-        width, height,
+        w, h,
         blur=addonSettings.backgroundArtBlurAmount2,
         opacity=addonSettings.backgroundArtOpacityAmount2,
         background=background

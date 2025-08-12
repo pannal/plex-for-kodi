@@ -164,7 +164,7 @@
 
     <height>{{ vscale(124) }}</height>
     <align>center</align>
-    <onup>100</onup>
+    <onup>500</onup>
     <itemgap>-40</itemgap>
     <orientation>horizontal</orientation>
     <scrolltime tween="quadratic" easing="out">200</scrolltime>
@@ -177,7 +177,7 @@
 <control type="group">
     <posx>0</posx>
     <posy>{{ vscale(140) }}r</posy>
-    <control type="button" id="100">
+    <control type="button" id="500">
         <enable>Player.HasAudio</enable>
         <hitrect x="0" y="-19" w="1920" h="48" />
         <posx>0</posx>
@@ -190,7 +190,7 @@
         <colordiffuse>A0000000</colordiffuse>
     </control>
     <control type="image" id="200">
-        <visible>Control.HasFocus(100)</visible>
+        <visible>Control.HasFocus(500)</visible>
         <animation effect="fade" time="100" delay="100" end="100">Visible</animation>
         <posx>0</posx>
         <posy>1</posy>
@@ -200,7 +200,7 @@
         <colordiffuse>FFE5A00D</colordiffuse>
     </control>
     <control type="progress">
-        <visible>!Control.HasFocus(100)</visible>
+        <visible>!Control.HasFocus(500)</visible>
         <description>Progressbar</description>
         <posx>0</posx>
         <posy>2</posy>
@@ -214,7 +214,7 @@
         <info>Player.Progress</info>
     </control>
     <control type="progress">
-        <visible>Control.HasFocus(100)</visible>
+        <visible>Control.HasFocus(500)</visible>
         <description>Progressbar</description>
         <posx>0</posx>
         <posy>2</posy>
@@ -253,7 +253,7 @@
 </control> -->
 
 <control type="group" id="202">
-    <visible>Control.HasFocus(100)</visible>
+    <visible>Control.HasFocus(500) + !String.IsEmpty(Window.Property(time.selection))</visible>
     <posx>0</posx>
     <posy>{{ vscale(184) }}r</posy>
     <control type="group" id="203">

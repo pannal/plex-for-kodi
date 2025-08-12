@@ -24,6 +24,9 @@ else:
     _Event = threading.Event
 
 
+UNDEF = "__UNDEF__"
+
+
 class PlexTimer(plexapp.util.Timer):
     def shouldAbort(self):
         return util.MONITOR.abortRequested()
@@ -113,21 +116,22 @@ class PlexInterface(plexapp.AppInterface):
             plexapp.Res((1024, 768)),
             plexapp.Res((1280, 720)),
             plexapp.Res((1280, 720)),
-            maxVideoRes, maxVideoRes, maxVideoRes, maxVideoRes, maxVideoRes
+            maxVideoRes, maxVideoRes, maxVideoRes, maxVideoRes, maxVideoRes, maxVideoRes, maxVideoRes, maxVideoRes
         ],
         'transcodeVideoBitrates': [
-            "64", "96", "208", "320", "720", "1500", "2000", "3000", "4000", "8000", "10000", "12000", "20000", "0"
+            "64", "96", "208", "320", "720", "1500", "2000", "3000", "4000", "6000", "8000", "10000", "12000", "16000",
+            "20000", "26000", "0"
         ],
         'deviceInfo': plexapp.DeviceInfo()
     }
 
     bingeModeManager = None
 
-    def getPreference(self, pref, default=None):
+    def getPreference(self, pref, default=UNDEF):
         if pref == 'manual_connections':
             return self.getManualConnections()
         else:
-            return util.getSetting(pref, default)
+            return util.getSetting(pref, default=default)
 
     def getPlaybackFeatures(self):
         return self.getPreference("playback_features",
@@ -151,14 +155,67 @@ class PlexInterface(plexapp.AppInterface):
     def setPreference(self, pref, value):
         util.setSetting(pref, value)
 
+    def getRCBaseKey(self):
+        return "_".join((plexapp.SERVERMANAGER.selectedServer.uuid[-8:], plexapp.ACCOUNT.ID))
+
+    def clearRequestsCache(self):
+        try:
+            util.DEBUG_LOG('Main: Clearing requests cache...')
+            asyncadapter.Session().cache.clear()
+            plexnet_util.CACHED_PLEX_URLS = {}
+        except:
+            pass
+
+    def prepareCache(self):
+        if not util.getSetting('persist_requests_cache'):
+            return
+        self.loadCache()
+
+    def loadCache(self):
+        s = asyncadapter.Session()
+        urls = {}
+        hub_item_states = {}
+        try:
+            urls = s.cache.other["stored_urls"]
+            hub_item_states = s.cache.other["item_states"]
+            success = s.cache.other["last_shutdown_successful"] == True
+        except (KeyError, ValueError, UnicodeDecodeError):
+            success = False
+
+        if not success:
+            util.LOG('PlexInterface: Last cache state invalid, clearing cache.')
+            self.clearRequestsCache()
+        else:
+            util.LOG('PlexInterface: Loaded cached URLs.')
+            try:
+                del s.cache.other["last_shutdown_successful"]
+            except KeyError:
+                # this should never happen; might've been old interference with the service and the old style of
+                # initializing the cache load in global space, not via plex.init()
+                pass
+        plexnet_util.CACHED_PLEX_URLS = urls
+        util.HUB_ITEM_STATES = hub_item_states
+
+    def shutdownCache(self):
+        if util.getSetting('persist_requests_cache'):
+            s = asyncadapter.Session()
+            s.cache.other["stored_urls"] = plexnet_util.CACHED_PLEX_URLS
+            s.cache.other["item_states"] = util.HUB_ITEM_STATES
+            s.cache.other["last_shutdown_successful"] = True
+            s.remove_expired_responses()
+            util.LOG('PlexInterface: Stored cached urls.')
+        else:
+            self.clearRequestsCache()
+            util.LOG('PlexInterface: Cleared requests cache.')
+
     def getRegistry(self, reg, default=None, sec=None):
         if sec == 'myplex' and reg == 'MyPlexAccount':
-            ret = util.getSetting('{0}.{1}'.format(sec, reg), default)
+            ret = util.getSetting('{0}.{1}'.format(sec, reg), default=default)
             if ret:
                 return ret
             return json.dumps({'authToken': util.getSetting('auth.token')})
         else:
-            return util.getSetting('{0}.{1}'.format(sec, reg), default)
+            return util.getSetting('{0}.{1}'.format(sec, reg), default=default)
 
     def setRegistry(self, reg, value, sec=None):
         util.setSetting('{0}.{1}'.format(sec, reg), value)
@@ -238,11 +295,11 @@ class PlexInterface(plexapp.AppInterface):
 
     def getQualityIndex(self, qualityType):
         if qualityType == self.QUALITY_LOCAL:
-            return self.getPreference("local_quality", 13)
+            return self.getPreference("local_quality2", 16)
         elif qualityType == self.QUALITY_ONLINE:
-            return self.getPreference("online_quality", 13)
+            return self.getPreference("online_quality2", 16)
         else:
-            return self.getPreference("remote_quality", 13)
+            return self.getPreference("remote_quality2", 16)
 
     def getMaxResolution(self, quality_type, allow4k=False):
         qualityIndex = self.getQualityIndex(quality_type)
@@ -267,7 +324,7 @@ class PlexInterface(plexapp.AppInterface):
 
     def getPlayedThresholdValue(self):
         values = list(reversed(PlayedThresholdSetting.options))
-        return int(values[self.getPreference("played_threshold", 1)].replace(" %", "")) / 100.0
+        return int(values[self.getPreference("played_threshold", 1)].replace(" %", ""))
 
 
 def onSmartDiscoverLocalChange(value=None, **kwargs):
@@ -288,7 +345,8 @@ def onManualIPChange(**kwargs):
     plexapp.refreshResources(True)
 
 
-plexapp.util.setInterface(PlexInterface())
+PLEX_INTERFACE = PlexInterface()
+plexapp.util.setInterface(PLEX_INTERFACE)
 plexapp.util.INTERFACE.playbackManager = PlaybackManager()
 plexapp.util.APP.on('change:smart_discover_local', onSmartDiscoverLocalChange)
 plexapp.util.APP.on('change:prefer_local', onPreferLANChange)
@@ -298,8 +356,8 @@ plexapp.util.APP.on('change:manual_ip_1', onManualIPChange)
 plexapp.util.APP.on('change:manual_port_0', onManualIPChange)
 plexapp.util.APP.on('change:manual_port_1', onManualIPChange)
 
-plexapp.util.CHECK_LOCAL = util.getSetting('smart_discover_local', True)
-plexapp.util.LOCAL_OVER_SECURE = util.getSetting('prefer_local', False)
+plexapp.util.CHECK_LOCAL = util.getSetting('smart_discover_local')
+plexapp.util.LOCAL_OVER_SECURE = util.getSetting('prefer_local')
 
 # set requests timeout
 TIMEOUT_READ = float(util.addonSettings.requestsTimeoutRead)
@@ -319,13 +377,18 @@ pnhttp.DEFAULT_TIMEOUT = plexapp.util.DEFAULT_TIMEOUT
 asyncadapter.DEFAULT_TIMEOUT = pnhttp.DEFAULT_TIMEOUT
 asyncadapter.DEFAULT_TIMEOUT = pnhttp.DEFAULT_TIMEOUT
 plexapp.util.ACCEPT_LANGUAGE = util.ACCEPT_LANGUAGE_CODE
+plexapp.util.LANGUAGE_CODE = util.LANGUAGE_CODE
 plexapp.setUserAgent(defaultUserAgent())
 plexnet_util.BASE_HEADERS = plexnet_util.getPlexHeaders()
 asyncadapter.MAX_RETRIES = int(util.addonSettings.maxRetries1)
+asyncadapter.DEBUG_REQUESTS = plexnet_util.DEBUG_REQUESTS = util.addonSettings.debugRequests
+asyncadapter.REQUESTS_CACHE_EXPIRY = util.addonSettings.requestsCacheExpiry
 if util.addonSettings.useCertBundle != "system":
     util.LOG("Using certificate bundle: {}".format(util.addonSettings.useCertBundle))
     plexnet_util.USE_CERT_BUNDLE = util.addonSettings.useCertBundle
 plexnet_util.translatePath = util.translatePath
+plexnet_util.DEFAULT_SETTINGS = util.DEFAULT_SETTINGS
+plexnet_util.TEMP_PATH = asyncadapter.TEMP_PATH = util.translatePath("special://temp/")
 
 
 class CallbackEvent(plexapp.util.CompatEvent):
@@ -374,6 +437,8 @@ class CallbackEvent(plexapp.util.CompatEvent):
 
 def init():
     util.DEBUG_LOG('Initializing...')
+
+    PLEX_INTERFACE.prepareCache()
 
     timed_out = False
     retries = 0

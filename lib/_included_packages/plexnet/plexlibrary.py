@@ -45,7 +45,7 @@ class Library(plexobjects.PlexObject):
     def recentlyAdded(self):
         return plexobjects.listItems(self.server, '/library/recentlyAdded')
 
-    def get(self, title):
+    def getByTitle(self, title):
         return plexobjects.findItem(self.server, '/library/all', title)
 
     def getByKey(self, key):
@@ -90,11 +90,16 @@ class LibrarySection(plexobjects.PlexObject):
     ALLOWED_SORT = ()
     BOOLEAN_FILTERS = ('unwatched', 'duplicate')
 
+    DEFAULT_URL_ARGS = None
+    DEFAULT_SORT = 'titleSort'
+    DEFAULT_SORT_DESC = False
+
     isLibraryPQ = True
 
     def __init__(self, data, initpath=None, server=None, container=None):
         self.locations = []
         self._isMapped = None
+        self._settings = None
         super(LibrarySection, self).__init__(data, initpath=initpath, server=server, container=container)
 
     def __repr__(self):
@@ -106,6 +111,18 @@ class LibrarySection(plexobjects.PlexObject):
         for loc in plexobjects.PlexItemList(data, media.Location, media.Location.TYPE, server=self.server):
             sep = norm_sep(loc.path)
             self.locations.append(loc.path if loc.path.endswith(sep) else loc.path + sep)
+
+    @property
+    def cachable(self):
+        return 'libraries' in util.INTERFACE.getPreference('cache_requests')
+
+    def getCacheRef(self, always_return=False):
+        if (hasattr(self, "TYPE") and self.TYPE and self.key
+                and ('libraries' in util.INTERFACE.getPreference('cache_requests') or always_return)):
+            return "_".join(('section', self.key))
+
+    def clearCache(self, override_type=None, **kwargs):
+        super(LibrarySection, self).clearCache(override_type="section")
 
     @staticmethod
     def fromFilter(filter_):
@@ -123,7 +140,7 @@ class LibrarySection(plexobjects.PlexObject):
         initpath = '/library/sections/{0}'.format(self.key)
         key = self.key
         try:
-            data = self.server.query(initpath, params=kwargs)
+            data = self.server.query(initpath, params=kwargs, cachable=self.cachable, cache_ref=self.cacheRef)
         except Exception as e:
             import traceback
             traceback.print_exc()
@@ -144,7 +161,7 @@ class LibrarySection(plexobjects.PlexObject):
         if not self.locations:
             return None, None
 
-        return pmm.getMappedPathFor(loc or self.locations[0], self.server)
+        return pmm.getMappedPathFor(loc or self.locations[0], self.server)[:-1]
 
     def deleteMapping(self, target):
         pmm.deletePathMapping(target, server=self.getServer())
@@ -177,6 +194,23 @@ class LibrarySection(plexobjects.PlexObject):
             path = '/library/sections/{0}/all'.format(self.key)
         
         return self.items(path, start, size, filter_, sort, unwatched, type_, False)
+
+    @property
+    def settings(self):
+        if self._settings is None:
+            if self.key.startswith('/'):
+                path = '{0}/prefs'.format(self.key)
+            else:
+                path = '/library/sections/{0}/prefs'.format(self.key)
+
+            try:
+                self._settings = {setting.id: {"default": setting.default, "value": setting.value}
+                                  for setting in plexobjects.listItems(self.server, path, bytag=True)}
+            except:
+                util.LOG("Couldn't get settings for {0}".format(self.key))
+                self._settings = {}
+
+        return self._settings
     
     def folder(self, start=None, size=None, subDir=False):
         if self.key.startswith('/'):
@@ -192,13 +226,19 @@ class LibrarySection(plexobjects.PlexObject):
     def items(self, path, start, size, filter_, sort, unwatched, type_, tag_fallback):
 
         args = {}
+        if self.DEFAULT_URL_ARGS:
+            args.update(self.DEFAULT_URL_ARGS)
 
         if size is not None:
             args['X-Plex-Container-Start'] = start
             args['X-Plex-Container-Size'] = size
 
         if filter_:
-            args[filter_[0]] = filter_[1]
+            # filter might've been returned with a full path (e.g. watchlist)
+            if filter_[1].startswith('/'):
+                path = filter_[1]
+            else:
+                args[filter_[0]] = filter_[1]
         else:
             args['includeCollections'] = 1
 
@@ -222,7 +262,8 @@ class LibrarySection(plexobjects.PlexObject):
         if args:
             path += util.joinArgs(args, '?' not in path)
 
-        return plexobjects.listItems(self.server, path, tag_fallback=tag_fallback)
+        return plexobjects.listItems(self.server, path, tag_fallback=tag_fallback, not_cachable=not self.cachable,
+                                     cache_ref=self.cacheRef)
 
     def jumpList(self, filter_=None, sort=None, unwatched=False, type_=None):
         if self.key.startswith('/'):
@@ -258,14 +299,16 @@ class LibrarySection(plexobjects.PlexObject):
             path += util.joinArgs(args, '?' not in path)
 
         try:
-            return plexobjects.listItems(self.server, path, bytag=True)
+            return plexobjects.listItems(self.server, path, bytag=True, cachable=self.cachable,
+                                         cache_ref=self.cacheRef)
         except exceptions.BadRequest:
             util.ERROR('jumpList() request error for path: {0}'.format(repr(path)))
             return None
 
     @property
     def onDeck(self):
-        return plexobjects.listItems(self.server, '/library/sections/%s/onDeck' % self.key)
+        return plexobjects.listItems(self.server, '/library/sections/%s/onDeck' % self.key, cachable=self.cachable,
+                                     cache_ref=self.cacheRef)
 
     def analyze(self):
         self.server.query('/library/sections/%s/analyze' % self.key, method=self.server.session.put)
@@ -288,7 +331,12 @@ class LibrarySection(plexobjects.PlexObject):
             args[category] = self._cleanSearchFilter(subcategory, value)
         if libtype is not None:
             args['type'] = plexobjects.searchType(libtype)
-        query = '/library/sections/%s/%s%s' % (self.key, category, util.joinArgs(args))
+
+        if self.key.startswith('/'):
+            base = '{0}/'.format(self.key)
+        else:
+            base = '/library/sections/{0}/'.format(self.key)
+        query = '{0}{1}{2}'.format(base, category, util.joinArgs(args))
 
         return plexobjects.listItems(self.server, query, bytag=True)
 
@@ -414,6 +462,48 @@ class ShowSection(LibrarySection):
         return self.search(libtype='episode', **kwargs)
 
 
+class WatchlistSection(LibrarySection):
+    ALLOWED_FILTERS = (
+        'year', 'decade', 'genre', 'released'
+    )
+    ALLOWED_SORT = (
+        'watchlistedAt', 'firstAvailableAt', 'titleSort', 'rating', 'audienceRating',
+    )
+    DEFAULT_SORT = 'watchlistedAt'
+    DEFAULT_SORT_DESC = True
+
+    TYPE = 'movies_shows'
+    ID = 'watchlist'
+    _key = '/library/sections/watchlist'
+
+    cachable = False
+
+    DEFAULT_URL_ARGS = {
+        "includeAdvanced": 1,
+        "includeMeta": 1
+    }
+
+    def __init__(self, data, initpath=None, server=None, container=None):
+        self.locations = []
+        self._settings = {}
+        data = server.query(self.key+"/all", offset=0, limit=0, type=99, **self.DEFAULT_URL_ARGS) # type: ignore
+        self.type = "mixed"
+        super(LibrarySection, self).__init__(data, initpath=initpath, server=server, container=self)
+        self.server = server
+
+    def has_data(self):
+        return self.totalSize and self.totalSize > 0
+
+    @property
+    def key(self):
+        return self._key
+
+    @key.setter
+    def key(self, value):
+        return
+
+
+
 class MusicSection(LibrarySection):
     ALLOWED_FILTERS = ('genre', 'country', 'collection')
     ALLOWED_SORT = ('addedAt', 'lastViewedAt', 'viewCount', 'titleSort')
@@ -443,6 +533,8 @@ class PhotoSection(LibrarySection):
 @plexobjects.registerLibType
 class Collection(media.MediaItem):
     TYPE = 'collection'
+    DEFAULT_SORT = 'titleSort'
+    DEFAULT_SORT_DESC = False
 
     def __repr__(self):
         title = self.title.replace(' ', '.')[0:20]
@@ -487,6 +579,12 @@ class Generic(plexobjects.PlexObject):
 #@plexobjects.registerLibType
 #class Collection(Generic):
 #    TYPE = 'collection'
+
+
+@plexobjects.registerLibType
+class Setting(plexobjects.PlexObject):
+    TYPE = 'Setting'
+
 
 @plexobjects.registerLibType
 class Playlist(playlist.BasePlaylist, signalsmixin.SignalsMixin):
@@ -563,6 +661,9 @@ class Playlist(playlist.BasePlaylist, signalsmixin.SignalsMixin):
 
 
 class BaseHub(plexobjects.PlexObject):
+    is_external = False
+    is_watchlist = False
+
     def __init__(self, *args, **kwargs):
         super(BaseHub, self).__init__(*args, **kwargs)
         self._identifier = None
@@ -590,7 +691,7 @@ class BaseHub(plexobjects.PlexObject):
 class Hub(BaseHub):
     TYPE = "Hub"
 
-    def init(self, data):
+    def init(self, data, not_cachable=False):
         self.items = []
         self._totalSize = None
 
@@ -607,8 +708,10 @@ class Hub(BaseHub):
             self.items = [media.Role(elem, initpath='/hubs', server=self.server, container=container) for elem in data]
         else:
             for elem in data:
+                if elem.tag == "Meta":
+                    continue
                 try:
-                    self.items.append(plexobjects.buildItem(self.server, elem, '/hubs', container=container, tag_fallback=True))
+                    self.items.append(plexobjects.buildItem(self.server, elem, '/hubs', container=container, tag_fallback=True, not_cachable=not_cachable or self.is_external))
                 except exceptions.UnknownType:
                     util.DEBUG_LOG('Unkown hub item type({1}): {0}', elem, elem.attrib.get('type'))
 
@@ -678,6 +781,19 @@ class Hub(BaseHub):
         return items
 
 
+class ExternalHub(Hub):
+    TYPE = "Hub"
+    is_external = True
+
+    def init(self, data, not_cachable=False):
+        self._setData(data)
+        super(ExternalHub, self).init(data, not_cachable=not_cachable)
+
+
+class WatchlistHub(ExternalHub):
+    is_watchlist = True
+
+
 class PlaylistHub(BaseHub):
     TYPE = "Hub"
     type = None
@@ -729,12 +845,14 @@ SECTION_TYPES = {
     MovieSection.TYPE: MovieSection,
     ShowSection.TYPE: ShowSection,
     MusicSection.TYPE: MusicSection,
-    PhotoSection.TYPE: PhotoSection
+    PhotoSection.TYPE: PhotoSection,
+    WatchlistSection.TYPE: WatchlistSection,
 }
 
 SECTION_IDS = {
     MovieSection.ID: MovieSection,
     ShowSection.ID: ShowSection,
     MusicSection.ID: MusicSection,
-    PhotoSection.ID: PhotoSection
+    PhotoSection.ID: PhotoSection,
+    WatchlistSection.ID: WatchlistSection,
 }

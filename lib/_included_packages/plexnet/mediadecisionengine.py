@@ -111,7 +111,8 @@ class MediaDecisionEngine(object):
         choice.isSelected = media.isSelected()
         choice.protocol = media.protocol("http")
 
-        maxResolution = item.settings.getMaxResolution(item.getQualityType(), self.isSupported4k(media, choice.videoStream))
+        #maxResolution = item.settings.getMaxResolution(item.getQualityType(), self.isSupported4k(media, choice.videoStream))
+        maxResolution = self.isSupported4k(media, choice.videoStream) and 2160 or 1088
         maxBitrate = item.settings.getMaxBitrate(item.getQualityType())
 
         choice.resolution = media.getVideoResolution()

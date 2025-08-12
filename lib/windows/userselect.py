@@ -135,7 +135,7 @@ class UserSelectWindow(kodigui.BaseWindow):
         options = []
         options.append({'key': 'sign_out', 'display': T(32421, 'Sign Out')})
         options.append({'key': 'exit', 'display': T(32422, 'Exit')})
-        if util.getSetting('kiosk.mode', False):
+        if util.getSetting('kiosk.mode'):
             if xbmc.getCondVisibility('System.CanPowerDown'):
                 options.append({'key': 'shutdown', 'display': T(32423, 'Shutdown')})
             if xbmc.getCondVisibility('System.CanSuspend'):

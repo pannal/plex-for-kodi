@@ -17,26 +17,14 @@ from .kodijsonrpc import rpc
 VERSION_RE = re.compile(r'<addon id="script\.plexmod".*version="([A-Za-z0-9.+:~-]+)".*?<requires>',
                         re.MULTILINE | re.DOTALL | re.S)
 
+NEWS_RE = re.compile(r'<news>(.*?)</news>', re.MULTILINE | re.DOTALL | re.S)
+
 TEMP_PATH = translatePath("special://temp/")
 
 try:
     LANGUAGE_RESOURCE = rpc.Settings.GetSettingValue(setting='locale.language')['value']
 except:
     LANGUAGE_RESOURCE = "resource.language.en_gb"
-
-
-class ServiceMonitor(xbmc.Monitor):
-    def __init__(self, *args, **kwargs):
-        xbmc.Monitor.__init__(self, *args, **kwargs)
-
-        self.sleeping = False
-
-    def onNotification(self, sender, method, data):
-        if sender == "xbmc" and method == "System.OnSleep":
-            self.sleeping = True
-
-        elif sender == "xbmc" and method == "System.OnWake":
-            self.sleeping = False
 
 
 UPDATERS = {}
@@ -72,15 +60,17 @@ class UpdaterSkipException(Exception):
 def get_digest(file_path):
     h = hashlib.md5()
 
-    with open(file_path, 'rb') as file:
-        while True:
-            # Reading is buffered, so we can read smaller chunks.
-            chunk = file.read(h.block_size)
-            if not chunk:
-                break
-            h.update(chunk)
-
-    return h.hexdigest()
+    try:
+        with open(file_path, 'rb') as file:
+            while True:
+                # Reading is buffered, so we can read smaller chunks.
+                chunk = file.read(h.block_size)
+                if not chunk:
+                    break
+                h.update(chunk)
+        return h.hexdigest()
+    except:
+        return ""
 
 
 @register_updater
@@ -89,6 +79,8 @@ class Updater(object):
     mode = "beta"
     branch = None
     remote_version = None
+    remote_changelog = None
+    remote_ref = None
     is_downgrade = False
     headers = {
         'User-Agent': xbmc.getUserAgent()
@@ -111,7 +103,13 @@ class Updater(object):
         return 'https://raw.githubusercontent.com/{}/{}/addon.xml'.format(self.repo, self.branch)
 
     @property
+    def ref_url(self):
+        return 'https://github.com/{}/commits/{}/addon.xml'.format(self.repo, self.branch)
+
+    @property
     def download_url(self):
+        if self.remote_ref:
+            return "https://github.com/{}/archive/{}.zip".format(self.repo, self.remote_ref)
         return "https://github.com/{}/archive/refs/heads/{}.zip".format(self.repo, self.branch)
 
     @property
@@ -136,9 +134,23 @@ class Updater(object):
             vc = version_compare(new_version, current_version)
             if allow_downgrade and vc < 0:
                 self.is_downgrade = True
+            changelog = NEWS_RE.findall(r.text)
+            if changelog:
+                self.remote_changelog = changelog[0].strip()
             return new_version if vc > 0 or (allow_downgrade and vc != 0) else False
 
         raise UpdateCheckFailed('Update check failed: No data returned')
+
+    def get_ref(self):
+        try:
+            r = requests.get(self.ref_url, timeout=10, headers=self.headers)
+            res = re.findall(r'"oid":"([a-f0-9]+)".+?"{}"'.format(self.remote_version), r.text,
+                             re.MULTILINE | re.DOTALL)
+            if res:
+                self.remote_ref = res[0]
+                return res[0]
+        except:
+            return None
 
     def download(self):
         archive_url = self.download_url
@@ -193,16 +205,28 @@ class Updater(object):
             raise UpdateUnpackFailed(tb)
 
     def get_major_changes(self):
-        # check current language file
-        ptl = ("resources", "language", LANGUAGE_RESOURCE, "strings.po")
-        if get_digest(os.path.join(translatePath(ADDON.getAddonInfo('path')), *ptl)) != \
-            get_digest(os.path.join(os.path.splitext(self.archive_path)[0], "script.plexmod", *ptl)):
-            return "language"
+        changes = []
 
         # check service.py
-        if get_digest(os.path.join(translatePath(ADDON.getAddonInfo('path')), "service.py")) != \
-                get_digest(os.path.join(os.path.splitext(self.archive_path)[0], "script.plexmod", "service.py")):
-            return "service"
+        if get_digest(os.path.join(translatePath(ADDON.getAddonInfo('path')), "lib", "service_runner.py")) != \
+                get_digest(os.path.join(os.path.splitext(self.archive_path)[0], "script.plexmod", "lib",
+                                        "service_runner.py")):
+            changes.append("service")
+
+        # check update_checker.py and dependencies
+        for a in ("update_checker.py", "updater.py", "kodi_util.py", "logging.py"):
+            if get_digest(os.path.join(translatePath(ADDON.getAddonInfo('path')), "lib", a)) != \
+                    get_digest(os.path.join(os.path.splitext(self.archive_path)[0], "script.plexmod", "lib", a)):
+                changes.append("updater")
+                break
+
+        # check current language file
+        ptl = ("resources", "language", LANGUAGE_RESOURCE, "strings.po")
+        ptr1 = os.path.join(translatePath(ADDON.getAddonInfo('path')), *ptl)
+        ptr2 = os.path.join(os.path.splitext(self.archive_path)[0], "script.plexmod", *ptl)
+        if os.path.exists(ptr1) and os.path.exists(ptr2) and get_digest(ptr1) != get_digest(ptr2):
+            changes.append("language")
+        return changes
 
     def install(self, path):
         dest = os.path.join(translatePath('special://home/addons/'), "script.plexmod")

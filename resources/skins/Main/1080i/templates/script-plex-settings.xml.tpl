@@ -78,7 +78,7 @@
             <width>590</width>
             <height>741</height>
             <onleft>201</onleft>
-            <onright>100</onright>
+            <onright>noop</onright>
             <scrolltime>200</scrolltime>
             <orientation>vertical</orientation>
             <!-- ITEM LAYOUT ########################################## -->
@@ -178,7 +178,7 @@
             <width>776</width>
             <height>715</height>
             <onleft>75</onleft>
-            <onright>150</onright>
+            <onright>noop</onright>
             <scrolltime>200</scrolltime>
             <orientation>vertical</orientation>
             <pagecontrol>101</pagecontrol>
@@ -382,20 +382,6 @@
             <orientation>vertical</orientation>
             <showonepage>false</showonepage>
             <onleft>151</onleft>
-        </control>
-
-        <control type="button" id="150">
-            <visible>Integer.IsGreater(Container(100).NumItems,0) + String.IsEmpty(Window.Property(section.about))</visible>
-            <width>10</width>
-            <height>{{ vscale(10) }}</height>
-            <onright>125</onright>
-            <onleft>100</onleft>
-            <font>font12</font>
-            <focusedcolor>FF000000</focusedcolor>
-            <texturefocus>-</texturefocus>
-            <texturenofocus>-</texturenofocus>
-            <label> </label>
-            <onfocus>SetFocus(100)</onfocus>
         </control>
 
         <control type="list" id="125">

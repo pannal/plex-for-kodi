@@ -4,12 +4,15 @@ from __future__ import unicode_literals
 
 import json
 import sys
+import datetime
+import types
 
 import plexnet
 from kodi_six import xbmc
 from kodi_six import xbmcgui
 from kodi_six import xbmcaddon
 from threading import Timer
+from iso639 import languages
 
 import lib.cache
 from lib import util
@@ -22,6 +25,8 @@ from . import windowutils
 
 UNDEF = "__UNDEF__"
 
+#MAIN_LANGUAGES = [l for l in languages if l.part1]
+#SEP_LANGUAGES= [l for l in languages if l.part2t and l not in MAIN_LANGUAGES]
 
 class Setting(object):
     type = None
@@ -32,9 +37,13 @@ class Setting(object):
     userAware = False
     isThemeRelevant = False
     backport_from = None
+    show_cb = None
 
     def translate(self, val):
         return str(val)
+
+    def should_show(self):
+        return self.show_cb() if self.show_cb else True
 
     def get(self, *args, **kwargs):
         _id = kwargs.pop("_id", UNDEF)
@@ -86,13 +95,16 @@ class Setting(object):
 
 
 class BasicSetting(Setting):
-    def __init__(self, ID, label, default, desc='', theme_relevant=False, backport_from=None):
+    def __init__(self, ID, label, default, desc='', theme_relevant=False, backport_from=None, show_cb=None):
         self.ID = ID
         self.label = label
         self.default = default
         self.desc = desc
         self.isThemeRelevant = theme_relevant
         self.backport_from = backport_from
+        if show_cb:
+            self.show_cb = show_cb
+        util.DEFAULT_SETTINGS[ID] = default
 
     def description(self, desc):
         self.desc = desc
@@ -119,10 +131,13 @@ class ListSetting(BasicSetting):
 class QualitySetting(ListSetting):
     options = (
         T(32001),
+        T(32017),
         T(32002),
+        T(32016),
         T(32003),
         T(32004),
         T(32005),
+        T(32015),
         T(32006),
         T(32007),
         T(32008),
@@ -228,6 +243,9 @@ class MultiOptionsSetting(OptionsSetting):
         self.noneOption = none_option
         util.JSON_SETTINGS.append(self.ID)
 
+        # fixme: not sure why we initialize default with an empty list in the supercall
+        util.DEFAULT_SETTINGS[ID] = default
+
     def get(self, *args, **kwargs):
         with_default = kwargs.pop('with_default', True)
         val = super(MultiOptionsSetting, self).get(*args, default=DEFAULT, **kwargs)
@@ -322,6 +340,8 @@ class InfoSetting(BasicSetting):
         self.info = info
 
     def valueLabel(self):
+        if isinstance(self.info, types.FunctionType):
+            return self.info()
         return self.info
 
 
@@ -407,7 +427,6 @@ class KeySetting(BasicSetting):
             ak = actions.ActionKey(int(code))
             return ak
 
-
 class Settings(object):
     SETTINGS = {
         'main': (
@@ -429,20 +448,57 @@ class Settings(object):
                     'search_use_kodi_kbd', T(32955, 'Use Kodi keyboard for searching'), False
                 ),
                 ThemeMusicSetting('theme_music', T(32480, 'Theme music'), 5),
-                PlayedThresholdSetting('played_threshold', T(33501, 'Video played threshold'), 1).description(
+                BoolSetting(
+                    'theme_music_loop', T(33737, 'Loop theme music'), True
+                ),
+                PlayedThresholdSetting('played_threshold', T(33501, 'Video played threshold'), 1,
+                                       show_cb=lambda: plexnet.plexapp.SERVERMANAGER.selectedServer.prefs.get("LibraryVideoPlayedThreshold", None) is None
+                                       ).description(
                     T(
                         33502,
                         "Set this to the same value as your Plex server (Settings>Library>Video played threshold) to av"
                         "oid certain pitfalls, Default: 90 %"
                     )
-                )
+                ),
+                OptionsSetting(
+                    'played_threshold_behaviour',
+                    T(34022, 'Video play completion behaviour'),
+                    3,
+                    (
+                        (0, T(34024, 'at selected threshold percentage')),
+                        (1, T(34025, 'at final credits marker position')),
+                        (2, T(34025, 'at first credits marker position')),
+                        (3, T(34026, 'earliest between threshold percent and first credits marker')),
+                    ),
+                    show_cb=lambda: plexnet.plexapp.SERVERMANAGER.selectedServer.prefs.get(
+                        "LibraryVideoPlayedAtBehaviour", None) is None
+                ).description(T(34023, "Decide whether to use end credits markers to determine the 'watched' "
+                                       "state of video items. When markers are not available the selected threshold "
+                                       "percentage will be used.")),
+                BoolSetting('use_alternate_seek2', T(33667, 'Use alternate seek'), util.altSeekRecommended).description(
+                    T(33668, 'ATTENTION: Only enable this if you have reproducible audio issues after '
+                             'seeking/resuming.\n\nUse an alternative seek method in videos, which can help in '
+                             'problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by '
+                             'default for CoreELEC and LG WebOS)'
+                )),
+                BoolSetting(
+                    'assume_resume', T(33711, 'Always resume media'), True
+                ).description(
+                    T(33712, 'When playback of an in-progress media is requested, resume it by default instead'
+                             ' of asking whether to resume or start from the beginning.')
+                ),
+                BoolSetting(
+                    'home_inprogress_resume', T(33713, 'Home: Resume in-progress items'), True
+                ).description(
+                    T(33714, 'Resume in-progress items directly instead of visiting the media.')
+                ),
             )
         ),
         'video': (
             T(32053, 'Video'), (
-                QualitySetting('local_quality', T(32020, 'Local Quality'), 13),
-                QualitySetting('remote_quality', T(32021, 'Remote Quality'), 13),
-                QualitySetting('online_quality', T(32022, 'Online Quality'), 13),
+                QualitySetting('local_quality2', T(32020, 'Local Quality'), 16),
+                QualitySetting('remote_quality2', T(32021, 'Remote Quality'), 16),
+                QualitySetting('online_quality2', T(32022, 'Online Quality'), 16),
                 MultiOptionsSetting(
                     'playback_features', T(33058, ''),
                     ["playback_directplay", "playback_remux", "allow_4k"],
@@ -460,6 +516,10 @@ class Settings(object):
                     'disable_hdr', T(33660, 'Disable HDR'), False
                 ).description(T(33661, "If you don't want your client to handle HDR (or HDR-fallback), "
                                        "enable this to force transcoding. Doesn't apply to DV Profile 5.")
+                ),
+                BoolSetting(
+                    'clamp_video_bitrates', T(33685, 'Clamp video bitrate'), True
+                ).description(T(33686, "Only show bitrate targets lower than the current video's bitrate.")
                 ),
                 MultiOptionsSetting(
                     'allowed_codecs', T(33059, ''),
@@ -509,9 +569,45 @@ class Settings(object):
                     T(33666, "Audio codecs you can't play back. Disables Direct Play for such media items, "
                              "enables Direct Stream if possible, transcodes audio stream to compatible format.")
                 ),
+                OptionsSetting(
+                    'audio_transcode_codec', T(33733, 'Transcode target codec'),
+                    "default",
+                    [("default", T(32030, 'Auto'))] + list(sorted([(a, "{} ({})".format(b, a)) for a, b in plexnet.util.AUDIO_CODECS_TC_VERB.items()]))
+                ).description(
+                    T(33734, "Sets the target codec when transcoding/direct streaming. Overridden when "
+                             "\"Transcode audio to AC3\" is set.")
+                ),
                 BoolSetting('audio_hires', T(33079, ''),
                             True).description(
                     T(33080, '')
+                ),
+                MultiOptionsSetting(
+                    'disable_subtitle_languages', T(33691, "Native languages"),
+                    [],
+                    [(b, a) for a, b in sorted([(l.name, l.part2t) for l in languages if l.part1])]  # +
+                    # [(b, a) for a, b in sorted([(l.name, l.part2t) for l in SEP_LANGUAGES])]
+                ).description(
+                    T(33692, "When you usually watch things in a different language with subtitles, but are a"
+                             " native speaker of other languages, which you don't need subtitles for, prevent Plex "
+                             "from auto-selecting subtitles for those languages.")
+                ),
+                OptionsSetting(
+                    'subtitle_download_from',
+                    T(33693, 'Download subtitles using'),
+                    'plex',
+                    (
+                        ('ask', T(33694, 'Ask')),
+                        ('plex', 'Plex'),
+                        ('kodi', 'Kodi'),
+                    )
+                ).description(T(33695, "Where do you want to download subtitles from? Note: Currently this "
+                                       "only applies to the subtitle quick actions in the player. The subtitle download"
+                                       " in stream settings always uses Plex as a source.")),
+                BoolSetting('subtitle_download_fallback', T(33701, 'Fallback to Kodi'),
+                            True).description(
+                    T(33702, "When no subtitles are found via the Plex subtitle search, fall back to Kodi "
+                             "subtitle search. Note: Currently this only applies to the subtitle quick actions in the "
+                             "player. The subtitle download in stream settings always uses Plex as a source.")
                 ),
                 OptionsSetting(
                     'burn_subtitles',
@@ -582,14 +678,45 @@ class Settings(object):
                 ).description(
                     T(33078, "")
                 ),
+                BoolUserSetting(
+                    'use_watchlist', T(34007, 'Use Watchlist'), True
+                ).description(
+                    T(34008, "Activates the current user's Plex watchlist as a section item. Adds watchlist "
+                             "functionality to certain media screens. Per-user setting. Default: On")
+                ),
+                BoolUserSetting(
+                    'watchlist_auto_remove', T(34009, 'Watchlist auto-remove'), True
+                ).description(
+                    T(34010, "Automatically remove fully watched items from watchlist. Default: On")
+                ),
                 MultiOptionsSetting(
-                    'no_episode_spoilers3', T(33006, ''),
-                    ['unwatched'],
+                    'show_ratings', T(33709, 'Show ratings for'),
+                    ["series", "movies"],
+                    [
+                        ('series', T(32393, 'TV Shows')),
+                        ('movies', T(32348, 'Movies')),
+                    ]
+                ),
+                MultiOptionsSetting(
+                    'show_reviews1', T(33710, 'Show reviews for'),
+                    ["watched", "unwatched"],
+                    [
+                        ('watched', T(33718, 'Watched')),
+                        ('unwatched', T(33010, 'Unwatched')),
+                    ]
+                ),
+                MultiOptionsSetting(
+                    'no_episode_spoilers4', T(33006, ''),
+                    ['unwatched', 'blur_images', 'hide_summary'],
                     (
                         ('unwatched', T(33010, '')),
                         ('in_progress', T(33011, '')),
                         ('no_unwatched_episode_titles', T(33012, '')),
+                        ('blur_images', T(33706, '')),
+                        ('blur_resume_images', T(33707, '')),
                         ('blur_chapters', T(33081, '')),
+                        ('hide_summary', T(33708, '')),
+                        ('hide_ratings', T(33705, '')),
                     )
                 ).description(T(33007, "")),
                 MultiOptionsSetting(
@@ -607,6 +734,12 @@ class Settings(object):
                 ).description(
                     T(33664, "When acting on items in the Home view, such as mark played, hide from continue "
                              "watching etc., show a confirmation dialog.")
+                ),
+                BoolSetting(
+                    'hub_season_thumbnails', T(33740, 'Home: Episodes season thumbnails'), True
+                ).description(
+                    T(33741, "Use season thumbnails/posters when displaying episodes in hubs instead of "
+                             "the TV show's.")
                 ),
                 BoolSetting(
                     'hubs_round_robin', T(33043, ''), False
@@ -632,10 +765,6 @@ class Settings(object):
                     T(33046, '')),
                 BoolSetting('no_osd_time_spoilers', T(33004, ''), False, backport_from="no_spoilers").description(
                     T(33005, '')),
-                BoolSetting('use_alternate_seek', T(33667, 'CoreELEC: Use alternate seek'), True).description(
-                    T(33668, 'Enables an alternate method to seek on CoreELEC due to a seemingly '
-                             'buggy implementation. Use this if you have audio issues after seeking/resuming.'
-                      )) if util.isCoreELEC else None,
                 MultiUAOptionsSetting(
                     'player_show_buttons', T(33057, 'Show buttons'),
                     ['subtitle_downloads', 'skip_intro', 'skip_credits'],
@@ -648,6 +777,16 @@ class Settings(object):
                         ('skip_credits', T(32496, 'Skip Credits')),
                     )
                 ).description(T(32939, 'Only applies to video player UI')),
+                MultiUAOptionsSetting(
+                    'fast_pause_resume', T(34012, 'Fast pause/resume'),
+                    [],
+                    (
+                        ('paused', T(34013, 'when paused')),
+                        ('playing', T(34014, 'when playing')),
+                    )
+                ).description(T(34015, 'User-specific. Use OK/ENTER button to pause instead of showing the OSD'
+                                       ' (which can then only be accessed using DOWN), or resume when paused. '
+                                       'Only works with \'Behave like official Plex clients\' enabled.')),
                 OptionsSetting(
                     'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
                     (
@@ -813,6 +952,24 @@ class Settings(object):
                                        'edge (possibly unstable)\nStable: Stable branch (faster than Repository)\n'
                                        'Repository: Kodi repository (official (slow) or Don\'t Panic)')
                               ) if not util.FROM_KODI_REPOSITORY else None,
+                MultiOptionsSetting(
+                    'cache_requests', T(33724, 'Cache Plex data for'),
+                    [],
+                    [
+                        ('items', T(33723, 'Media Items')),
+                        ('libraries', T(33722, 'Libraries')),
+                    ]
+                ).description(T(33727, "Store Plex server responses for items and library views in a local "
+                                       "SQLite database. Doesn't cache anything else (Home/Hubs are always up to date)."
+                                       " Massively speeds up consecutive visits to items and libraries. Certain "
+                                       "important events, such as watch state changes, automatically delete the item "
+                                       "cache and its corresponding library cache. The complete cache gets cleared "
+                                       "when exiting the addon. (Default: Off)")),
+                BoolSetting('persist_requests_cache', T(33725, 'Persist cached Plex data'), False)
+                .description(T(33726, "Instead of clearing the cache when exiting the addon, persist it "
+                                      "instead. Warning: You'll most likely encounter missing items in libraries "
+                                      "or outdated data. Use the corresponding menu functionalities to clear the "
+                                      "cache for specific items or libraries.")),
                 BoolSetting('exit_default_is_quit', T(32965, 'Start Plex On Kodi Startup'), False)
                 .description(T(32966, "stub")),
                 BoolSetting('path_mapping', T(33000, ''), True).description(T(33001, '')),
@@ -855,7 +1012,7 @@ class Settings(object):
                 OptionsSetting(
                     'action_on_wake',
                     T(33070, 'Action on Wake event'),
-                    util.isCoreELEC and 'wait_5' or 'wait_1',
+                    util.altSeekRecommended and 'wait_5' or 'wait_1',
                     [('none', T(32702, 'Nothing')), ('restart', T(33071, 'Restart PM4K'))]
                     + [('wait_{}'.format(s), T(33072, '').format(s)) for s in [1, 2, 3] + list(range(5, 65, 5))]
                 ).description(T(33075, '')),
@@ -878,6 +1035,12 @@ class Settings(object):
                 InfoSetting('addon_path', T(33616, 'Addon Path'), util.ADDON.getAddonInfo("path")),
                 InfoSetting('userdata_path', T(33617, 'Userdata/Profile Path'),
                             util.translatePath("special://profile")),
+                InfoSetting('service_status', T(33689, 'Service running'),
+                            lambda: "{} ({})".format(
+                                util.getGlobalProperty("service.started") and T(32328, "Yes") or T(32329, "No"),
+                                util.getGlobalProperty("service.version"))),
+                InfoSetting('i_last_update_check', T(33690, "Last update check"),
+                            lambda: util.getGlobalProperty('last_update_check', datetime.datetime.fromtimestamp(0).strftime('%Y-%m-%dT%H:%M:%S.%f'))),
             )
         ),
     }
@@ -914,6 +1077,7 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
         self.showSections()
         self.setFocusId(75)
         self.lastSection = None
+        self.lastFocusID = None
         self.checkSection()
 
     def onAction(self, action):
@@ -933,8 +1097,14 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
                 # elif not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.TOP_GROUP_ID)):
                 #     self.setFocusId(self.TOP_GROUP_ID)
                 #     return
-            elif action == xbmcgui.ACTION_MOVE_RIGHT and controlID == 150:
-                self.editSetting(from_right=True)
+            elif action == xbmcgui.ACTION_MOVE_RIGHT:
+                if self.lastFocusID == self.SECTION_LIST_ID:
+                    if self.lastSection != 'about':
+                        self.setFocusId(self.SETTINGS_LIST_ID)
+                    return
+                elif self.lastFocusID == self.SETTINGS_LIST_ID:
+                    self.editSetting(from_right=True)
+                    return
         except:
             util.ERROR()
 
@@ -942,7 +1112,8 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
 
     def onClick(self, controlID):
         if controlID == self.SECTION_LIST_ID:
-            self.setFocusId(self.SETTINGS_LIST_ID)
+            if self.lastSection != 'about':
+                self.setFocusId(self.SETTINGS_LIST_ID)
         elif controlID == self.SETTINGS_LIST_ID:
             self.editSetting()
         elif controlID == self.OPTIONS_LIST_ID:
@@ -951,6 +1122,9 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
             self.doClose()
         elif controlID == self.PLAYER_STATUS_BUTTON_ID:
             self.showAudioPlayer()
+
+    def onFocus(self, controlID):
+        self.lastFocusID = controlID
 
     def checkSection(self):
         mli = self.sectionList.getSelectedItem()
@@ -982,7 +1156,7 @@ class SettingsWindow(kodigui.BaseWindow, windowutils.UtilMixin):
 
         items = []
         for setting in settings:
-            if setting is None:
+            if setting is None or not setting.should_show():
                 continue
 
             item = kodigui.ManagedListItem(setting.label, setting.type != 'BOOL' and setting.valueLabel() or '',
@@ -1279,16 +1453,16 @@ def showSubtitlesDialog(video):
 
 
 def showQualityDialog(video):
-    options = [(13 - i, T(l)) for (i, l) in enumerate((32001, 32002, 32003, 32004, 32005, 32006, 32007, 32008, 32009,
-                                                       32010, 32011))]
+    options = [(16 - i, T(l)) for (i, l) in enumerate((32001, 32017, 32002, 32016, 32003, 32004, 32005, 32015, 32006,
+                                                       32007, 32008, 32009, 32010, 32011))]
 
     choice = showOptionsDialog(T(32397, 'Quality'), options)
     if choice is None:
         return
 
-    video.settings.setPrefOverride('local_quality', choice)
-    video.settings.setPrefOverride('remote_quality', choice)
-    video.settings.setPrefOverride('online_quality', choice)
+    video.settings.setPrefOverride('local_quality2', choice)
+    video.settings.setPrefOverride('remote_quality2', choice)
+    video.settings.setPrefOverride('online_quality2', choice)
 
 
 def openWindow():

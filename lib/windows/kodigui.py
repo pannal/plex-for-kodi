@@ -99,6 +99,13 @@ class BaseFunctions(object):
     def setBoolProperty(self, key, boolean):
         self.setProperty(key, boolean and '1' or '')
 
+    def waitForVisibility(self, control):
+        return waitForVisibility(control)
+
+    def waitAndSetFocus(self, control):
+        self.waitForVisibility(control)
+        self.setFocusId(control)
+
 
 LAST_BG_URL = None
 BG_NA = "script.plex/home/background-fallback_black.png"
@@ -110,7 +117,7 @@ class XMLBase(object):
             self.getControl(666)
         except RuntimeError as e:
             if e.args and "Non-Existent Control" in e.args[0]:
-                if count < 4:
+                if count < 8:
                     # retry
                     xbmc.sleep(250)
                     return self.onInit(count=count+1)
@@ -118,11 +125,21 @@ class XMLBase(object):
                 util.ERROR("Possibly broken XML file: {}, triggering recompilation.".format(self.xmlFile))
                 util.showNotification("Recompiling templates", time_ms=1000,
                                       header="Possibly broken XML file(s)")
-                if xbmc.Player().isPlaying():
-                    try:
-                        xbmc.Player().stop()
-                    except:
-                        pass
+
+                try:
+                    if xbmc.Player().isPlaying():
+                        try:
+                            xbmc.Player().stop()
+                        except:
+                            pass
+
+                    tries = 0
+                    while xbmc.Player().isPlaying() and tries < 50:
+                        util.MONITOR.waitForAbort(0.1)
+                        tries += 1
+                except:
+                    pass
+
                 xbmc.sleep(1000)
 
                 if self.__class__.__name__ == "HomeWindow":
@@ -151,6 +168,7 @@ class XMLBase(object):
     def goHomeAction(self, action):
         if (util.HOME_BUTTON_MAPPED is not None
                 and action.getButtonCode() == int(util.HOME_BUTTON_MAPPED) and hasattr(self, "goHome")):
+            util.DEBUG_LOG("Kodigui: Going home action")
             self.goHome(with_root=True)
             return True
         return
@@ -254,7 +272,7 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
             xbmcgui.Window(self._winID).setProperty(key, value)
             xbmcgui.WindowXML.setProperty(self, key, value)
         except RuntimeError:
-            xbmc.log('kodigui.BaseWindow.setProperty: Missing window', xbmc.LOGDEBUG)
+            util.DEBUG_LOG('kodigui.BaseWindow.setProperty: Missing window ({}) ({})', self._winID, key)
 
     def setCondFocusId(self, focus):
         if self.getFocusId() != focus:
@@ -262,8 +280,7 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
 
     def updateBackgroundFrom(self, ds):
         if util.addonSettings.dynamicBackgrounds:
-            w, h = util.scaleResolution(self.width, self.height, by=util.addonSettings.backgroundResolutionScalePerc)
-            return self.windowSetBackground(util.backgroundFromArt(ds.art, width=w, height=h))
+            return self.windowSetBackground(util.backgroundFromArt(ds.get('art', ds.get('parentArt', ds.get('grandparentArt', None))), width=self.width, height=self.height))
 
     def windowSetBackground(self, value):
         if not util.addonSettings.dbgCrossfade:
@@ -964,7 +981,8 @@ class MultiWindow(object):
         self.exitCommand = None
 
     def __getattr__(self, name):
-        return getattr(self._current, name)
+        if self._current:
+            return getattr(self._current, name)
 
     def onCloseSignal(self, *args, **kwargs):
         self._closeSignalled = True
@@ -1058,6 +1076,8 @@ class MultiWindow(object):
     def onAction(self, action):
         if action == xbmcgui.ACTION_PREVIOUS_MENU or action == xbmcgui.ACTION_NAV_BACK:
             self.doClose()
+        elif XMLBase.goHomeAction(self, action):
+            return
         self._currentOnAction(action)
 
     def onClick(self, controlID):
@@ -1302,3 +1322,10 @@ class GlobalProperty():
 
     def __exit__(self, exc_type, exc_value, traceback):
         xbmcgui.Window(10000).setProperty('script.plex.{}'.format(self.prop), self.end or self.old)
+
+
+def waitForVisibility(control):
+    tries = 0
+    while not xbmc.getCondVisibility('Control.IsVisible({0})'.format(control)) and tries < 50:
+        util.MONITOR.waitForAbort(0.1)
+        tries += 1

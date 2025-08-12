@@ -64,14 +64,29 @@ class PlexServerManager(signalsmixin.SignalsMixin):
             util.LOG("Setting selected server to {0}", server)
             self.selectedServer = server
 
-            # Update our saved state.
-            self.saveState(setPreferred=True)
+            if server:
+                if server.owned:
+                    util.LOG("Getting and storing server prefs for {0}", server.name)
+                    prefs = server.getPrefs()
+                    for pref in prefs:
+                        if pref.get("id") in ("LibraryVideoPlayedThreshold", "LibraryVideoPlayedAtBehaviour"):
+                            server.prefs[str(pref.get("id"))] = pref.get("value").asInt()
+                    util.INTERFACE.setRegistry("PlexServerPrefs", json.dumps(server.prefs), sec=server.uuid[-8:])
+                else:
+                    util.LOG("Server isn't owned by the current user. Trying to reuse cached server prefs for {0}", server.name)
+                    try:
+                        server.prefs = json.loads(util.INTERFACE.getRegistry("PlexServerPrefs", sec=server.uuid[-8:]))
+                        util.DEBUG_LOG("Cached server prefs loaded for {0}", server.name)
+                    except:
+                        pass
 
-            # Notify anyone who might care.
-            util.APP.trigger("change:selectedServer", server=server)
+                # Update our saved state.
+                self.saveState(setPreferred=True)
 
-            return True
+                # Notify anyone who might care.
+                util.APP.trigger("change:selectedServer", server=server)
 
+                return True
         return False
 
     def getServer(self, uuid=None):
@@ -80,8 +95,14 @@ class PlexServerManager(signalsmixin.SignalsMixin):
         elif uuid == "myplex":
             from . import myplexserver
             return myplexserver.MyPlexServer()
+        elif uuid == "plexdiscover":
+            return self.getDiscoverServer()
         else:
             return self.serversByUuid[uuid]
+
+    def getDiscoverServer(self):
+        from . import myplexserver
+        return myplexserver.PlexDiscoverServer()
 
     def getServers(self):
         servers = []
@@ -90,6 +111,10 @@ class PlexServerManager(signalsmixin.SignalsMixin):
                 servers.append(self.serversByUuid[uuid])
 
         return servers
+
+    @property
+    def connectedServers(self):
+        return filter(lambda s: s.activeConnection, self.getServers())
 
     def hasPendingRequests(self):
         for server in self.getServers():
@@ -348,6 +373,9 @@ class PlexServerManager(signalsmixin.SignalsMixin):
 
             for i in range(len(serverObj.get('connections', []))):
                 conn = serverObj['connections'][i]
+                if conn['address'].endswith(":None"):
+                    continue
+
                 isFallback = hasSecureConn and conn['address'][:5] != "https" and not util.LOCAL_OVER_SECURE
                 sources = plexconnection.PlexConnection.SOURCE_BY_VAL[conn['sources']]
                 connection = plexconnection.PlexConnection(sources, conn['address'], conn['isLocal'], conn['token'], isFallback)
@@ -615,7 +643,9 @@ class PlexServerManager(signalsmixin.SignalsMixin):
             serverAddress = "{0}://{1}:{2}".format(proto, conn.connection, port)
 
             request = http.HttpRequest(serverAddress + "/identity")
-            context = request.createRequestContext("manual_connections", callback.Callable(self.onManualConnectionsResponse))
+            context = request.createRequestContext("manual_connections",
+                                                   callback.Callable(self.onManualConnectionsResponse),
+                                                   timeout=util.CONN_CHECK_TIMEOUT)
             context.serverAddress = serverAddress
             context.address = conn.connection
             context.proto = proto

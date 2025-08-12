@@ -477,7 +477,7 @@
 </control> -->
 
 <control type="group" id="202">
-    <visible>Control.HasFocus(500)</visible>
+    <visible>Control.HasFocus(500) + !String.IsEmpty(Window.Property(time.selection))</visible>
     <posx>0</posx>
     <posy>{{ vscale(184) }}r</posy>
     <control type="group" id="203">

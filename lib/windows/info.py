@@ -55,6 +55,9 @@ class InfoWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         summary = [self.info]
         medias = self.video.media()
+        if not medias:
+            return self.info
+
         mediaCount = len(medias)
         onlyOneMedia = mediaCount == 1
         partCount = sum(len(m.parts) for m in medias)

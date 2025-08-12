@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from threading import Timer
+
 from lib import util
 from . import kodigui
 
@@ -27,10 +29,12 @@ class OptionsDialog(kodigui.BaseDialog):
         self.actionCallback = kwargs.get('action_callback')
         self.buttonChoice = None
         self.select = kwargs.get('select', 0)
+        self.delayButtons = kwargs.get('delay_buttons', False)
 
     def onFirstInit(self):
         self.setProperty('header', self.header)
         self.setProperty('info', self.info)
+        self.setProperty('delay_buttons', bool(self.delayButtons) and '1' or '')
 
         if self.button2:
             self.setProperty('button.2', self.button2)
@@ -43,7 +47,15 @@ class OptionsDialog(kodigui.BaseDialog):
 
         self.setBoolProperty('initialized', True)
 
-        if self.BUTTON_IDS[self.select] != self.DEFAULT_ID:
+        if not self.delayButtons:
+            self.setup_buttons()
+
+        if self.delayButtons:
+            Timer(self.delayButtons, self.setup_buttons).start()
+
+    def setup_buttons(self):
+        self.setProperty('enable_buttons', '1')
+        if self.delayButtons:
             util.MONITOR.waitForAbort(0.1)
             self.setFocusId(self.BUTTON_IDS[self.select])
 
@@ -64,9 +76,15 @@ class OptionsDialog(kodigui.BaseDialog):
             self.doClose()
 
 
-def show(header, info, button0=None, button1=None, button2=None, action_callback=None, dialog_props=None, select=0):
-    w = OptionsDialog.open(header=header, info=info, button0=button0, button1=button1, button2=button2, select=select,
-                           action_callback=action_callback, dialog_props=dialog_props)
+class BigOptionsDialog(OptionsDialog):
+    xmlFile = 'script-plex-options_dialog_big.xml'
+
+
+def show(header, info, button0=None, button1=None, button2=None, action_callback=None, dialog_props=None, select=0,
+         delay_buttons=None, big=False):
+    cls = big and BigOptionsDialog or OptionsDialog
+    w = cls.open(header=header, info=info, button0=button0, button1=button1, button2=button2, select=select,
+                           action_callback=action_callback, dialog_props=dialog_props, delay_buttons=delay_buttons)
     choice = w.buttonChoice
     del w
     util.garbageCollect()

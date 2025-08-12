@@ -69,6 +69,31 @@ def dialog(msg='LOADING', condition=None, delay=True, delay_time=0.5):
     return methodWrap
 
 
+def busy_property(delay=True, delay_time=0.5):
+    def methodWrap(func):
+        def inner(win, *args, **kwargs):
+            def setProp(w):
+                w.setProperty('busy', '1')
+
+            timer = None
+            if delay:
+                timer = threading.Timer(delay_time, lambda: setProp(win))
+                timer.start()
+            else:
+                setProp(win)
+            try:
+                return func(win, *args, **kwargs)
+            finally:
+                if timer and timer.is_alive():
+                    timer.cancel()
+                    timer.join()
+                del timer
+                win.setProperty('busy', '')
+        return inner
+    return methodWrap
+
+
+
 def widthDialog(method, msg, *args, **kwargs):
     condition = kwargs.pop("condition", None)
     delay = kwargs.pop("delay", False)

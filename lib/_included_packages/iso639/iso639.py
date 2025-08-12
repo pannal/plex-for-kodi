@@ -92,6 +92,12 @@ class _Language(object):
             raise AttributeError("'{o}' object has no attribute '{a}'".format(o=type(self).__name__, a=item))
         return compat[item]
 
+    def __repr__(self):
+        return str(self)
+
+    def __str__(self):
+        return self.name
+
 
 class lazy_property(object):
     """

@@ -11,6 +11,7 @@ class MediaChoice(object):
     def __init__(self, media=None, partIndex=0):
         self.media = media
         self.part = None
+        self.partIndex = partIndex
         self.forceTranscode = False
         self.isDirectPlayable = False
         self.videoStream = None

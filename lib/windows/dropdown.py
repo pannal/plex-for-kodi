@@ -83,7 +83,7 @@ class DropdownDialog(kodigui.BaseDialog):
         if y == "middle":
             y = util.vperci(util.vscale(ol_height))
 
-        self.getControl(100).setPosition(self.x, y)
+        self.getControl(100).setPosition(self.x, int(y))
 
         self.setProperty('show', '1')
         self.setProperty('close.direction', self.closeDirection)
@@ -214,7 +214,7 @@ class DropdownHeaderDialog(DropdownDialog):
 def showDropdown(
     options, pos=None,
     pos_is_bottom=False,
-    close_direction='top',
+    close_direction='left',
     set_dropdown_prop=True,
     with_indicator=False,
     suboption_callback=None,

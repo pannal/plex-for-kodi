@@ -2,6 +2,7 @@
 import sys
 import traceback
 import types
+import logging
 
 from kodi_six import xbmc
 
@@ -12,6 +13,10 @@ def log(msg, *args, **kwargs):
         msg = msg.format(*[arg() if isinstance(arg, types.FunctionType) else arg for arg in args])
 
     level = kwargs.pop("level", xbmc.LOGINFO)
+
+    prepend_msg = kwargs.pop('prepend_msg', None)
+    if prepend_msg:
+        msg = '{0}: {1}'.format(prepend_msg, msg)
 
     if kwargs:
         # resolve dynamic kwargs
@@ -37,3 +42,15 @@ def log_error(txt='', hide_tb=False):
 
 def service_log(msg, level=xbmc.LOGINFO, realm="Updater"):
     xbmc.log('script.plexmod/{}: {}'.format(realm, msg), level)
+
+
+class KodiLogProxyHandler(logging.Handler):
+    def __init__(self, level=logging.NOTSET, log_func=log):
+        self.log_func = log_func
+        super(KodiLogProxyHandler, self).__init__(level)
+
+    def emit(self, record):
+        try:
+            self.log_func(self.format(record))
+        except:
+            self.handleError(record)

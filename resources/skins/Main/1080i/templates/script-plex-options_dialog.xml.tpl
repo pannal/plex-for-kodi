@@ -81,6 +81,7 @@
         <usecontrolcoords>true</usecontrolcoords>
         <control type="button" id="1001">
             <visible allowhiddenfocus="true">!String.IsEmpty(Window.Property(button.0))</visible>
+            <enable>String.IsEmpty(Window.Property(delay_buttons)) | !String.IsEmpty(Window.Property(enable_buttons))</enable>
             <animation effect="zoom" start="100" end="110,120" time="100" center="auto" reversible="false">Focus</animation>
             <animation effect="zoom" start="110,120" end="100" time="100" center="auto" reversible="false">UnFocus</animation>
             <posx>0</posx>
@@ -97,6 +98,7 @@
         </control>
         <control type="button" id="1002">
             <visible>!String.IsEmpty(Window.Property(button.1))</visible>
+            <enable>String.IsEmpty(Window.Property(delay_buttons)) | !String.IsEmpty(Window.Property(enable_buttons))</enable>
             <animation effect="zoom" start="100" end="110,120" time="100" center="auto" reversible="false">Focus</animation>
             <animation effect="zoom" start="110,120" end="100" time="100" center="auto" reversible="false">UnFocus</animation>
             <posx>0</posx>
@@ -113,6 +115,7 @@
         </control>
         <control type="button" id="1003">
             <visible>!String.IsEmpty(Window.Property(button.2))</visible>
+            <enable>String.IsEmpty(Window.Property(delay_buttons)) | !String.IsEmpty(Window.Property(enable_buttons))</enable>
             <animation effect="zoom" start="100" end="110,120" time="100" center="auto" reversible="false">Focus</animation>
             <animation effect="zoom" start="110,120" end="100" time="100" center="auto" reversible="false">UnFocus</animation>
             <posx>0</posx>

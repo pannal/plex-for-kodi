@@ -167,7 +167,7 @@ class PlexPart(plexobjects.PlexObject):
     def getPathMappedUrl(self, return_only_folder=False):
         verify = addonSettings.verifyMappedFiles
 
-        map_path, pms_path = pmm.getMappedPathFor(self.file, self.getServer())
+        map_path, pms_path, _ = pmm.getMappedPathFor(self.file, self.getServer())
         if map_path and pms_path:
             if return_only_folder:
                 return map_path

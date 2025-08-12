@@ -64,7 +64,8 @@ class PlexResource(object):
             # If the connection is one of our plex.direct secure connections, add
             # the nonsecure variant as well, unless https is required.
             #
-            if self.httpsRequired and conn.attrib.get('protocol') == "https" and conn.attrib.get('address') not in conn.attrib.get('uri'):
+            if (self.httpsRequired and conn.attrib.get('protocol') == "https" and
+                    conn.attrib.get('address') not in conn.attrib.get('uri') and conn.attrib.get('port')):
                 self.connections.append(
                     plexconnection.PlexConnection(
                         plexconnection.PlexConnection.SOURCE_MYPLEX,
@@ -78,6 +79,9 @@ class PlexResource(object):
         # add discovered local cons if necessary
         for ipPort, origAddress in addLocalConsFound:
             ip, port = ipPort
+            if not port:
+                continue
+
             address = "http://" + ip + ":" + str(port)
             for conn in self.connections:
                 if conn.address == address:

@@ -14,6 +14,14 @@ from . import opener
 from . import windowutils
 
 
+def require_duration(f):
+    def wrapper(self, *args, **kwargs):
+        if not self.duration:
+            self.setDuration()
+        return f(self, *args, **kwargs)
+    return wrapper
+
+
 class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     xmlFile = 'script-plex-music_current_playlist.xml'
     path = util.ADDON.getAddonInfo('path')
@@ -55,6 +63,8 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def __init__(self, *args, **kwargs):
         kodigui.ControlledWindow.__init__(self, *args, **kwargs)
         self.selectedOffset = 0
+        self.duration = None
+        self.track = None
         self.setDuration()
         self.exitCommand = None
         self.musicPlayerWinID = kwargs.get('winID')
@@ -110,14 +120,17 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
             self.seekButtonClicked()
         elif controlID == self.SHUFFLE_BUTTON_ID:
             self.fillPlaylist()
+            self.selectPlayingItem()
         elif controlID == self.SHUFFLE_REMOTE_BUTTON_ID:
             player.PLAYER.handler.playQueue.setShuffle()
         elif controlID == self.REPEAT_BUTTON_ID:
             self.repeatButtonClicked()
         elif controlID == self.SKIP_PREV_BUTTON_ID:
             self.skipPrevButtonClicked()
+            self.selectPlayingItem()
         elif controlID == self.SKIP_NEXT_BUTTON_ID:
             self.skipNextButtonClicked()
+            self.selectPlayingItem()
         elif controlID == self.OPTIONS_BUTTON_ID:
             self.optionsButtonClicked()
         elif controlID == self.STOP_BUTTON_ID:
@@ -145,6 +158,8 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def onAudioStarted(self, *args, **kwargs):
         util.setGlobalProperty('ignore_spinner', '')
         self.ignoreStopCommands = False
+        self.selectedOffset = 0
+        self.duration = None
         self.setDuration()
 
     def onAudioChanged(self, *args, **kwargs):
@@ -193,7 +208,7 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         options.append({'key': 'to_artist', 'display': T(32301, 'Go to Artist')})
         options.append({'key': 'to_section', 'display': T(32302, u'Go to {0}').format(track.getLibrarySectionTitle())})
 
-        choice = dropdown.showDropdown(options, pos, close_direction='down', pos_is_bottom=True, close_on_playback_ended=True)
+        choice = dropdown.showDropdown(options, pos, pos_is_bottom=True, close_on_playback_ended=True)
         if not choice:
             return
 
@@ -226,12 +241,14 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         self.fillPlaylist()
 
-        for ni in self.playlistListControl:
+        # due to Kodi playlist limitations and necessary swappery, we might've got the current item twice in the list;
+        # select the latest one
+        for ni in reversed(self.playlistListControl):
             if ni.dataSource['comment'].split(':', 1)[0] == plexID:
                 self.playlistListControl.selectItem(ni.pos())
                 break
 
-        xbmc.sleep(100)
+        util.MONITOR.waitForAbort(0.25)
 
         newViewPos = self.playlistListControl.getViewPosition()
         if viewPos != newViewPos:
@@ -309,11 +326,18 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
     def setDuration(self):
         try:
-            duration = player.PLAYER.getTotalTime() * 1000
+            #duration = None
+            #if self.track:
+            #    duration = self.track.duration.asInt()
+            #if not duration:
+            #    duration = player.PLAYER.getTotalTime() * 1000
+            #if not duration:
+            duration = player.PLAYER.getMusicInfoTag().getDuration() * 1000
             self.duration = duration if duration > 0 else self.duration
-        except RuntimeError:  # Not playing
+        except (RuntimeError, AttributeError):  # Not playing
             pass
 
+    @require_duration
     def seekForward(self, offset):
         self.selectedOffset += offset
         if self.selectedOffset > self.duration:
@@ -321,6 +345,7 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         self.updateSelectedProgress()
 
+    @require_duration
     def seekBack(self, offset):
         self.selectedOffset -= offset
         if self.selectedOffset < 0:
@@ -328,6 +353,7 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
         self.updateSelectedProgress()
 
+    @require_duration
     def seekMouse(self, action):
         x = self.mouseXTrans(action.getAmount1())
         y = self.mouseYTrans(action.getAmount2())
@@ -340,6 +366,7 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.selectedOffset = int((x - self.BAR_X) / float(self.SEEK_IMAGE_WIDTH) * self.duration)
         self.updateSelectedProgress()
 
+    @require_duration
     def updateSelectedProgress(self):
         if not self.duration:
             return

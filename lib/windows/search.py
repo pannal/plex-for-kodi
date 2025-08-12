@@ -115,7 +115,7 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
         self.resultsThread = None
         self.updateResultsTimeout = 0
         self.isActive = True
-        self.useKodiKbd = util.getSetting('search_use_kodi_kbd', False)
+        self.useKodiKbd = util.getSetting('search_use_kodi_kbd')
 
     def onFirstInit(self):
         self.hubControls = (

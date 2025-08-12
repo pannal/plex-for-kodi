@@ -26,7 +26,7 @@ from . import playlists
 from . import search
 from . import windowutils
 from . import background
-from .mixins import SpoilersMixin
+from .mixins import SpoilersMixin, removeFromWatchlistBlind
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
 HUB_PAGE_SIZE = 10
@@ -68,12 +68,12 @@ class SectionHubsTask(backgroundthread.Task):
         if self.isCanceled():
             return
 
-        if not plexapp.SERVERMANAGER.selectedServer:
+        if not plexapp.SERVERMANAGER.selectedServer or not self.section.server:
             # Could happen during sign-out for instance
             return
 
         try:
-            hubs = HubsList(plexapp.SERVERMANAGER.selectedServer.hubs(self.section.key, count=HUB_PAGE_SIZE,
+            hubs = HubsList(self.section.server.hubs(self.section.key, count=HUB_PAGE_SIZE,
                                                                       section_ids=self.section_keys,
                                                                       ignore_hubs=self.ignore_hubs)).init()
             if self.isCanceled():
@@ -161,9 +161,19 @@ class ExtendHubTask(backgroundthread.Task):
             util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
         except:
             util.DEBUG_LOG('Something went wrong when extending hub: {0}', repr(self.hub.hubIdentifier))
+            util.ERROR()
 
 
-class HomeSection(object):
+class VirtualSection(object):
+    locations = []
+    isMapped = False
+
+    @property
+    def server(self):
+        return plexapp.SERVERMANAGER.selectedServer
+
+
+class HomeSection(VirtualSection):
     key = None
     type = 'home'
     title = T(32332, 'Home')
@@ -174,8 +184,10 @@ class HomeSection(object):
 
 home_section = HomeSection()
 
+watchlist_section = None
 
-class PlaylistsSection(object):
+
+class PlaylistsSection(VirtualSection):
     key = 'playlists'
     type = 'playlists'
     title = T(32333, 'Playlists')
@@ -384,6 +396,15 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         # PLAYLISTS
         'playlists.audio': {'index': 5, 'text2lines': True, 'title': T(32048, 'Audio')},
         'playlists.video': {'index': 6, 'text2lines': True, 'ar16x9': True, 'title': T(32053, 'Video')},
+        # WATCHLIST
+        'watchlist.continueWatching': {'index': 1, 'with_progress': False, 'do_updates': True, 'text2lines': True},
+        'watchlist.coming-soon': {'index': 2, 'with_progress': False, 'do_updates': True, 'text2lines': True},
+        'watchlist.recently-added': {'index': 3, 'with_progress': False, 'do_updates': True, 'text2lines': True},
+        'home.top_watchlisted': {'index': 4, 'with_progress': False, 'do_updates': True, 'text2lines': True},
+        'home.coming-soon': {'index': 7, 'with_progress': False, 'do_updates': True, 'text2lines': True},
+        'home.trending-friends': {'index': 8, 'with_progress': False, 'do_updates': True, 'text2lines': True},
+        'home.trending-for-you': {'index': 13, 'with_progress': False, 'do_updates': True, 'text2lines': True},
+        'home.new-for-you': {'index': 14, 'with_progress': False, 'do_updates': True, 'text2lines': True},
     }
 
     THUMB_POSTER_DIM = util.scaleResolution(244, 361)
@@ -423,6 +444,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self.wantedSections = None
         self.movingSection = False
         self._initialMovingSectionPos = None
+        self.block_section_change = False
         self.go_root = False
         windowutils.HOME = self
 
@@ -433,7 +455,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
     def onFirstInit(self):
         # set last BG image if possible
         if util.addonSettings.dynamicBackgrounds:
-            bgUrl = util.getSetting("last_bg_url")
+            bgUrl = util.getSetting("last_bg_url.{}".format(plexapp.ACCOUNT.ID))
             if bgUrl:
                 self.windowSetBackground(bgUrl)
 
@@ -494,8 +516,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self.doClose()
 
     def onReInit(self):
+        util.DEBUG_LOG("Home: On ReInit")
         if self._ignoreReInit:
             return
+
+        if player.PLAYER.bgmPlaying:
+            player.PLAYER.stopAndWait()
 
         self._anyItemAction = False
         if self._applyTheme:
@@ -537,7 +563,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             self._updateOnDeckHubs()
 
     def checkPlexDirectHosts(self, servers, source="stored", *args, **kwargs):
-        handlePD = util.getSetting('handle_plexdirect', 'ask')
+        handlePD = util.getSetting('handle_plexdirect')
         if handlePD == "never":
             return
 
@@ -636,7 +662,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
     @property
     def currentHub(self):
-        hub_focus = int(self.getProperty('hub.focus'))
+        try:
+            hub_focus = int(self.getProperty('hub.focus'))
+        except ValueError:
+            return None
+
         if len(self.hubControls) > hub_focus and self.hubControls[hub_focus]:
             hub_control = self.hubControls[hub_focus]
             hub = hub_control.dataSource
@@ -647,7 +677,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         return [combo for combo, data in self.hubSettings.items() if not data.get("show", True)]
 
     def updateProperties(self, *args, **kwargs):
-        self.setBoolProperty('bifurcation_lines', util.getSetting('hubs_bifurcation_lines', False))
+        self.setBoolProperty('bifurcation_lines', util.getSetting('hubs_bifurcation_lines'))
 
     def focusFirstValidHub(self, startIndex=None):
         indices = self.hubFocusIndexes
@@ -687,10 +717,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         plexapp.util.APP.on('account:response', self.displayServerAndUser)
         plexapp.util.APP.on('sli:reachability:received', self.displayServerAndUser)
         plexapp.util.APP.on('change:hubs_bifurcation_lines', self.updateProperties)
-        plexapp.util.APP.on('change:no_episode_spoilers3', self.setDirty)
+        plexapp.util.APP.on('change:no_episode_spoilers4', self.setDirty)
         plexapp.util.APP.on('change:spoilers_allowed_genres2', self.setDirty)
         plexapp.util.APP.on('change:hubs_use_new_continue_watching', self.setDirty)
         plexapp.util.APP.on('change:path_mapping_indicators', self.setDirty)
+        plexapp.util.APP.on('change:hub_season_thumbnails', self.setDirty)
+        plexapp.util.APP.on('change:use_watchlist', self.setDirty)
         plexapp.util.APP.on('change:debug', self.setDebugFlag)
         plexapp.util.APP.on('change:update_source', self.updateSourceChanged)
         plexapp.util.APP.on('theme_relevant_setting', self.setThemeDirty)
@@ -715,10 +747,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         plexapp.util.APP.off('account:response', self.displayServerAndUser)
         plexapp.util.APP.off('sli:reachability:received', self.displayServerAndUser)
         plexapp.util.APP.off('change:hubs_bifurcation_lines', self.updateProperties)
-        plexapp.util.APP.off('change:no_episode_spoilers3', self.setDirty)
+        plexapp.util.APP.off('change:no_episode_spoilers4', self.setDirty)
         plexapp.util.APP.off('change:spoilers_allowed_genres2', self.setDirty)
         plexapp.util.APP.off('change:hubs_use_new_continue_watching', self.setDirty)
         plexapp.util.APP.off('change:path_mapping_indicators', self.setDirty)
+        plexapp.util.APP.off('change:hub_season_thumbnails', self.setDirty)
+        plexapp.util.APP.off('change:use_watchlist', self.setDirty)
         plexapp.util.APP.off('change:debug', self.setDebugFlag)
         plexapp.util.APP.off('change:update_source', self.updateSourceChanged)
         plexapp.util.APP.off('theme_relevant_setting', self.setThemeDirty)
@@ -741,12 +775,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             is_downgrade = bool(util.getGlobalProperty('update_is_downgrade', consume=True))
             button = optionsdialog.show(
                 T(33670, 'Update available'),
-                T(33671, 'Current: {current_version}\nNew: {new_version}').format(
+                T(33671, 'Current: {current_version}\nNew: {new_version}\n\nChangelog:\n{changelog}').format(
                     current_version=util.ADDON.getAddonInfo('version'),
                     new_version=util.getGlobalProperty('update_available'),
+                    changelog=util.getGlobalProperty('update_changelog'),
                 ),
                 T(33683, 'Exit, download and install'),
-                T(33684, 'Later') if not is_downgrade else T(32329, 'No')
+                T(33684, 'Later') if not is_downgrade else T(32329, 'No'),
+                delay_buttons=1.8, big=True
             )
             if button == 0:
                 resp = "commence"
@@ -757,15 +793,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
             if resp == "commence":
                 # wait for it to be consumed
-                util.waitForConsumption('update_response', timeout=20)
+                try:
+                    util.waitForConsumption('update_response', timeout=200)
+                finally:
+                    self._shuttingDown = True
+                    self._ignoreTick = True
+                    self.stopRetryingRequests()
 
-                self._shuttingDown = True
-                #self.closeOption = "update"
-                self.doClose()
-                return True
+                    # fixme: add "update" to the list of closeOptions for which we should force quit if necessary?
+                    #self.closeOption = "update"
+                    self.unhookSignals()
+                    self.doClose()
+                    return True
 
     def tick(self):
-        if self.service_responder():
+        if self.is_active and self.service_responder():
             return
 
         if self.is_active and self._updateSourceChanged:
@@ -779,30 +821,45 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if hubs is None:
             return
 
-        if (self.is_active and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
+        if (self.is_active and not self._checkingForExit and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL and
                 not xbmc.Player().isPlayingVideo()):
+            util.DEBUG_LOG("Home: Ticking, section stale, calling showHubs(update=True)")
             self.showHubs(self.lastSection, update=True)
 
     def doClose(self):
+        util.DEBUG_LOG("Home: doClose called, triggering close.windows")
         plexapp.util.APP.trigger('close.windows')
         #if self.sectionChangeThread and self.sectionChangeThread.isAlive():
         #    self.sectionChangeThread.join(timeout=2.0)
 
+        util.DEBUG_LOG("Home: doClose called, calling super")
         super(HomeWindow, self).doClose()
 
+    def stopRetryingRequests(self):
+        util.DEBUG_LOG("Stopping request retries")
+        plexnet.asyncadapter.STOP_RETRYING_REQUESTS = True
+
     def shutdown(self):
+        util.DEBUG_LOG("Home: shutdown called")
         self._shuttingDown = True
+        self._ignoreTick = True
+        self.stopRetryingRequests()
         try:
             self.serverList.reset()
         except AttributeError:
             pass
 
+        util.DEBUG_LOG("Home: unhooking signals")
         self.unhookSignals()
-        self.storeLastBG()
+        if (self.closeOption != "switch" and
+                (not isinstance(self.closeOption, dict) or (isinstance(self.closeOption, dict) and not self.closeOption.get('fast_switch')))):
+            self.storeLastBG()
+        util.DEBUG_LOG("Home: exiting shutdown method")
+
 
     def storeLastBG(self):
         if util.addonSettings.dynamicBackgrounds:
-            oldbg = util.getSetting("last_bg_url", "")
+            oldbg = util.getSetting("last_bg_url.{}".format(plexapp.ACCOUNT.ID), '')
             # store BG url of first hub, first item, as this is most likely to be the one we're focusing on the
             # next start
             try:
@@ -822,9 +879,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
                             bg = util.backgroundFromArt(ds.art, width=self.width, height=self.height)
                             if bg:
-                                util.DEBUG_LOG('Storing BG for {0}, "{1}"'.format(self.hubControls[index].dataSource,
-                                                                                  ds.defaultTitle))
-                                util.setSetting("last_bg_url", bg)
+                                util.DEBUG_LOG('Storing BG for {0}, "{1}", acc {2}'.format(self.hubControls[index].dataSource,
+                                                                                  ds.defaultTitle, plexapp.ACCOUNT.ID))
+                                util.setSetting("last_bg_url.{}".format(plexapp.ACCOUNT.ID), bg)
                                 return
             except:
                 util.LOG("Couldn't store last background")
@@ -850,7 +907,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                     return
 
                 if action == xbmcgui.ACTION_CONTEXT_MENU:
-                    show_section = self.sectionMenu()
+                    try:
+                        self.block_section_change = True
+                        show_section = self.sectionMenu()
+                    finally:
+                        self.block_section_change = False
                     if not show_section:
                         return
                     else:
@@ -862,6 +923,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 if action == xbmcgui.ACTION_SELECT_ITEM:
                     self.showServers()
                     return
+                elif action == xbmcgui.ACTION_CONTEXT_MENU and util.getUserSetting('previous_server', None):
+                    uuid = util.getUserSetting('previous_server', None)
+                    if uuid != plexapp.SERVERMANAGER.selectedServer.uuid:
+                        self.selectServer(uuid)
+                    return
+
                 elif action == xbmcgui.ACTION_MOUSE_LEFT_CLICK:
                     self.showServers(mouse=True)
                     self.setBoolProperty('show.servers', True)
@@ -869,6 +936,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             elif controlID == self.USER_BUTTON_ID:
                 if action == xbmcgui.ACTION_SELECT_ITEM:
                     self.showUserMenu()
+                    return
+                elif action == xbmcgui.ACTION_CONTEXT_MENU and util.getSetting('previous_user'):
+                    # check whether we can fast swap (account is not protected)
+                    # get user
+                    uid = util.getSetting('previous_user')
+                    if uid == plexapp.ACCOUNT.ID:
+                        return
+
+                    user = plexapp.ACCOUNT.getHomeUser(uid)
+                    if not user or user.isProtected:
+                        self.doUserOption(force_option="switch")
+                        return
+
+                    self.doUserOption(force_option={"fast_switch": user.id})
                     return
                 elif action == xbmcgui.ACTION_MOUSE_LEFT_CLICK:
                     self.showUserMenu(mouse=True)
@@ -922,11 +1003,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                         return
 
                     if controlID == self.SECTION_LIST_ID and self.sectionList.control.getSelectedPosition() > 0:
-                        self.sectionList.setSelectedItemByPos(0)
-                        # set lastSection here already, otherwise tick() might interfere
-                        # fixme: Might still happen in a race condition, check later
-                        self.lastSection = home_section
-                        self.showHubs(home_section)
+                        self.goHome()
                         return
 
                     if util.addonSettings.fastBack and not optionsFocused and offSections \
@@ -955,6 +1032,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                             # rare case confirmed in Kodi 18 when requests are still running and we're exiting quickly
                             return
 
+                        util.DEBUG_LOG("Home: Showing exit confirmation dialog")
+
                         ex = self.confirmExit()
                         # 0 = exit; 1 = minimize; 2 = cancel
                         if ex.button in (2, None):
@@ -966,10 +1045,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                             return
                         elif ex.button == 0:
                             self._shuttingDown = True
+                            util.DEBUG_LOG("Home: Initiating shutdown, setting background")
                             background.setShutdown()
                             if ex.modifier == "quit":
                                 self.closeOption = "quit"
                                 self.unhookSignals()
+                            else:
+                                self.closeOption = "exit"
                     finally:
                         self._checkingForExit = False
 
@@ -1013,7 +1095,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if 399 < controlID < 500:
             self.setProperty('hub.focus', str(self.hubFocusIndexes[controlID - 400]))
 
-        if controlID == self.SECTION_LIST_ID and not self.changingServer:
+        if (controlID == self.SECTION_LIST_ID and not self.changingServer and not self._checkingForExit and not
+        self._shuttingDown):
             self.checkSectionItem()
 
         if xbmc.getCondVisibility('ControlGroup(50).HasFocus(0) + ControlGroup(100).HasFocus(0)'):
@@ -1021,13 +1104,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         elif controlID != 250 and xbmc.getCondVisibility('ControlGroup(50).HasFocus(0) + !ControlGroup(100).HasFocus(0)'):
             util.setGlobalBoolProperty('off.sections', '1')
 
-        if player.PLAYER.bgmPlaying:
-            player.PLAYER.stopAndWait()
+    def goHome(self, **kwargs):
+        self.setProperty('hub.focus', '')
+        self.setFocusId(self.SECTION_LIST_ID)
+        self.sectionList.setSelectedItemByPos(0)
+        # set lastSection here already, otherwise tick() might interfere
+        # fixme: Might still happen in a race condition, check later
+        self.lastSection = home_section
+        self.showHubs(home_section)
+        return
 
     def confirmExit(self):
         lBtnExit = T(32336, 'Exit')
         lBtnQuit = T(32704, 'Quit Kodi')
-        modifier = util.getSetting('exit_default_is_quit', False) and "quit" or "exit"
+        modifier = util.getSetting('exit_default_is_quit') and "quit" or "exit"
 
         ret = plexnet.util.AttributeDict(button=None, modifier=modifier)
 
@@ -1062,20 +1152,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
     def _updateOnDeckHubs(self, **kwargs):
         util.DEBUG_LOG('UpdateOnDeckHubs called')
         self._odHubsDirty = False
-        if util.getSetting("speedy_home_hubs2", False):
-            util.DEBUG_LOG("Using alternative home hub refresh")
-            sections = set()
-            for mli in self.sectionList:
-                if mli.dataSource is not None and mli.dataSource != self.lastSection:
-                    sections.add(mli.dataSource)
-            tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections, self.ignoredHubs)
-                     for s in [self.lastSection] + list(sections)]
-        else:
-            # fetch hubs we need to update
-            rp = self.getCurrentHubsPositions(self.lastSection)
-            tasks = [UpdateHubTask().setup(hub, self.updateHubCallback,
-                                           reselect_pos=rp.get(hub.getCleanHubIdentifier(self.lastSection.key is None)))
-                     for hub in self.updateHubs.values()]
+        #if util.getSetting("speedy_home_hubs2"):
+        #    util.DEBUG_LOG("Using alternative home hub refresh")
+        #    sections = set()
+        #    for mli in self.sectionList:
+        #        if mli.dataSource is not None and mli.dataSource != self.lastSection:
+        #            sections.add(mli.dataSource)
+        #    tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections, self.ignoredHubs)
+        #             for s in [self.lastSection] + list(sections) if not s.server.DEFER_HUBS and s != self.lastSection]
+        #else:
+        # fetch hubs we need to update
+        rp = self.getCurrentHubsPositions(self.lastSection)
+        tasks = [UpdateHubTask().setup(hub, self.updateHubCallback,
+                                       reselect_pos=rp.get(hub.getCleanHubIdentifier(self.lastSection.key is None)))
+                 for hub in self.updateHubs.values()]
         self.tasks += tasks
         backgroundthread.BGThreader.addTasks(tasks)
 
@@ -1087,10 +1177,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self.cacheSpoilerSettings()
 
     def setThemeDirty(self, *args, **kwargs):
-        self._applyTheme = util.getSetting("theme", "modern-colored")
+        self._applyTheme = util.getSetting("theme")
 
     def setDebugFlag(self, *args, **kwargs):
-        util.DEBUG = util.getSetting("debug", False)
+        util.DEBUG = util.getSetting("debug")
         util.addonSettings.debug = util.DEBUG
 
     def fullyRefreshHome(self, *args, **kwargs):
@@ -1109,12 +1199,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
     def refreshLastSection(self, *args, **kwargs):
         self.enableUpdates()
-        if not xbmc.Player().isPlayingVideo():
+        if not xbmc.Player().isPlayingVideo() and not self._shuttingDown:
             util.LOG("Refreshing last section after wake events")
             self.showHubs(self.lastSection, force=True, update=True)
 
     def onWake(self, *args, **kwargs):
-        wakeAction = util.getSetting('action_on_wake', util.isCoreELEC and 'wait_5' or 'wait_1')
+        wakeAction = util.getSetting('action_on_wake', util.platformFlavor == 'CoreELEC' and 'wait_5' or 'wait_1')
         if wakeAction == "restart":
             self._ignoreReInit = True
             self._restarting = True
@@ -1178,12 +1268,31 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if mli.dataSource is None:
             return
 
+        # auto resume for in-progress items
+        if util.getSetting('home_inprogress_resume'):
+            if mli.dataSource.TYPE in ('episode', 'movie') and mli.dataSource.in_progress:
+                auto_play = True
+
         carryProps = None
         if auto_play:
             carryProps = self.carriedProps
 
+        use_ds = mli.dataSource
+        ds_changed = False
+
+        extra_kwargs = {}
+        if mli.dataSource.is_watchlist:
+            extra_kwargs['from_watchlist'] = True
+            extra_kwargs['external_item'] = True
+
+            if mli.dataSource.TYPE in ("season", "episode"):
+                # we need to change the datasource if someone clicks an episode in a discover hub (watchlist), to go
+                # to the corresponding show
+                use_ds = mli.dataSource.show()
+                ds_changed = True
+
         try:
-            command = opener.open(mli.dataSource, auto_play=auto_play, dialog_props=carryProps)
+            command = opener.open(use_ds, auto_play=auto_play, dialog_props=carryProps, **extra_kwargs)
             if command == "NODATA":
                 raise util.NoDataException
         except util.NoDataException:
@@ -1193,7 +1302,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if self._restarting:
             return
 
-        self.updateListItem(mli)
+        if not ds_changed:
+            self.updateListItem(mli)
 
         if not mli:
             return
@@ -1254,8 +1364,16 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             sections = [playlists_section] + plexapp.SERVERMANAGER.selectedServer.library.sections()
             options = []
 
+            use_sep = False
             if "order" in self.librarySettings and self.librarySettings["order"]:
                 options.append({'key': 'reset_order', 'display': T(33040, "Reset library order")})
+                use_sep = True
+
+            if util.getSetting('cache_requests'):
+                options.append({'key': 'cache_reset', 'display': T(33720, "Clear all caches")})
+                use_sep = True
+
+            if use_sep:
                 options.append(dropdown.SEPARATOR)
 
             had_section = False
@@ -1268,6 +1386,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                                     }
                                    )
                     had_section = True
+
+            # hack for an inexistant watchlist due to it being hidden
+            if util.getUserSetting("use_watchlist", True) and not self.librarySettings.get("/library/sections/watchlist", {}).get("show", True):
+                options.append({'key': 'show',
+                                'section_id': "/library/sections/watchlist",
+                                'display': T(33029, "Show library: {}").format(T(34000, 'Watchlist'))
+                                })
+
             if self.hubSettings:
                 had_hidden_hub = False
                 hidden_hubs_opts = []
@@ -1304,13 +1430,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
         else:
             options = []
-            if plexapp.ACCOUNT.isAdmin and section != playlists_section:
+
+            if plexapp.ACCOUNT.isAdmin and section not in (watchlist_section, playlists_section):
                 options = [{'key': 'refresh', 'display': T(33082, "Scan Library Files")},
                            {'key': 'emptyTrash', 'display': T(33083, "Empty Trash")},
                            {'key': 'analyze', 'display': T(33084, "Analyze")},
                            dropdown.SEPARATOR]
 
-            if section.locations and util.getSetting('path_mapping', True):
+            if section.locations and util.getSetting('path_mapping'):
                 for loc in section.locations:
                     source, target = section.getMappedPath(loc)
                     loc_is_mapped = source and target
@@ -1326,6 +1453,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             options.append({'key': 'hide', 'display': T(33028, "Hide library")})
             options.append({'key': 'move', 'display': T(33039, "Move")})
             options.append(dropdown.SEPARATOR)
+
+            if 'libraries' in util.getSetting('cache_requests') and section != watchlist_section:
+                options.append({'key': 'section_cache_reset', 'display': T(33721, "Clear library cache (not items)")})
+                options.append(dropdown.SEPARATOR)
 
             if self.hubSettings:
                 for section_hub_key in self.ignoredHubs:
@@ -1416,6 +1547,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 section.analyze()
             return
 
+        elif choice["key"] == "cache_reset":
+            try:
+                plexapp.util.INTERFACE.clearRequestsCache()
+            except Exception as e:
+                util.DEBUG_LOG("Couldn't clear requests cache: {}", e)
+
+        elif choice["key"] == "section_cache_reset":
+            try:
+                util.DEBUG_LOG('Clearing requests cache for section {}...', section.title)
+                section.clearCache()
+            except Exception as e:
+                util.DEBUG_LOG("Couldn't clear library cache: {}", e)
+
     def hubMenu(self, hubControlID):
         hub = self.currentHub
         if not hub:
@@ -1468,12 +1612,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                     options.append({'key': 'remove_cw', 'display': T(33662, "Remove from Continue Watching")})
                     if not has_mp:
                         select_base = 1
+                if util.getSetting('home_inprogress_resume') and mli.dataSource.in_progress:
+                    # this is an in progress item that would be auto resumed; add specific entry to visit media instead
+                    options.insert(0, dropdown.SEPARATOR)
+                    options.insert(0, {'key': 'to_item', 'display': T(33019, "Visit media item")})
+                    select_base = 0
+
 
             if mli.dataSource.TYPE in ('episode', 'season'):
                 options.append(dropdown.SEPARATOR)
                 options.append({'key': 'to_show', 'display': T(32323, "Go To Show")})
                 if mli.dataSource.TYPE == 'episode':
                     options.append({'key': 'to_season', 'display': T(32400, "Go To Season")})
+
+            if 'items' in util.getSetting('cache_requests'):
+                options.append({'key': 'cache_reset', 'display': T(33728, "Clear cache for item")})
 
         choice = dropdown.showDropdown(
             options,
@@ -1497,7 +1650,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             return self.lastSection
 
         elif choice["key"] in ("mark_watched", "mark_unwatched"):
-            if util.getSetting('home_confirm_actions', True):
+            if util.getSetting('home_confirm_actions'):
                 button = optionsdialog.show(
                     T(32319, "Mark Played") if choice["key"] == "mark_watched" else T(32318, "Mark Unplayed"),
                     u"{} {}".format(mli.label, mli.label2),
@@ -1511,6 +1664,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
             if choice["key"] == "mark_watched":
                 mli.dataSource.markWatched()
+                if mli.dataSource.isFullyWatched:
+                    guid = mli.dataSource.show().guid if mli.dataSource.TYPE in ('episode',
+                                                                                 'season') else mli.dataSource.guid
+                    removeFromWatchlistBlind(guid)
                 self._updateOnDeckHubs()
 
             elif choice["key"] == "mark_unwatched":
@@ -1518,7 +1675,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 self._updateOnDeckHubs()
 
         elif choice["key"] == "remove_cw":
-            if util.getSetting('home_confirm_actions', True):
+            if util.getSetting('home_confirm_actions'):
                 button = optionsdialog.show(
                     T(33662, "Remove from Continue Watching"),
                     u"{} {}".format(mli.label, mli.label2),
@@ -1542,6 +1699,22 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             except util.NoDataException:
                 util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
                 return
+
+        elif choice["key"] == "to_item":
+            try:
+                command = opener.open(mli.dataSource, dialog_props=self.carriedProps)
+                if command == "NODATA":
+                    raise util.NoDataException
+            except util.NoDataException:
+                util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+                return
+
+        elif choice["key"] == "cache_reset":
+            try:
+                util.DEBUG_LOG('Clearing requests cache for {}...', mli.dataSource)
+                mli.dataSource.clearCache()
+            except Exception as e:
+                util.DEBUG_LOG("Couldn't clear cache: {}", e)
 
     def sectionMover(self, item, action):
         def stop_moving(reset=False):
@@ -1636,7 +1809,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
         if not mli or not mli.getProperty('is.end') or mli.getProperty('is.updating') == '1':
             # round robining
-            if mli and util.getSetting("hubs_round_robin", False):
+            if mli and util.getSetting("hubs_round_robin"):
                 mlipos = control.getManagedItemPosition(mli)
 
                 # in order to not round-robin when the next chunk is loading, implement our own cheap round-robining
@@ -1649,10 +1822,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                         self.updateBackgroundFrom(control[0].dataSource)
                         return
                 elif (action == xbmcgui.ACTION_MOVE_LEFT and mlipos == 0
-                      and (controlID, mlipos) == self._lastSelectedItem):
+                      and ((controlID, mlipos) == self._lastSelectedItem)):
                     if not control.dataSource.more.asInt():
                         last_item_index = len(control) - 1
                         control.selectItem(last_item_index)
+                        while control.getSelectedPos() != last_item_index:
+                            util.MONITOR.waitForAbort(0.1)
+
+                        if not control[last_item_index].dataSource:
+                            last_item_index -= 1
+                            control.selectItem(last_item_index)
+                            
                         self._lastSelectedItem = (controlID, last_item_index)
                         self.updateBackgroundFrom(control[last_item_index].dataSource)
                     else:
@@ -1698,13 +1878,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self.tasks = [t for t in self.tasks if t]
 
     def sectionChanged(self, force=False):
+        if self._shuttingDown:
+            return
+
         self.sectionChangeTimeout = time.time() + 0.5
 
         # wait 2s at max if we're currently awaiting any hubs to reload
         # fixme: this can be done in a better way, probably
         waited = 0
         while any(self.tasks) and waited < 20:
-            self.showBusy(True)
+            if waited > 5:
+                self.showBusy(True)
             util.MONITOR.waitForAbort(0.1)
             waited += 1
         self.showBusy(False)
@@ -1719,10 +1903,16 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             self.sectionChangeThread.start()
 
     def _sectionChanged(self, immediate=False):
+        if self._shuttingDown:
+            return
+
         if not immediate:
             if not self.sectionChangeTimeout:
                 return
             while not util.MONITOR.waitForAbort(0.1):
+                # timing issue
+                if not self.sectionChangeTimeout:
+                    return
                 if time.time() >= self.sectionChangeTimeout:
                     break
 
@@ -1734,6 +1924,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
     def _sectionReallyChanged(self, section):
         with self.lock:
+            while self.block_section_change:
+                util.MONITOR.waitForAbort(0.1)
+
             self.setProperty('hub.focus', '')
             if util.addonSettings.dynamicBackgrounds:
                 self.backgroundSet = False
@@ -1754,8 +1947,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
     def sectionHubsCallback(self, section, hubs, reselect_pos_dict=None):
         with self.lock:
             update = bool(self.sectionHubs.get(section.key))
+            # sort hubs by hubmap index
+            hubs.sort(key=lambda hub: self.HUBMAP.get(hub.getCleanHubIdentifier(is_home=section.key is None),
+                                                    {"index": 999})["index"])
+
             self.sectionHubs[section.key] = hubs
             if self.lastSection == section:
+                if section.server.DEFER_HUBS:
+                    self.setBoolProperty('loading.content', False)
                 self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
 
     def updateHubCallback(self, hub, items=None, reselect_pos=None):
@@ -1785,6 +1984,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self.updateHubCallback(hub, items, reselect_pos=reselect_pos)
 
     def showSections(self, focus_section=None):
+        global watchlist_section
         self.sectionHubs = {}
         items = []
 
@@ -1794,6 +1994,16 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         items.append(homemli)
 
         sections = []
+
+        # https://discover.provider.plex.tv/library/sections/watchlist/all?includeAdvanced=1&includeMeta=1
+        if not plexapp.ACCOUNT.isOffline and util.getUserSetting("use_watchlist", True) and ("/library/sections/watchlist" not in self.librarySettings
+                or ("/library/sections/watchlist" in self.librarySettings and self.librarySettings["/library/sections/watchlist"].get("show", True))):
+            # get watchlist
+            from plexnet import plexlibrary
+            wl = watchlist_section = plexlibrary.WatchlistSection(None, server=plexapp.SERVERMANAGER.getDiscoverServer())
+            if wl.has_data():
+                wl.title = T(34000, 'Watchlist')
+                sections.append(wl)
 
         if "playlists" not in self.librarySettings \
                 or ("playlists" in self.librarySettings and self.librarySettings["playlists"].get("show", True)):
@@ -1827,10 +2037,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
         if plexapp.SERVERMANAGER.selectedServer.hasHubs():
             self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections, self.ignoredHubs)
-                          for s in [home_section] + sections]
+                          for s in [home_section] + sections if not s.server.DEFER_HUBS]
             backgroundthread.BGThreader.addTasks(self.tasks)
 
-        show_pm_indicator = util.getSetting('path_mapping_indicators', True)
+        show_pm_indicator = util.getSetting('path_mapping_indicators')
         for section in sections:
             mli = kodigui.ManagedListItem(section.title,
                                           thumbnailImage='script.plex/home/type/{0}.png'.format(section.type),
@@ -1839,6 +2049,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             if section == playlists_section:
                 mli.setProperty('is.playlists', '1')
                 mli.setThumbnailImage('script.plex/home/type/playlists.png')
+            elif section == watchlist_section:
+                mli.setThumbnailImage('script.plex/home/type/watchlist.png')
             if pmm.mapping and show_pm_indicator:
                 mli.setBoolProperty('is.mapped', section.isMapped)
             items.append(mli)
@@ -1892,21 +2104,25 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                         rp[identifier] = (str(mli.dataSource.ratingKey), pos)
         return rp
 
+    @busy.busy_property()
     def _showHubs(self, section=None, update=False, force=False, reselect_pos_dict=None):
         if not update:
             self.clearHubs()
 
-        if not plexapp.SERVERMANAGER.selectedServer.hasHubs():
+        if not section.server.DEFER_HUBS and not plexapp.SERVERMANAGER.selectedServer.hasHubs():
             return
 
         if section.key is False:
-            self.showBusy(False)
             return
-
-        self.showBusy(True)
 
         hubs = self.sectionHubs.get(section.key)
         section_stale = False
+
+        if hubs is None and section.server.DEFER_HUBS:
+            util.DEBUG_LOG('Showing deferred hubs - Section: {0} - Update: {1}', section.key, update)
+            force = True
+            hubs = HubsList()
+            self.setBoolProperty('loading.content', True)
 
         if not force:
             if hubs is not None:
@@ -1915,7 +2131,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             # hubs.invalid is True when the last hub update errored. if the hub is stale, refresh it, though
             if hubs is not None and hubs.invalid and not section_stale:
                 util.DEBUG_LOG("Section fetch has failed: {}", section.key)
-                self.showBusy(False)
                 self.setBoolProperty('no.content', True)
                 return
 
@@ -1926,7 +2141,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                         break
 
                 if section.type != "home":
-                    self.showBusy(False)
                     self.setBoolProperty('no.content', True)
                 return
 
@@ -1949,49 +2163,46 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             return
 
         util.DEBUG_LOG('Showing hubs - Section: {0} - Update: {1}', section.key, update)
-        try:
-            hasContent = False
-            skip = {}
+        hasContent = False
+        skip = {}
 
-            for hub in hubs:
-                identifier = hub.getCleanHubIdentifier(is_home=not section.key)
+        for hub in hubs:
+            identifier = hub.getCleanHubIdentifier(is_home=not section.key)
 
-                if identifier not in self.HUBMAP:
-                    util.DEBUG_LOG('UNHANDLED - Hub: {0} [{1}]({2})'.format(hub.hubIdentifier, identifier,
-                                                                            len(hub.items)))
+            if identifier not in self.HUBMAP:
+                util.DEBUG_LOG('UNHANDLED - Hub: {0} [{1}]({2})'.format(hub.hubIdentifier, identifier,
+                                                                        len(hub.items)))
+                continue
+
+            skip[self.HUBMAP[identifier]['index']] = 1
+
+            if self.showHub(hub, is_home=not section.key,
+                            reselect_pos=reselect_pos_dict.get(identifier) if reselect_pos_dict else None):
+                if hub.items:
+                    hasContent = True
+                if self.HUBMAP[identifier].get('do_updates'):
+                    self.updateHubs[identifier] = hub
+
+        if not hasContent:
+            self.setBoolProperty('no.content', True)
+
+        lastSkip = 0
+        if skip:
+            lastSkip = min(skip.keys())
+
+        focus = None
+        if update:
+            for i, control in enumerate(self.hubControls):
+                if i in skip:
+                    lastSkip = i
                     continue
+                if self.getFocusId() == control.getId():
+                    focus = lastSkip
+                control.reset()
 
-                skip[self.HUBMAP[identifier]['index']] = 1
-
-                if self.showHub(hub, is_home=not section.key,
-                                reselect_pos=reselect_pos_dict.get(identifier) if reselect_pos_dict else None):
-                    if hub.items:
-                        hasContent = True
-                    if self.HUBMAP[identifier].get('do_updates'):
-                        self.updateHubs[identifier] = hub
-
-            if not hasContent:
-                self.setBoolProperty('no.content', True)
-
-            lastSkip = 0
-            if skip:
-                lastSkip = min(skip.keys())
-
-            focus = None
-            if update:
-                for i, control in enumerate(self.hubControls):
-                    if i in skip:
-                        lastSkip = i
-                        continue
-                    if self.getFocusId() == control.getId():
-                        focus = lastSkip
-                    control.reset()
-
-                if focus is not None:
-                    self.setFocusId(focus)
-            self.storeLastBG()
-        finally:
-            self.showBusy(False)
+            if focus is not None:
+                self.setFocusId(focus)
+        self.storeLastBG()
 
     def showHub(self, hub, items=None, is_home=False, reselect_pos=None):
         identifier = hub.getCleanHubIdentifier(is_home=is_home)
@@ -2173,7 +2384,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         use_reselect_pos = False
         if reselect_pos is not None:
             rk, pos = reselect_pos
-            use_reselect_pos = True if rk is not None else (reselect_pos > 0 or reselect_pos == -1)
+            use_reselect_pos = True if rk is not None else (pos > 0 or pos == -1)
 
             if pos == 0 and not use_reselect_pos:
                 # we might want to force the first position, check the hubs position
@@ -2183,6 +2394,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         items = []
 
         check_spoilers = False
+
+        # fetch previously seen item states
+        # date, view count, last viewed at
+        hub_item_state_key = "_".join([plexapp.util.INTERFACE.getRCBaseKey(), identifier])
+        hub_item_states = (util.HUB_ITEM_STATES.get(hub_item_state_key, {}) or {"movie": 0,
+                                                                                "episode": 0,
+                                                                                "season": 0,
+                                                                                "show": 0})
+        cks = []
+        urls = []
+
+        hub_is_watchlist = hub.is_watchlist
+
         for obj in hubitems or hub.items:
             if not self.backgroundSet and not use_reselect_pos:
                 if self.updateBackgroundFrom(obj):
@@ -2198,9 +2422,30 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 # with_art sets the wide parameter which includes the episode title
                 wide = no_spoilers in ("funwatched", "unwatched") and not self.noTitles
 
+            # determine whether we need to clear caches based on item parameters
+            if obj.cachable and obj.type in hub_item_states:
+                seen = hub_item_states[obj.type]
+                last_update = max(int(obj.get('addedAt', 0)), int(obj.get('updatedAt', 0)))
+                if seen < last_update:
+                    _cks, _urls = obj.clearCache(return_urls=True)
+                    cks += _cks
+                    urls += _urls
+                    hub_item_states[obj.type] = last_update
+
+            if hub_is_watchlist:
+                obj.is_watchlist = True
+
             mli = self.createListItem(obj, wide=wide)
             if mli:
                 items.append(mli)
+
+        if util.getSetting('cache_requests'):
+            cks = list(set(cks))
+            urls = list(set(urls))
+            if cks:
+                obj._clearCache(cks, urls)
+
+            util.HUB_ITEM_STATES[hub_item_state_key] = hub_item_states
 
         if with_progress:
             for mli in items:
@@ -2212,7 +2457,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 # use episode thumbnail for in progress episodes
                 if mli.dataSource.type == 'episode' and util.addonSettings.continueUseThumb and check_spoilers:
                     # blur them if we don't want any spoilers and the episode hasn't been fully watched
-                    if mli.dataSource._noSpoilers:
+                    if self.noResumeImages and mli.dataSource._noSpoilers:
                         extra_opts = {"blur": util.addonSettings.episodeNoSpoilerBlur}
                     thumb = mli.dataSource.thumb
 
@@ -2265,9 +2510,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 for idx, mli in enumerate(control):
                     if mli.dataSource and mli.dataSource.ratingKey and str(mli.dataSource.ratingKey) == rk:
                         if cur_pos != idx:
-                            util.DEBUG_LOG("Hub {}: Reselect: Found {} in list, reselecting", identifier, rk)
+                            util.DEBUG_LOG("Hub {}: Reselect: Found {} in list ({} vs. {}), reselecting",
+                                           identifier, rk, idx, pos)
                             control.selectItem(idx)
                             rk_found = True
+                            pos = idx
+                            break
                         else:
                             return
                 if rk_found:
@@ -2326,9 +2574,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             return
 
         section = item.dataSource
+        self.lastSection = section
 
-        if section.type in ('show', 'movie', 'artist', 'photo'):
+        if section.type in ('show', 'movie', 'artist', 'photo', 'mixed'):
             self.processCommand(opener.sectionClicked(section))
+            self.sectionChangeTimeout = None
         elif section.type in ('playlists',):
             self.processCommand(opener.handleOpen(playlists.PlaylistsWindow))
 
@@ -2400,21 +2650,28 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             if not from_refresh:
                 plexapp.refreshResources()
 
-    def selectServer(self):
+    def selectServer(self, uuid=None):
         if self._shuttingDown:
             return
 
-        mli = self.serverList.getSelectedItem()
-        if not mli:
-            return
+        if not uuid:
+            mli = self.serverList.getSelectedItem()
+            if not mli:
+                return
+            server = mli.dataSource
+        else:
+            server = plexapp.SERVERMANAGER.getServer(uuid)
+            if not server:
+                return
+
+        # store last used server
+        prevUUID = plexapp.SERVERMANAGER.selectedServer.uuid
 
         self.changingServer = True
 
         # this is broken
         with busy.BusySignalContext(plexapp.util.APP, "change:selectedServer") as bc:
             self.setFocusId(self.SECTION_LIST_ID)
-
-            server = mli.dataSource
 
             # fixme: this might still trigger a dialog, re-triggering the previously opened windows
             if not self._shuttingDown and not server.isReachable():
@@ -2433,6 +2690,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             if not changed:
                 bc.ignoreSignal = True
                 self.changingServer = False
+            else:
+                util.setSetting('previous_server.{}'.format(plexapp.ACCOUNT.ID), prevUUID)
 
     def showUserMenu(self, mouse=False):
         items = []
@@ -2467,12 +2726,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if not mouse:
             self.setFocusId(self.USER_LIST_ID)
 
-    def doUserOption(self):
-        mli = self.userList.getSelectedItem()
-        if not mli:
-            return
+    def doUserOption(self, force_option=None):
+        if not force_option:
+            mli = self.userList.getSelectedItem()
+            if not mli:
+                return
 
-        option = mli.dataSource
+            option = mli.dataSource
+        else:
+            option = force_option
+
+        def kill_background():
+            util.DEBUG_LOG("Killing last background image")
+            kodigui.LAST_BG_URL = None
+            self.windowSetBackground(None)
 
         self.setFocusId(self.USER_BUTTON_ID)
 
@@ -2496,9 +2763,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             if button != 1:
                 return
             self.closeOption = option
+            kill_background()
             self.doClose()
         else:
             self.closeOption = option
+            kill_background()
             self.doClose()
 
     def showAudioPlayer(self):

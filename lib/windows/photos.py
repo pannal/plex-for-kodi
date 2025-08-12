@@ -143,6 +143,9 @@ class PhotoWindow(kodigui.BaseWindow):
 
         kodigui.BaseWindow.onAction(self, action)
 
+    def goHome(self, *args, **kwargs):
+        self.doClose()
+
     def checkPqueueListChanged(self):
         item = self.pqueueList.getSelectedItem()
         if item == self.lastItem:

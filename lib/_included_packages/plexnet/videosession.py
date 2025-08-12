@@ -369,7 +369,8 @@ class VideoPPI(ComputedPPIValue):
     dataPoints = [
         DPAttributesDiffer("videoCodec"),
         DPAttributesDiffer("videoResolution", valueFormatter=lambda i, v1, v2: [normRes(v1), normRes(v2)]),
-        DPAttributesDiffer("videoBitrate", formatTrue=u"%(val1)s->%(val2)skbit", formatFalse=u"%(val1)skbit"),
+        DPAttributesDiffer("videoBitrate", formatTrue=u"%(val1)s->%(val2)skbit", formatFalse=u"%(val1)skbit",
+                           valueFormatter=lambda i, v1, v2: [v1, v2 if v2 != "2147483647" else "?"]),
         lambda i: [
             (i.details.session.videoStreamDecision + " HW")
             if i.details.session.transcodeVideoDecision == "transcode" and i.details.session.transcodeHWEncoding

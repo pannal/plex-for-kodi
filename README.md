@@ -39,3 +39,7 @@ https://forums.plex.tv/t/plexmod-for-kodi-18-19-20-21/481208
 
 ## License
 [LICENSE](https://github.com/plexinc/plex-for-kodi/blob/master/LICENSE.txt)
+
+## Powered by
+
+[![JetBrains logo.](https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.svg)](https://jb.gg/OpenSource)

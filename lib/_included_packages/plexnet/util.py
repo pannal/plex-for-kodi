@@ -44,6 +44,7 @@ def resetBaseHeaders():
         'X-Plex-Version': ADDON.getAddonInfo('version'),
         'X-Plex-Device': X_PLEX_DEVICE,
         'X-Plex-Client-Identifier': X_PLEX_IDENTIFIER,
+        'X-Plex-Language': LANGUAGE_CODE,
         'Accept-Encoding': 'gzip,deflate',
         'Accept-Language': ACCEPT_LANGUAGE,
         'User-Agent': '{0}/{1}'.format("PM4K", ADDON.getAddonInfo('version'))
@@ -53,9 +54,9 @@ def resetBaseHeaders():
 # Core Settings
 PROJECT = 'PlexNet'                                 # name provided to plex server
 VERSION = '0.0.0a1'                                 # version of this api
-TIMEOUT = 10                                        # request timeout
+TIMEOUT = 5                                        # request timeout
 TIMEOUT_CONNECT = 5                                 # connect timeout
-DEFAULT_TIMEOUT = 10
+DEFAULT_TIMEOUT = 5
 LONG_TIMEOUT = 20
 PLEXTV_TIMEOUT = None                               # set me later
 PLEXTV_TIMEOUT_READ = 20                                   # s
@@ -64,9 +65,13 @@ CONN_CHECK_TIMEOUT = 2.5                            # s
 LAN_REACHABILITY_TIMEOUT = 0.01                     # s
 CHECK_LOCAL = False
 LOCAL_OVER_SECURE = False
+DEBUG_REQUESTS = False
+CACHED_PLEX_URLS = {}
+REQUESTS_CACHE_EXPIRY = 168
 X_PLEX_CONTAINER_SIZE = 50                          # max results to return in a single search page
 
 ACCEPT_LANGUAGE = 'en-US,en'
+LANGUAGE_CODE = 'en'
 
 # Plex Header Configuation
 X_PLEX_PROVIDES = 'player,controller'          # one or more of [player, controller, server]
@@ -75,6 +80,7 @@ X_PLEX_PLATFORM_VERSION = platform.uname()[2]  # Operating system version, eg 4.
 X_PLEX_PRODUCT = PROJECT                       # Plex application name, eg Laika, Plex Media Server, Media Link
 X_PLEX_VERSION = VERSION                       # Plex application version number
 USER_AGENT = '{0}/{1}'.format(PROJECT, VERSION)
+TEMP_PATH = None
 
 USE_CERT_BUNDLE = False
 
@@ -253,6 +259,7 @@ def getPlexHeaders():
             "X-Plex-Device": INTERFACE.getGlobal("device"),
             "X-Plex-Model": INTERFACE.getGlobal("model"),
             "X-Plex-Device-Name": INTERFACE.getGlobal("friendlyName"),
+            "X-Plex-Language": LANGUAGE_CODE,
             'Accept-Encoding': 'gzip,deflate',
             'Accept-Language': ACCEPT_LANGUAGE,
             'User-Agent': '{0}/{1}'.format("PM4K", ADDON.getAddonInfo('version'))
@@ -418,7 +425,9 @@ AUDIO_CODECS_VERB = {
 
 AUDIO_CODECS = list(AUDIO_CODECS_VERB.keys())
 
-AUDIO_CODECS_TC = ['mp3', 'ac3', 'dca', 'aac', 'opus']
+AUDIO_CODECS_TC = ['mp3', 'ac3', 'aac', 'opus', 'vorbis', 'eac3', 'flac', 'alac']
+
+AUDIO_CODECS_TC_VERB = {codec: AUDIO_CODECS_VERB[codec] for codec in AUDIO_CODECS_TC}
 
 
 

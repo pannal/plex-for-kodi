@@ -82,9 +82,9 @@ class PlexPlayer(BasePlayer):
         else:
             directPlay = directPlayPref == "forced" and True or None
 
-        return self._build(directPlay, "playback_remux" in features)
+        return self._build(directPlay, "playback_remux" in features, features=features)
 
-    def _build(self, directPlay=None, directStream=True, currentPartIndex=None):
+    def _build(self, directPlay=None, directStream=True, currentPartIndex=None, features=None):
         isForced = directPlay is not None
         if isForced:
             util.LOG(directPlay and "Forced Direct Play" or "Forced Transcode; allowDirectStream={0}".format(directStream))
@@ -159,7 +159,8 @@ class PlexPlayer(BasePlayer):
                 transcodeServer = self.item.getTranscodeServer(True, "video")
                 if transcodeServer is None:
                     return None
-                partObj = self.buildTranscode(transcodeServer, partObj, partIndex, directStream, isCurrentPart)
+                partObj = self.buildTranscode(transcodeServer, partObj, partIndex, directStream, isCurrentPart,
+                                              features=features)
 
             # Set up our linked list references. If we couldn't build an actual
             # object: fail fast. Otherwise, see if we're at our start offset
@@ -270,10 +271,16 @@ class PlexPlayer(BasePlayer):
         if not self.item or not self.metadata:
             return None
 
+        features = self.item.settings.getPlaybackFeatures()
+
         decisionPath = self.metadata.decisionPath
         if not decisionPath:
             server = self.metadata.transcodeServer or self.item.getServer()
-            decisionPath = self.buildTranscode(server, util.AttributeDict(), self.metadata.partIndex, True, False).decisionPath
+            decisionPath = self.buildTranscode(server, util.AttributeDict(),
+                                               self.metadata.partIndex,
+                                               True,
+                                               False,
+                                               features=features).decisionPath
 
         # Modify the decision params based on the transcode url
         if decisionPath:
@@ -396,6 +403,11 @@ class PlexPlayer(BasePlayer):
             disACodecs = self.item.settings.getPreference("audio_disabled_codecs", [])
             if disACodecs:
                 audioCodecs = list(set(audioCodecs) - set(disACodecs))
+
+            # force transcode audio codec
+            tcACodec = self.item.settings.getPreference("audio_transcode_codec", "default")
+            if tcACodec != "default":
+                audioCodecs = [tcACodec]
         else:
             if dtsIsAC3:
                 audioCodecs = ["ac3", "dca"]
@@ -568,7 +580,7 @@ class PlexPlayer(BasePlayer):
         if self.media.protocol == "hls":
             obj.streamFormat = "hls"
             obj.switchingStrategy = "full-adaptation"
-            obj.live = self.isLiveHLS(obj.streamUrls[0], self.media.indirectHeaders)
+            #obj.live = self.isLiveHls(obj.streamUrls[0], self.media.indirectHeaders)
         else:
             obj.streamFormat = self.media.get('container', 'mp4')
             if obj.streamFormat == "mov" or obj.streamFormat == "m4v":
@@ -618,7 +630,7 @@ class PlexPlayer(BasePlayer):
 
         return None
 
-    def buildTranscode(self, server, obj, partIndex, directStream, isCurrentPart):
+    def buildTranscode(self, server, obj, partIndex, directStream, isCurrentPart, features=None):
         util.DEBUG_LOG('buildTranscode()')
         obj.transcodeServer = server
         obj.isTranscoded = True
@@ -681,9 +693,15 @@ class PlexPlayer(BasePlayer):
         builder.addParam("directPlay", "0")
 
         qualityIndex = self.item.settings.getQualityIndex(self.item.getQualityType(server))
-        builder.addParam("videoQuality", self.item.settings.getGlobal("transcodeVideoQualities")[qualityIndex])
-        builder.addParam("videoResolution", str(self.item.settings.getGlobal("transcodeVideoResolutions")[qualityIndex]))
+        #builder.addParam("videoQuality", self.item.settings.getGlobal("transcodeVideoQualities")[qualityIndex])
+        maxVideoResolution = "allow_4k" in features and "3840x2160" or "1920x1080"
+        builder.addParam("videoResolution", str(maxVideoResolution))
         builder.addParam("maxVideoBitrate", self.item.settings.getGlobal("transcodeVideoBitrates")[qualityIndex])
+
+        builder.extras.append(
+            "add-limitation(scope=videoCodec&scopeName=*&context=streaming&protocol=http&"
+            "type=upperBound&name=video.height&value={}&isRequired=true)".format("allow_4k" in features and "2160" or
+                                                                                 "1088"))
 
         if self.media.mediaIndex is not None:
             builder.addParam("mediaIndex", str(self.media.mediaIndex))

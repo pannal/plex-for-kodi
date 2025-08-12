@@ -19,13 +19,16 @@
         <effect type="slide" end="0,{{ vscale(-500) }}" time="200" tween="quadratic" easing="out"/>
     </animation>
 
+    <ondown condition="!String.IsEmpty(Window.Property(disable_playback))">400</ondown>
+
     <posx>0</posx>
     <posy>{{ vscale(155) }}</posy>
-    <defaultcontrol>101</defaultcontrol>
+    <!--<defaultcontrol>101</defaultcontrol>-->
 
     {% block buttons %}
         {% if theme.episodes.use_button_bg %}
             <control type="image">
+                <visible>String.IsEmpty(Window.Property(disable_playback))</visible>
                 <posx>60</posx>
                 <posy>{{ vscale(369) }}</posy>
                 <width>657</width>
@@ -35,7 +38,7 @@
             </control>
         {% endif %}
         <control type="grouplist" id="300">
-            <visible allowhiddenfocus="!String.IsEmpty(Container(400).ListItem.Property(media.multiple))">String.IsEmpty(Container(400).ListItem.Property(media.multiple)) + !String.IsEmpty(Window.Property(initialized))</visible>
+            <visible allowhiddenfocus="!String.IsEmpty(Container(400).ListItem.Property(media.multiple))">String.IsEmpty(Container(400).ListItem.Property(media.multiple)) + !String.IsEmpty(Window.Property(initialized)) + String.IsEmpty(Window.Property(disable_playback))</visible>
             <defaultcontrol always="true">301</defaultcontrol>
             <posx>30</posx>
             <posy>{{ theme.episodes.buttongroup.posy|vscale }}</posy>
@@ -64,7 +67,7 @@
             {% endwith %}
         </control>
         <control type="grouplist" id="1300">
-            <visible>!String.IsEmpty(Container(400).ListItem.Property(media.multiple)) + !String.IsEmpty(Window.Property(initialized))</visible>
+            <visible>!String.IsEmpty(Container(400).ListItem.Property(media.multiple)) + !String.IsEmpty(Window.Property(initialized)) + String.IsEmpty(Window.Property(disable_playback))</visible>
             <defaultcontrol always="true">1301</defaultcontrol>
             <posx>30</posx>
             <posy>{{ theme.episodes.buttongroup_1300.posy|vscale }}</posy>
@@ -355,12 +358,14 @@
             </control>
             <control type="label">
                 <visible>!String.IsEmpty(Container(400).ListItem.Property(subtitles))</visible>
-                <width>auto</width>
+                <width max="460">auto</width>
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>FFFFFFFF</textcolor>
+                <scroll>true</scroll>
+                <scrollspeed>15</scrollspeed>
                 <label>$INFO[Container(400).ListItem.Property(subtitles)]</label>
             </control>
         </control>
@@ -407,6 +412,7 @@
 
         <onup condition="Control.IsVisible(300)">300</onup>
         <onup condition="Control.IsVisible(1300)">1300</onup>
+        <onup condition="!Control.IsVisible(1300) + !Control.IsVisible(300)">200</onup>
         <itemgap>0</itemgap>
 
         <!-- EPISODES -->

@@ -4,6 +4,7 @@ import datetime
 
 try:
     datetime.datetime.strptime('0', '%H')
+    new_datetime = datetime.datetime
 except TypeError:
     # Fix for datetime issues with XBMC/Kodi
     class new_datetime(datetime.datetime):

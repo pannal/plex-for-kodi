@@ -31,7 +31,7 @@ class MusicPlayerWindow(currentplaylist.CurrentPlaylistWindow):
     width = 1920
     height = 1080
 
-    SEEK_BUTTON_ID = 100
+    SEEK_BUTTON_ID = 500
     SEEK_IMAGE_ID = 200
     SHUFFLE_REMOTE_BUTTON_ID = 422
     REPEAT_BUTTON_ID = 401
@@ -50,6 +50,7 @@ class MusicPlayerWindow(currentplaylist.CurrentPlaylistWindow):
         self.album = kwargs.get('album')
         self.selectedOffset = 0
         self.exitCommand = None
+        self.duration = None
         self.ignoreStopCommands = False
 
         if self.track:
@@ -150,7 +151,7 @@ class MusicPlayerWindow(currentplaylist.CurrentPlaylistWindow):
         xbmc.executebuiltin('PlayerControl(Next)')
 
     def showPlaylist(self):
-        self.processCommand(opener.handleOpen(currentplaylist.CurrentPlaylistWindow, winID=xbmcgui.getCurrentWindowId()))
+        self.processCommand(opener.handleOpen(currentplaylist.CurrentPlaylistWindow, winID=self._winID))
 
     def stopButtonClicked(self):
         player.PLAYER.stopAndWait()

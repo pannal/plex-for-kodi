@@ -29,6 +29,7 @@ class DataCacheManager(object):
     def __init__(self):
         self._currentServerUUID = None
         plexapp.util.APP.on('change:selectedServer', self.setServerUUID)
+        plexapp.util.APP.on('change:tempServer', self.setServerUUID)
         if self.USE_GZ:
             self.DC_PATH += "z"
         if xbmcvfs.exists(self.DC_PATH):
@@ -59,6 +60,7 @@ class DataCacheManager(object):
 
     def deinit(self):
         plexapp.util.APP.off('change:selectedServer', self.setServerUUID)
+        plexapp.util.APP.off('change:tempServer', self.setServerUUID)
 
     def getCacheData(self, context, identifier):
         ret = self.DATA_CACHES["cache"].get(self._currentServerUUID, {}).get(context, {}).get(identifier, {})

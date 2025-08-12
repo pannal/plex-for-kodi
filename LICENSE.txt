@@ -1282,6 +1282,35 @@ For more information on this, and how to apply and follow the GNU AGPL, see
 <http://www.gnu.org/licenses/>.
 
 -------------------------------------------------------------------------
+requests-cache
+
+Copyright (c) 2012, Roman Haritonov
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+* Redistributions of source code must retain the above copyright
+  notice, this list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright
+  notice, this list of conditions and the following disclaimer in the
+  documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+-------------------------------------------------------------------------
 
 https://github.com/dmulholl/ibis/blob/master/license.txt
 
@@ -1298,5 +1327,7 @@ CC BY 4.0 License: https://creativecommons.org/licenses/by/4.0/#
 Play queue by Sébastien Robaszkiewicz from <a href="https://thenounproject.com/browse/icons/term/play-queue/" target="_blank" title="Play queue Icons">Noun Project</a> (CC BY 3.0)
 fast forward by Adiyogi from <a href="https://thenounproject.com/browse/icons/term/fast-forward/" target="_blank" title="fast forward Icons">Noun Project</a> (CC BY 3.0)
 subtitle by YANDI RS from <a href="https://thenounproject.com/browse/icons/term/subtitle/" target="_blank" title="subtitle Icons">Noun Project</a> (CC BY 3.0)
+hourglass by shariful islam from <a href="https://thenounproject.com/browse/icons/term/hourglass/" target="_blank" title="hourglass Icons">Noun Project</a> (CC BY 3.0)
+Wait for Calendar by Smashicons from <a href="https://thenounproject.com/browse/icons/term/wait-for-calendar/" target="_blank" title="Wait for Calendar Icons">Noun Project</a> (CC BY 3.0)
 
 Other unlisted icons under CC BY 3.0, https://creativecommons.org/licenses/by/3.0/

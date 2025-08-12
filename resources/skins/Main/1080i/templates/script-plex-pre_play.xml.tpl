@@ -37,332 +37,341 @@
 
             {% with attr = theme.pre_play.buttons & template = "includes/themed_button.xml.tpl" %}
                 {% include template with name="info" & id=304 %}
-                {% include template with name="play" & id=302 & visible="String.IsEmpty(Window.Property(unavailable))" %}
+                {% include template with name="play" & id=302 & visible="String.IsEmpty(Window.Property(unavailable)) + String.IsEmpty(Window.Property(disable_playback))" %}
+                {% include "includes/wl_dynamic_buttons.xml.tpl" %}
                 {% include template with name="trailer" & id=303 & visible="!String.IsEmpty(Window.Property(trailer.button))" %}
+                {% include "includes/wl_add_remove_buttons.xml.tpl" %}
                 {% include template with name="media" & id=307 & visible="!String.IsEmpty(Window.Property(media.multiple))" %}
-                {% include template with name="settings" & id=305 %}
-                {% include template with name="more" & id=306 %}
+                {% include template with name="settings" & id=305 & visible="String.IsEmpty(Window.Property(disable_playback))" %}
+                {% include template with name="more" & id=306 & visible="String.IsEmpty(Window.Property(disable_playback))" %}
             {% endwith %}
 
         </control>
     {% endblock %}
 
-    <control type="group">
-        <posx>0</posx>
-        <posy>0</posy>
-        <width>1920</width>
-        <height>{{ vscale(600) }}</height>
+    {% block details %}
         <control type="group">
-            <visible>!String.IsEmpty(Window.Property(preview.no))</visible>
-            <control type="image">
-                <posx>60</posx>
-                <posy>0</posy>
-                <width>347</width>
-                <height>{{ vscale(518) }}</height>
-                <texture background="true">script.plex/thumb_fallbacks/movie.png</texture>
-                <animation effect="fade" start="0" end="100" time="0" delay="500">WindowOpen</animation>
-                <aspectratio>scale</aspectratio>
-            </control>
-            <control type="image">
-                <posx>60</posx>
-                <posy>0</posy>
-                <width>347</width>
-                <height>{{ vscale(518) }}</height>
-                <texture background="true">$INFO[Window.Property(thumb)]</texture>
-                <aspectratio>scale</aspectratio>
-            </control>
-            {% include "includes/watched_indicator.xml.tpl" with itemref="Window" & xoff=347+60 & uw_size=48 & scale="medium" %}
-
-        </control>
-
-        <control type="group">
-            <visible>!String.IsEmpty(Window.Property(preview.yes))</visible>
-            <posx>60</posx>
-            <posy>0</posy>
-            <control type="image">
-                <posx>0</posx>
-                <posy>0</posy>
-                <width>347</width>
-                <height>{{ vscale(315) }}</height>
-                <texture background="true">script.plex/thumb_fallbacks/show.png</texture>
-                <animation effect="fade" start="0" end="100" time="0" delay="500">WindowOpen</animation>
-                <aspectratio>scale</aspectratio>
-            </control>
-            <control type="image">
-                <posx>0</posx>
-                <posy>{{ vscale(323) }}</posy>
-                <width>347</width>
-                <height>{{ vscale(195) }}</height>
-                <texture colordiffuse="FF111111">script.plex/white-square.png</texture>
-                <aspectratio>scale</aspectratio>
-            </control>
-
-            <control type="image">
-                <posx>0</posx>
-                <posy>0</posy>
-                <width>347</width>
-                <height>{{ vscale(315) }}</height>
-                <texture background="true">$INFO[Window.Property(thumb)]</texture>
-                <aspectratio aligny="top">scale</aspectratio>
-            </control>
-            <control type="image">
-                <posx>0</posx>
-                <posy>{{ vscale(323) }}</posy>
-                <width>347</width>
-                <height>{{ vscale(195) }}</height>
-                <texture background="true">$INFO[Window.Property(preview)]</texture>
-                <aspectratio>scale</aspectratio>
-            </control>
-        </control>
-        <control type="grouplist">
-            <posx>466</posx>
-            <posy>0</posy>
-            <width>1226</width>
-            <height>{{ vscale(60) }}</height>
-            <align>left</align>
-            <itemgap>0</itemgap>
-            <scroll>true</scroll>
-            <scrollspeed>5</scrollspeed>
-            <orientation>horizontal</orientation>
-            <usecontrolcoords>true</usecontrolcoords>
-            <control type="label">
-                <width>auto</width>
-                <height>{{ vscale(60) }}</height>
-                <font>font13</font>
-                <align>left</align>
-                <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(title)]</label>
-            </control>
-            <control type="button">
-                <visible>!String.IsEmpty(Window.Property(remainingTime))</visible>
-                <posx>10</posx>
-                <posy>6</posy>
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>center</align>
-                <aligny>center</aligny>
-                <focusedcolor>FFE5A00D</focusedcolor>
-                <textcolor>FFE5A00D</textcolor>
-                <textoffsetx>15</textoffsetx>
-                <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
-                <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-                <label>$INFO[Window.Property(remainingTime)]</label>
-            </control>
-        </control>
-        <control type="grouplist">
-            <posx>466</posx>
-            <posy>{{ vscale(68) }}</posy>
-            <width>1360</width>
-            <height>{{ vscale(34) }}</height>
-            <align>left</align>
-            <itemgap>0</itemgap>
-            <orientation>horizontal</orientation>
-            <usecontrolcoords>true</usecontrolcoords>
-            <control type="label">
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>left</align>
-                <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(duration)]$INFO[Window.Property(info), &#8226; ]$INFO[Window.Property(date), &#8226; ]$INFO[Window.Property(content.rating), &#8226; ]</label>
-            </control>
-            <control type="button">
-                <visible>!String.IsEmpty(Window.Property(video.res))</visible>
-                <posx>10</posx>
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>center</align>
-                <aligny>center</aligny>
-                <focusedcolor>FFFFFFFF</focusedcolor>
-                <textcolor>FFFFFFFF</textcolor>
-                <textoffsetx>15</textoffsetx>
-                <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
-                <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-                <label>$INFO[Window.Property(video.res)]$INFO[Window.Property(video.rendering), &#8226; ]$INFO[Window.Property(video.codec), &#8226; ]$INFO[Window.Property(audio.codec), &#8226; ]$INFO[Window.Property(audio.channels), &#8226; ]</label>
-            </control>
-            <control type="button">
-                <visible>!String.IsEmpty(Window.Property(unavailable))</visible>
-                <posx>10</posx>
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>center</align>
-                <aligny>center</aligny>
-                <focusedcolor>FFFFFFFF</focusedcolor>
-                <textcolor>FFFFFFFF</textcolor>
-                <textoffsetx>15</textoffsetx>
-                <texturefocus colordiffuse="FFAC3223" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
-                <texturenofocus colordiffuse="FFAC3223" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-                <label>$ADDON[script.plexmod 32312]</label>
-            </control>
-        </control>
-
-        <control type="grouplist">
-            <visible>!String.IsEmpty(Window.Property(rating)) | !String.IsEmpty(Window.Property(rating2))</visible>
-            <posx>1426</posx>
-            <posy>4</posy>
-            <width>434</width>
-            <height>{{ vscale(32) }}</height>
-            <align>right</align>
-            <itemgap>15</itemgap>
-            <orientation>horizontal</orientation>
-            <usecontrolcoords>true</usecontrolcoords>
-            <control type="image">
-                <visible>!String.IsEmpty(Window.Property(rating))</visible>
-                <posy>2</posy>
-                <width>63</width>
-                <height>{{ vscale(30) }}</height>
-                <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating.image)]</texture>
-                <aspectratio align="right">keep</aspectratio>
-            </control>
-            <control type="label">
-                <visible>!String.IsEmpty(Window.Property(rating))</visible>
-                <width>auto</width>
-                <height>{{ vscale(30) }}</height>
-                <font>font12</font>
-                <align>left</align>
-                <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(rating)]</label>
-            </control>
-            <control type="image">
-                <visible>!String.IsEmpty(Window.Property(rating2))</visible>
-                <posy>2</posy>
-                <width>40</width>
-                <height>{{ vscale(30) }}</height>
-                <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating2.image)]</texture>
-                <aspectratio align="right">keep</aspectratio>
-            </control>
-            <control type="label">
-                <visible>!String.IsEmpty(Window.Property(rating2))</visible>
-                <width>auto</width>
-                <height>{{ vscale(30) }}</height>
-                <font>font12</font>
-                <align>left</align>
-                <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(rating2)]</label>
-            </control>
-            <control type="image">
-                <visible>!String.IsEmpty(Window.Property(rating.stars))</visible>
-                <posy>6</posy>
-                <width>134</width>
-                <height>{{ vscale(22) }}</height>
-                <texture>script.plex/stars/$INFO[Window.Property(rating.stars)].png</texture>
-            </control>
-        </control>
-
-        <control type="label">
-            <visible>!String.IsEmpty(Window.Property(directors)) | !String.IsEmpty(Window.Property(writers))</visible>
-            <posx>466</posx>
-            <posy>{{ vscale(130) }}</posy>
-            <width>1360</width>
-            <height>{{ vscale(30) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <textcolor>99FFFFFF</textcolor>
-            <label>$INFO[Window.Property(directors)]$INFO[Window.Property(writers)]</label>
-        </control>
-        <control type="label">
-            <visible>!String.IsEmpty(Window.Property(cast))</visible>
-            <posx>466</posx>
-            <posy>{{ vscale(165) }}</posy>
-            <width>1360</width>
-            <height>{{ vscale(30) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <textcolor>99FFFFFF</textcolor>
-            <label>$INFO[Window.Property(cast)]</label>
-        </control>
-        <control type="grouplist">
-            <posx>466</posx>
-            <posy>{{ vscale(223) }}</posy>
-            <width>1360</width>
-            <height>{{ vscale(34) }}</height>
-            <align>left</align>
-            <itemgap>15</itemgap>
-            <orientation>horizontal</orientation>
-            <usecontrolcoords>true</usecontrolcoords>
-            <control type="button">
-                <visible>!String.IsEmpty(Window.Property(audio))</visible>
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>center</align>
-                <aligny>center</aligny>
-                <focusedcolor>FFFFFFFF</focusedcolor>
-                <textcolor>FFFFFFFF</textcolor>
-                <textoffsetx>15</textoffsetx>
-                <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
-                <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-                <label>[UPPERCASE]$ADDON[script.plexmod 32048][/UPPERCASE]</label>
-            </control>
-            <control type="label">
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>left</align>
-                <aligny>center</aligny>
-                <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(audio)]</label>
-            </control>
-            <control type="button">
-                <visible>!String.IsEmpty(Window.Property(subtitles))</visible>
-                <left>30</left>
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>center</align>
-                <aligny>center</aligny>
-                <focusedcolor>FFFFFFFF</focusedcolor>
-                <textcolor>FFFFFFFF</textcolor>
-                <textoffsetx>15</textoffsetx>
-                <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
-                <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
-                <label>[UPPERCASE]$ADDON[script.plexmod 32396][/UPPERCASE]</label>
-            </control>
-            <control type="label">
-                <visible>!String.IsEmpty(Window.Property(subtitles))</visible>
-                <width>auto</width>
-                <height>{{ vscale(34) }}</height>
-                <font>font12</font>
-                <align>left</align>
-                <aligny>center</aligny>
-                <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(subtitles)]</label>
-            </control>
-        </control>
-        <control type="textbox">
-            <posx>466</posx>
-            <posy>{{ vscale(290) }}</posy>
-            <width>1360</width>
-            <height>{{ vscale(102) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <textcolor>FFFFFFFF</textcolor>
-            <scrolltime>200</scrolltime>
-            <autoscroll delay="2000" time="2000" repeat="10000">!Control.HasFocus(13)</autoscroll>
-            <label>$INFO[Window.Property(summary)]</label>
-        </control>
-        <control type="image" id="250">
-            <animation effect="zoom" start="0,100" end="100,100" time="1000" center="-1,561" reversible="false" tween="circle" easing="out">WindowOpen</animation>
-            <posx>-1</posx>
-            <posy>{{ vscale(557) }}</posy>
-            <width>1</width>
-            <height>{{ vscale(8) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>FFCC7B19</colordiffuse>
-        </control>
-        <control type="image">
-            <visible>!Control.IsVisible(500)</visible>
             <posx>0</posx>
-            <posy>{{ vscale(565) }}</posy>
+            <posy>0</posy>
             <width>1920</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
+            <height>{{ vscale(600) }}</height>
+            <control type="group">
+                <visible>!String.IsEmpty(Window.Property(preview.no))</visible>
+                <control type="image">
+                    <posx>60</posx>
+                    <posy>0</posy>
+                    <width>347</width>
+                    <height>{{ vscale(518) }}</height>
+                    <texture background="true">script.plex/thumb_fallbacks/movie.png</texture>
+                    <animation effect="fade" start="0" end="100" time="0" delay="500">WindowOpen</animation>
+                    <aspectratio>scale</aspectratio>
+                </control>
+                <control type="image">
+                    <posx>60</posx>
+                    <posy>0</posy>
+                    <width>347</width>
+                    <height>{{ vscale(518) }}</height>
+                    <texture background="true">$INFO[Window.Property(thumb)]</texture>
+                    <aspectratio>scale</aspectratio>
+                </control>
+                {% include "includes/watched_indicator.xml.tpl" with itemref="Window" & xoff=347+60 & uw_size=48 & scale="medium" %}
+
+            </control>
+
+            <control type="group">
+                <visible>!String.IsEmpty(Window.Property(preview.yes))</visible>
+                <posx>60</posx>
+                <posy>0</posy>
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>347</width>
+                    <height>{{ vscale(315) }}</height>
+                    <texture background="true">script.plex/thumb_fallbacks/show.png</texture>
+                    <animation effect="fade" start="0" end="100" time="0" delay="500">WindowOpen</animation>
+                    <aspectratio>scale</aspectratio>
+                </control>
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>{{ vscale(323) }}</posy>
+                    <width>347</width>
+                    <height>{{ vscale(195) }}</height>
+                    <texture colordiffuse="FF111111">script.plex/white-square.png</texture>
+                    <aspectratio>scale</aspectratio>
+                </control>
+
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>0</posy>
+                    <width>347</width>
+                    <height>{{ vscale(315) }}</height>
+                    <texture background="true">$INFO[Window.Property(thumb)]</texture>
+                    <aspectratio aligny="top">scale</aspectratio>
+                </control>
+                <control type="image">
+                    <posx>0</posx>
+                    <posy>{{ vscale(323) }}</posy>
+                    <width>347</width>
+                    <height>{{ vscale(195) }}</height>
+                    <texture background="true">$INFO[Window.Property(preview)]</texture>
+                    <aspectratio>scale</aspectratio>
+                </control>
+            </control>
+            <control type="grouplist">
+                <posx>466</posx>
+                <posy>0</posy>
+                <width>1226</width>
+                <height>{{ vscale(60) }}</height>
+                <align>left</align>
+                <itemgap>0</itemgap>
+                <scroll>true</scroll>
+                <scrollspeed>5</scrollspeed>
+                <orientation>horizontal</orientation>
+                <usecontrolcoords>true</usecontrolcoords>
+                <control type="label">
+                    <width>auto</width>
+                    <height>{{ vscale(60) }}</height>
+                    <font>font13</font>
+                    <align>left</align>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Window.Property(title)]</label>
+                </control>
+                <control type="button">
+                    <visible>!String.IsEmpty(Window.Property(remainingTime))</visible>
+                    <posx>10</posx>
+                    <posy>6</posy>
+                    <width>auto</width>
+                    <height>{{ vscale(34) }}</height>
+                    <font>font12</font>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <focusedcolor>FFE5A00D</focusedcolor>
+                    <textcolor>FFE5A00D</textcolor>
+                    <textoffsetx>15</textoffsetx>
+                    <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
+                    <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
+                    <label>$INFO[Window.Property(remainingTime)]</label>
+                </control>
+            </control>
+            <control type="grouplist">
+                <posx>466</posx>
+                <posy>{{ vscale(68) }}</posy>
+                <width>1360</width>
+                <height>{{ vscale(34) }}</height>
+                <align>left</align>
+                <itemgap>0</itemgap>
+                <orientation>horizontal</orientation>
+                <usecontrolcoords>true</usecontrolcoords>
+                <control type="label">
+                    <width>auto</width>
+                    <height>{{ vscale(34) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Window.Property(duration),, &#8226; ]$INFO[Window.Property(info)]$INFO[Window.Property(date), &#8226; ]$INFO[Window.Property(content.rating), &#8226; ]$INFO[Window.Property(studios), &#8226; ]</label>
+                </control>
+                <control type="button">
+                    <visible>!String.IsEmpty(Window.Property(video.res))</visible>
+                    <posx>10</posx>
+                    <width>auto</width>
+                    <height>{{ vscale(34) }}</height>
+                    <font>font12</font>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <focusedcolor>FFFFFFFF</focusedcolor>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <textoffsetx>15</textoffsetx>
+                    <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
+                    <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
+                    <label>$INFO[Window.Property(video.res)]$INFO[Window.Property(video.rendering), &#8226; ]$INFO[Window.Property(video.codec), &#8226; ]$INFO[Window.Property(audio.codec), &#8226; ]$INFO[Window.Property(audio.channels), &#8226; ]</label>
+                </control>
+                <control type="button">
+                    <visible>!String.IsEmpty(Window.Property(unavailable))</visible>
+                    <posx>10</posx>
+                    <width>auto</width>
+                    <height>{{ vscale(34) }}</height>
+                    <font>font12</font>
+                    <align>center</align>
+                    <aligny>center</aligny>
+                    <focusedcolor>FFFFFFFF</focusedcolor>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <textoffsetx>15</textoffsetx>
+                    <texturefocus colordiffuse="FFAC3223" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
+                    <texturenofocus colordiffuse="FFAC3223" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
+                    <label>$ADDON[script.plexmod 32312]</label>
+                </control>
+            </control>
+
+            <control type="grouplist">
+                <visible>!String.IsEmpty(Window.Property(rating)) | !String.IsEmpty(Window.Property(rating2))</visible>
+                <posx>1426</posx>
+                <posy>4</posy>
+                <width>434</width>
+                <height>{{ vscale(32) }}</height>
+                <align>right</align>
+                <itemgap>15</itemgap>
+                <orientation>horizontal</orientation>
+                <usecontrolcoords>true</usecontrolcoords>
+                <control type="image">
+                    <visible>!String.IsEmpty(Window.Property(rating))</visible>
+                    <posy>2</posy>
+                    <width>63</width>
+                    <height>{{ vscale(30) }}</height>
+                    <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating.image)]</texture>
+                    <aspectratio align="right">keep</aspectratio>
+                </control>
+                <control type="label">
+                    <visible>!String.IsEmpty(Window.Property(rating))</visible>
+                    <width>auto</width>
+                    <height>{{ vscale(30) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Window.Property(rating)]</label>
+                </control>
+                <control type="image">
+                    <visible>!String.IsEmpty(Window.Property(rating2))</visible>
+                    <posy>2</posy>
+                    <width>40</width>
+                    <height>{{ vscale(30) }}</height>
+                    <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating2.image)]</texture>
+                    <aspectratio align="right">keep</aspectratio>
+                </control>
+                <control type="label">
+                    <visible>!String.IsEmpty(Window.Property(rating2))</visible>
+                    <width>auto</width>
+                    <height>{{ vscale(30) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>$INFO[Window.Property(rating2)]</label>
+                </control>
+                <control type="image">
+                    <visible>!String.IsEmpty(Window.Property(rating.stars))</visible>
+                    <posy>6</posy>
+                    <width>134</width>
+                    <height>{{ vscale(22) }}</height>
+                    <texture>script.plex/stars/$INFO[Window.Property(rating.stars)].png</texture>
+                </control>
+            </control>
+            {% block cast_detail_and_streams %}
+                <control type="label">
+                    <visible>!String.IsEmpty(Window.Property(directors)) | !String.IsEmpty(Window.Property(writers))</visible>
+                    <posx>466</posx>
+                    <posy>{{ vscale(130) }}</posy>
+                    <width>1360</width>
+                    <height>{{ vscale(30) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <textcolor>99FFFFFF</textcolor>
+                    <label>$INFO[Window.Property(directors)]$INFO[Window.Property(writers)]</label>
+                </control>
+                <control type="label">
+                    <visible>!String.IsEmpty(Window.Property(cast))</visible>
+                    <posx>466</posx>
+                    <posy>{{ vscale(165) }}</posy>
+                    <width>1360</width>
+                    <height>{{ vscale(30) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <textcolor>99FFFFFF</textcolor>
+                    <label>$INFO[Window.Property(cast)]</label>
+                </control>
+                {% block streams %}
+                    <control type="grouplist">
+                        <posx>466</posx>
+                        <posy>{{ vscale(223) }}</posy>
+                        <width>1360</width>
+                        <height>{{ vscale(34) }}</height>
+                        <align>left</align>
+                        <itemgap>15</itemgap>
+                        <orientation>horizontal</orientation>
+                        <usecontrolcoords>true</usecontrolcoords>
+                        <control type="button">
+                            <visible>!String.IsEmpty(Window.Property(audio))</visible>
+                            <width>auto</width>
+                            <height>{{ vscale(34) }}</height>
+                            <font>font12</font>
+                            <align>center</align>
+                            <aligny>center</aligny>
+                            <focusedcolor>FFFFFFFF</focusedcolor>
+                            <textcolor>FFFFFFFF</textcolor>
+                            <textoffsetx>15</textoffsetx>
+                            <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
+                            <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
+                            <label>[UPPERCASE]$ADDON[script.plexmod 32048][/UPPERCASE]</label>
+                        </control>
+                        <control type="label">
+                            <width>auto</width>
+                            <height>{{ vscale(34) }}</height>
+                            <font>font12</font>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textcolor>FFFFFFFF</textcolor>
+                            <label>$INFO[Window.Property(audio)]</label>
+                        </control>
+                        <control type="button">
+                            <visible>!String.IsEmpty(Window.Property(subtitles))</visible>
+                            <left>30</left>
+                            <width>auto</width>
+                            <height>{{ vscale(34) }}</height>
+                            <font>font12</font>
+                            <align>center</align>
+                            <aligny>center</aligny>
+                            <focusedcolor>FFFFFFFF</focusedcolor>
+                            <textcolor>FFFFFFFF</textcolor>
+                            <textoffsetx>15</textoffsetx>
+                            <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
+                            <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
+                            <label>[UPPERCASE]$ADDON[script.plexmod 32396][/UPPERCASE]</label>
+                        </control>
+                        <control type="label">
+                            <visible>!String.IsEmpty(Window.Property(subtitles))</visible>
+                            <width>auto</width>
+                            <height>{{ vscale(34) }}</height>
+                            <font>font12</font>
+                            <align>left</align>
+                            <aligny>center</aligny>
+                            <textcolor>FFFFFFFF</textcolor>
+                            <label>$INFO[Window.Property(subtitles)]</label>
+                        </control>
+                    </control>
+                {% endblock %}
+            {% endblock %}
+            {% block summary %}
+                <control type="textbox">
+                    <posx>466</posx>
+                    <posy>{{ vscale(290) }}</posy>
+                    <width>1360</width>
+                    <height>{{ vscale(102) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <scrolltime>200</scrolltime>
+                    <autoscroll delay="2000" time="2000" repeat="10000">!Control.HasFocus(13)</autoscroll>
+                    <label>$INFO[Window.Property(summary)]</label>
+                </control>
+            {% endblock %}
+            <control type="image" id="250">
+                <animation effect="zoom" start="0,100" end="100,100" time="1000" center="-1,561" reversible="false" tween="circle" easing="out">WindowOpen</animation>
+                <posx>-1</posx>
+                <posy>{{ vscale(557) }}</posy>
+                <width>1</width>
+                <height>{{ vscale(8) }}</height>
+                <texture>script.plex/white-square.png</texture>
+                <colordiffuse>FFCC7B19</colordiffuse>
+            </control>
+            <control type="image">
+                <visible>!Control.IsVisible(500)</visible>
+                <posx>0</posx>
+                <posy>{{ vscale(565) }}</posy>
+                <width>1920</width>
+                <height>{{ vscale(2) }}</height>
+                <texture>script.plex/white-square.png</texture>
+                <colordiffuse>A0000000</colordiffuse>
+            </control>
         </control>
-    </control>
+    {% endblock %}
 
     <control type="grouplist" id="60">
         <posx>0</posx>

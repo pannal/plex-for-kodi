@@ -165,15 +165,18 @@ class AppInterface(object):
             maxResolution = "1080p"
 
         self._globals['qualities'] = [
-            simpleobjects.AttributeDict({'title': "Original", 'index': 13, 'maxBitrate': 1000000}),
-            simpleobjects.AttributeDict({'title': "20 Mbps " + maxResolution, 'index': 12, 'maxBitrate': 20000}),
-            simpleobjects.AttributeDict({'title': "12 Mbps " + maxResolution, 'index': 11, 'maxBitrate': 12000}),
-            simpleobjects.AttributeDict({'title': "10 Mbps " + maxResolution, 'index': 10, 'maxBitrate': 10000}),
-            simpleobjects.AttributeDict({'title': "8 Mbps " + maxResolution, 'index': 9, 'maxBitrate': 8000}),
-            simpleobjects.AttributeDict({'title': "4 Mbps 720p", 'index': 8, 'maxBitrate': 4000, 'maxHeight': 720}),
-            simpleobjects.AttributeDict({'title': "3 Mbps 720p", 'index': 7, 'maxBitrate': 3000, 'maxHeight': 720}),
-            simpleobjects.AttributeDict({'title': "2 Mbps 720p", 'index': 6, 'maxBitrate': 2000, 'maxHeight': 720}),
-            simpleobjects.AttributeDict({'title': "1.5 Mbps 480p", 'index': 5, 'maxBitrate': 1500, 'maxHeight': 480}),
+            simpleobjects.AttributeDict({'title': "Original", 'index': 16, 'maxBitrate': 1000000}),
+            simpleobjects.AttributeDict({'title': "26 Mbps", 'index': 15, 'maxBitrate': 26000}),
+            simpleobjects.AttributeDict({'title': "20 Mbps", 'index': 14, 'maxBitrate': 20000}),
+            simpleobjects.AttributeDict({'title': "16 Mbps", 'index': 13, 'maxBitrate': 16000}),
+            simpleobjects.AttributeDict({'title': "12 Mbps", 'index': 12, 'maxBitrate': 12000}),
+            simpleobjects.AttributeDict({'title': "10 Mbps", 'index': 11, 'maxBitrate': 10000}),
+            simpleobjects.AttributeDict({'title': "8 Mbps", 'index': 10, 'maxBitrate': 8000}),
+            simpleobjects.AttributeDict({'title': "6 Mbps", 'index': 9, 'maxBitrate': 8000}),
+            simpleobjects.AttributeDict({'title': "4 Mbps", 'index': 8, 'maxBitrate': 4000, 'maxHeight': 720}),
+            simpleobjects.AttributeDict({'title': "3 Mbps", 'index': 7, 'maxBitrate': 3000, 'maxHeight': 720}),
+            simpleobjects.AttributeDict({'title': "2 Mbps", 'index': 6, 'maxBitrate': 2000, 'maxHeight': 720}),
+            simpleobjects.AttributeDict({'title': "1.5 Mbps", 'index': 5, 'maxBitrate': 1500, 'maxHeight': 480}),
             simpleobjects.AttributeDict({'title': "720 Kbps", 'index': 4, 'maxBitrate': 720, 'maxHeight': 360}),
             simpleobjects.AttributeDict({'title': "320 Kbps", 'index': 3, 'maxBitrate': 320, 'maxHeight': 360}),
             maxQuality
@@ -233,11 +236,11 @@ class AppInterface(object):
 
     def getQualityIndex(self, qualityType):
         if qualityType == self.QUALITY_LOCAL:
-            return self.getPreference("local_quality", 13)
+            return self.getPreference("local_quality2", 16)
         elif qualityType == self.QUALITY_ONLINE:
-            return self.getPreference("online_quality", 13)
+            return self.getPreference("online_quality2", 16)
         else:
-            return self.getPreference("remote_quality", 13)
+            return self.getPreference("remote_quality2", 16)
 
     def settingsGetMaxResolution(self, qualityType, allow4k):
         qualityIndex = self.getQualityIndex(qualityType)
@@ -277,11 +280,11 @@ class PlayerSettingsInterface(object):
 
     def getQualityIndex(self, qualityType):
         if qualityType == util.INTERFACE.QUALITY_LOCAL:
-            return self.getPreference("local_quality", 13)
+            return self.getPreference("local_quality2", 16)
         elif qualityType == util.INTERFACE.QUALITY_ONLINE:
-            return self.getPreference("online_quality", 13)
+            return self.getPreference("online_quality2", 16)
         else:
-            return self.getPreference("remote_quality", 13)
+            return self.getPreference("remote_quality2", 16)
 
     def getPreference(self, key, default=None):
         if key in self.prefOverrides:

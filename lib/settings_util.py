@@ -1,16 +1,17 @@
 # coding=utf-8
 import threading
+import _strptime
 import datetime
 import binascii
 import json
 
-import plexnet.util
-
 from lib.kodi_util import ADDON
 
+UNDEF = "__UNDEF__"
 SETTINGS_LOCK = threading.Lock()
 JSON_SETTINGS = []
 USER_SETTINGS = []
+DEFAULT_SETTINGS = {}
 
 
 def _processSetting(setting, default, is_json=False):
@@ -35,30 +36,40 @@ def _processSetting(setting, default, is_json=False):
     return setting
 
 
+def _getDef(key, default):
+    if default == UNDEF:
+        default = DEFAULT_SETTINGS.get(key, None)
+    return default
 
-def getSetting(key, default=None):
+
+def getSetting(key, default=UNDEF):
+    d = _getDef(key, default)
+
     with SETTINGS_LOCK:
         setting = ADDON.getSetting(key)
         is_json = key in JSON_SETTINGS
-        return _processSetting(setting, default, is_json=is_json)
+        return _processSetting(setting, d, is_json=is_json)
 
 
-def getUserSetting(key, default=None):
-    if not plexnet.util.ACCOUNT:
-        return default
+def getUserSetting(key, default=UNDEF):
+    from plexnet.util import ACCOUNT
+    d = _getDef(key, default)
+
+    if not ACCOUNT:
+        return d
 
     is_json = key in JSON_SETTINGS
 
-    key = '{}.{}'.format(key, plexnet.util.ACCOUNT.ID)
+    key = '{}.{}'.format(key, ACCOUNT.ID)
     with SETTINGS_LOCK:
         setting = ADDON.getSetting(key)
-        return _processSetting(setting, default, is_json=is_json)
+        return _processSetting(setting, d, is_json=is_json)
 
 
-def setSetting(key, value):
+def setSetting(key, value, addon=ADDON):
     with SETTINGS_LOCK:
         value = _processSettingForWrite(value)
-        ADDON.setSetting(key, value)
+        addon.setSetting(key, value)
 
 
 def _processSettingForWrite(value):

@@ -71,10 +71,6 @@ class NowPlayingManager(object):
         self.TIMELINE_TYPES = ["video", "music", "photo"]
 
         # Members
-        self.serverTimelines = util.AttributeDict()
-        self.subscribers = util.AttributeDict()
-        self.pollReplies = util.AttributeDict()
-        self.timelines = util.AttributeDict()
         self.location = self.NAVIGATION
 
         self.textFieldName = None
@@ -82,11 +78,18 @@ class NowPlayingManager(object):
         self.textFieldSecure = None
 
         # Initialization
+        self.reset()
+
+    def reset(self):
+        self.serverTimelines = util.AttributeDict()
+        self.subscribers = util.AttributeDict()
+        self.pollReplies = util.AttributeDict()
+        self.timelines = util.AttributeDict()
         for timelineType in self.TIMELINE_TYPES:
             self.timelines[timelineType] = TimelineData(timelineType)
 
     def updatePlaybackState(self, timelineType, itemData, state, t, playQueue=None, duration=0, force=False,
-                            force_time=False):
+                            force_time=False, server=None):
         timeline = self.timelines[timelineType]
         old_item_data = None
         if timeline.itemData:
@@ -118,11 +121,11 @@ class NowPlayingManager(object):
         timeline.state = state
         timeline.duration = duration
 
-        self.sendTimelineToServer(timelineType, timeline, t, force=force)
+        self.sendTimelineToServer(timelineType, timeline, t, force=force, server=server)
         return time_updated
 
-    def sendTimelineToServer(self, timelineType, timeline, t, force=False):
-        server = util.APP.serverManager.selectedServer
+    def sendTimelineToServer(self, timelineType, timeline, t, force=False, server=None):
+        server = server or util.APP.serverManager.selectedServer
         if not server:
             return
 

@@ -1,0 +1,2 @@
+{% include template with name="watchlist" & id=308 & visible="!String.IsEmpty(Window.Property(watchlist_enabled)) + String.IsEmpty(Window.Property(is_watchlisted))" %}
+{% include template with name="watchlisted" & id=309 & visible="!String.IsEmpty(Window.Property(watchlist_enabled)) + !String.IsEmpty(Window.Property(is_watchlisted))" %}

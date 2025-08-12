@@ -91,7 +91,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
     NEXT_DIM = util.scaleResolution(537, 303)
     PREV_DIM = util.scaleResolution(462, 259)
     ONDECK_DIM = util.scaleResolution(329, 185)
-    RELATED_DIM = util.scaleResolution(268, 397)
+    RELATED_DIM = util.scaleResolution(268, 402)
     ROLES_DIM = util.scaleResolution(334, 334)
 
     OPTIONS_GROUP_ID = 200
@@ -134,18 +134,30 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
         self.playBackStarted = False
         self.handleBGM = kwargs.get('bgm')
         self.lastItem = None
+        self.earlyAbortRequested = False
 
-    def doClose(self):
+    def doClose(self, force=False):
         util.DEBUG_LOG('VideoPlayerWindow: Closing')
         self.timeout = None
         self.relatedPaginator = None
         self.onDeckPaginator = None
         self.lastItem = None
+        if self.earlyAbortRequested:
+            player.PLAYER._ignorePlaybackFailure = True
+            if player.PLAYER.isPlayingVideo():
+                player.PLAYER.close()
+                if player.PLAYER.handler:
+                    player.PLAYER.handler.stoppedManually = True
+                player.PLAYER.stop()
+
         kodigui.ControlledWindow.doClose(self)
-        player.PLAYER.handler.sessionEnded()
+
+        if player.PLAYER.handler:
+            player.PLAYER.handler.sessionEnded()
 
     def onFirstInit(self):
         player.PLAYER.on('session.ended', self.sessionEnded)
+        player.PLAYER.on('videowindow.closed', self.videoWindowClosed)
         player.PLAYER.on('av.started', self.playerPlaybackStarted)
         player.PLAYER.on('starting.video', self.onVideoStarting)
         player.PLAYER.on('started.video', self.onVideoStarted)
@@ -172,7 +184,9 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
         pass
 
     def onReInit(self):
-        self.setBackground()
+        util.DEBUG_LOG('VideoPlayerWindow: Reinitializing')
+        if not self.earlyAbortRequested:
+            self.setBackground()
 
     def onAction(self, action):
         try:
@@ -229,6 +243,11 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
 
                     if mli != self.lastItem and not mli.getProperty("is.boundary"):
                         self.lastItem = mli
+            else:
+                if action in(xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_STOP):
+                    util.DEBUG_LOG('VideoPlayerWindow: Abort requested, setting flag')
+                    self.earlyAbortRequested = True
+                    return
         except:
             util.ERROR()
 
@@ -236,6 +255,10 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
 
     def playerPlaybackStarted(self, *args, **kwargs):
         self.playBackStarted = True
+
+        if self.earlyAbortRequested:
+            util.DEBUG_LOG('VideoPlayerWindow: Abort flag set, closing')
+            self.doClose()
 
     def onClick(self, controlID):
         if not self.postPlayMode:
@@ -298,7 +321,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
             x, y = self.getRoleItemDDPosition()
 
             options = [{'role': r, 'display': r.reasonTitle} for r in sectionRoles]
-            choice = dropdown.showDropdown(options, (x, y), pos_is_bottom=True, close_direction='bottom')
+            choice = dropdown.showDropdown(options, (x, y), pos_is_bottom=True)
 
             if not choice:
                 return
@@ -350,8 +373,16 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
         util.DEBUG_LOG('VideoPlayerWindow: Session ended - closing (ID: {0})', id(self))
         self.doClose()
 
+    def videoWindowClosed(self, session_id=None, video=None, **kwargs):
+        if session_id != id(self):
+            return
+
+        video.clearCache()
+
     def play(self, resume=False, handler=None):
         self.hidePostPlay()
+
+        player.PLAYER.dontRequeueBGM = True
 
         def anyOtherVPlayer():
             return any(list(filter(lambda x: x['playerid'] > 0, kodijsonrpc.rpc.Player.GetActivePlayers())))
@@ -384,7 +415,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
                 util.DEBUG_LOG("Stopping BGM before starting playback")
                 player.PLAYER.stopAndWait()
 
-            while player.PLAYER.bgmPlaying:
+            while player.PLAYER.bgmPlaying or player.PLAYER.isPlayingAudio():
                 util.MONITOR.waitForAbort(0.1)
 
         self.setBackground()
@@ -403,6 +434,9 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
         except Exception as e:
             util.LOG("Playback failed: {}", traceback.format_exc())
             self.doClose()
+
+        util.DEBUG_LOG("VideoPlayerWindow: Playback initialized; returning from play()")
+
 
     def openItem(self, control=None, item=None):
         if not item:
@@ -456,7 +490,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
 
         util.DEBUG_LOG('PostPlay: Showing video info')
         if self.next:
-            self.next.reload(includeExtras=1, includeExtrasCount=10)
+            self.next.reload(includeChapters=1, includeExtras=1, includeExtrasCount=10)
 
         self.relatedPaginator = RelatedPaginator(self.relatedListControl,
                                                  leaf_count=int((self.prev or self.next).relatedCount),
@@ -726,7 +760,9 @@ def play(video=None, play_queue=None, resume=False, bgm=False, **kwargs):
     except util.NoDataException:
         raise
     finally:
+        util.DEBUG_LOG("VideoPlayer Window exit")
         player.PLAYER.off('session.ended', w.sessionEnded)
+        player.PLAYER.off('videowindow.closed', w.videoWindowClosed)
         player.PLAYER.off('post.play', w.postPlay)
         player.PLAYER.off('av.started', w.playerPlaybackStarted)
         player.PLAYER.off('starting.video', w.onVideoStarting)

@@ -2,10 +2,10 @@ from __future__ import absolute_import
 import time
 import socket
 import six
+import os
+import datetime
 
-import requests
-import six
-
+from kodi_six import xbmc
 from requests.packages.urllib3 import HTTPConnectionPool, HTTPSConnectionPool
 from requests.packages.urllib3.connection import HTTPConnection
 from requests.packages.urllib3.poolmanager import PoolManager, proxy_from_url
@@ -16,8 +16,9 @@ except ImportError:
     # urllib3 >= 2.1.0
     from requests.packages.urllib3.connection import HTTPSConnection as VerifiedHTTPSConnection
 
-from requests.adapters import HTTPAdapter
+from requests.adapters import HTTPAdapter, Retry
 from requests.compat import urlparse
+from requests_cache import CachedSession
 
 #from six.moves.http_client import HTTPConnection
 import errno
@@ -25,6 +26,9 @@ import errno
 DEFAULT_POOLBLOCK = False
 SSL_KEYWORDS = ('key_file', 'cert_file', 'cert_reqs', 'ca_certs',
                 'ssl_version')
+
+DEBUG_REQUESTS = False
+TEMP_PATH = None
 
 WIN_WSAEINVAL = 10022
 WIN_EWOULDBLOCK = 10035
@@ -34,10 +38,13 @@ WIN_ENOTCONN = 10057
 WIN_EHOSTUNREACH = 10065
 
 MAX_RETRIES = 3
+REQUESTS_CACHE_EXPIRY = 168
 
 
 def ABORT_FLAG_FUNCTION():
-    return False
+    if STOP_RETRYING_REQUESTS and DEBUG_REQUESTS:
+        xbmc.log('AsyncVerifiedHTTPSConnection: Abort flag set!', xbmc.LOGINFO)
+    return STOP_RETRYING_REQUESTS
 
 
 class CanceledException(Exception):
@@ -76,21 +83,18 @@ class AsyncTimeout(float):
         return self
 
 
-DEFAULT_TIMEOUT = AsyncTimeout(10).setConnectTimeout(10)
+DEFAULT_TIMEOUT = AsyncTimeout(5).setConnectTimeout(5)
 
+class AsyncConnectionMixin:
+    def __str__(self):
+        return '{0}({1})'.format(self.__class__.__name__, self.identifier)
 
-class AsyncVerifiedHTTPSConnection(VerifiedHTTPSConnection):
-    __slots__ = ("_canceled", "deadline", "_timeout")
-
-    def __init__(self, *args, **kwargs):
-        VerifiedHTTPSConnection.__init__(self, *args, **kwargs)
-        self._canceled = False
-        self.deadline = 0
-        self._timeout = AsyncTimeout(DEFAULT_TIMEOUT)
+    def __repr__(self):
+        return str(self)
 
     def _check_timeout(self):
         if time.time() > self.deadline:
-            raise ConnectTimeoutError('connection timed out')
+            raise ConnectTimeoutError('connection timed out: {0}'.format(str(self)))
 
     def create_connection(self, address, timeout=None, source_address=None):
         """Connect to *address* and return the socket object.
@@ -104,8 +108,13 @@ class AsyncVerifiedHTTPSConnection(VerifiedHTTPSConnection):
         for the socket to bind as a source address before making the connection.
         An host of '' or port 0 tells the OS to use the default.
         """
+        if DEBUG_REQUESTS:
+            xbmc.log(
+                '{3}.create_connection: {0} {1} {2}'.format(address, timeout, repr(timeout), self.__class__.__name__),
+                xbmc.LOGINFO)
         timeout = AsyncTimeout.fromTimeout(timeout)
         self._timeout = timeout
+        self.identifier = address
 
         host, port = address
         err = None
@@ -122,14 +131,14 @@ class AsyncVerifiedHTTPSConnection(VerifiedHTTPSConnection):
                     sock.bind(source_address)
                 for msg in self._connect(sock, sa):
                     if self._canceled or ABORT_FLAG_FUNCTION():
-                        raise CanceledException('Request canceled')
+                        raise CanceledException('Request canceled: {0}'.format(str(self)))
                 sock.setblocking(True)
                 return sock
 
             except socket.error as _:
                 err = _
                 if sock is not None:
-                    sock.shutdown(socket.SHUT_RDWR)
+                    #sock.shutdown(socket.SHUT_RDWR)
                     sock.close()
 
         if err is not None:
@@ -145,13 +154,19 @@ class AsyncVerifiedHTTPSConnection(VerifiedHTTPSConnection):
             if not status or status in (errno.EISCONN, WIN_EISCONN):
                 break
             elif status in (errno.EINPROGRESS, WIN_EWOULDBLOCK):
-                self.deadline = time.time() + self._timeout.getConnectTimeout()
+                # extend the deadline once at most, otherwise count towards our connect timeout
+                if not self.deadline_extended:
+                    self.deadline = time.time() + self._timeout.getConnectTimeout()
+                    self.deadline_extended = True
+
             # elif status in (errno.EWOULDBLOCK, errno.EALREADY) or (os.name == 'nt' and status == errno.WSAEINVAL):
             #     pass
             yield
 
         if self._canceled or ABORT_FLAG_FUNCTION():
-            raise CanceledException('Request canceled')
+            if DEBUG_REQUESTS:
+                xbmc.log('{1}._connect: Canceled: {0}'.format(self.identifier, self.__class__.__name__), xbmc.LOGINFO)
+            raise CanceledException('Request canceled: {0}'.format(str(self)))
 
         error = sock.getsockopt(socket.SOL_SOCKET, socket.SO_ERROR)
         if error:
@@ -170,15 +185,29 @@ class AsyncVerifiedHTTPSConnection(VerifiedHTTPSConnection):
         self._canceled = True
 
 
-class AsyncHTTPConnection(HTTPConnection):
-    __slots__ = ("_canceled", "deadline")
+class AsyncVerifiedHTTPSConnection(AsyncConnectionMixin, VerifiedHTTPSConnection):
+    __slots__ = ("_canceled", "deadline", "deadline_extended", "identifier", "_timeout")
+
     def __init__(self, *args, **kwargs):
-        HTTPConnection.__init__(self, *args, **kwargs)
+        super(AsyncVerifiedHTTPSConnection, self).__init__(*args, **kwargs)
         self._canceled = False
         self.deadline = 0
+        self.identifier = None
+        self.deadline_extended = False
+        self._timeout = AsyncTimeout(DEFAULT_TIMEOUT)
 
-    def cancel(self):
-        self._canceled = True
+
+class AsyncHTTPConnection(AsyncConnectionMixin, HTTPConnection):
+    __slots__ = ("_canceled", "deadline", "deadline_extended", "identifier", "_timeout")
+
+    def __init__(self, *args, **kwargs):
+        super(AsyncHTTPConnection, self).__init__(*args, **kwargs)
+        self._canceled = False
+        self.deadline = 0
+        self.identifier = None
+        self.deadline_extended = False
+        self._timeout = AsyncTimeout(DEFAULT_TIMEOUT)
+
 
 
 class AsyncHTTPConnectionPool(HTTPConnectionPool):
@@ -335,12 +364,33 @@ class AsyncHTTPAdapter(HTTPAdapter):
         self.connections.append(conn)
         return conn
 
+STOP_RETRYING_REQUESTS = False
 
-class Session(requests.Session):
+
+class StoppableRetry(Retry):
+    def increment(self, *args, **kwargs):
+        if STOP_RETRYING_REQUESTS:
+            self.total = 0
+        return super(StoppableRetry, self).increment(*args, **kwargs)
+
+
+class Session(CachedSession):
     def __init__(self, *args, **kwargs):
-        requests.Session.__init__(self, *args, **kwargs)
-        self.mount('https://', AsyncHTTPAdapter(max_retries=MAX_RETRIES))
-        self.mount('http://', AsyncHTTPAdapter(max_retries=MAX_RETRIES))
+        kwargs['cache_name'] = os.path.join(TEMP_PATH, "pm4k_requests_cache")
+        kwargs['backend'] = "sqlite"
+        kwargs['fast_save'] = True
+        if REQUESTS_CACHE_EXPIRY:
+            kwargs['expire_after'] = datetime.timedelta(hours=REQUESTS_CACHE_EXPIRY)  # 7 days
+        CachedSession.__init__(self, *args, **kwargs)
+
+        self.mount('https://', AsyncHTTPAdapter(max_retries=StoppableRetry(MAX_RETRIES)))
+        self.mount('http://', AsyncHTTPAdapter(max_retries=StoppableRetry(MAX_RETRIES)))
+
+    def request(self, method, url, *args, **kwargs):
+        self._is_cache_disabled = not kwargs.pop('with_cache', False)
+        if DEBUG_REQUESTS:
+            xbmc.log("Session.request: (cache enabled: %s) %s %s" % (not self._is_cache_disabled, method, url), xbmc.LOGINFO)
+        return CachedSession.request(self, method, url, *args, **kwargs)
 
     def cancel(self):
         for v in self.adapters.values():

@@ -48,7 +48,7 @@
                 <posy>0</posy>
                 <width>300</width>
                 <height>{{ vscale(66) }}</height>
-                <texture colordiffuse="FF323232" border="10">script.plex/white-square-top-rounded.png</texture>
+                <texture colordiffuse="D3111111" border="10">script.plex/white-square-top-rounded.png</texture>
             </control>
             <control type="image">
                 <visible>String.IsEmpty(ListItem.Property(first)) + String.IsEmpty(ListItem.Property(last)) + String.IsEmpty(ListItem.Property(only))</visible>
@@ -56,7 +56,7 @@
                 <posy>0</posy>
                 <width>300</width>
                 <height>{{ vscale(66) }}</height>
-                <texture colordiffuse="FF323232">script.plex/white-square.png</texture>
+                <texture colordiffuse="D3111111">script.plex/white-square.png</texture>
             </control>
             <control type="image">
                 <visible>!String.IsEmpty(ListItem.Property(last))</visible>
@@ -64,7 +64,7 @@
                 <posy>0</posy>
                 <width>300</width>
                 <height>{{ vscale(66) }}</height>
-                <texture flipy="true" colordiffuse="FF323232" border="10">script.plex/white-square-top-rounded.png</texture>
+                <texture flipy="true" colordiffuse="D3111111" border="10">script.plex/white-square-top-rounded.png</texture>
             </control>
             <control type="image">
                 <visible>!String.IsEmpty(ListItem.Property(only))</visible>
@@ -72,7 +72,7 @@
                 <posy>0</posy>
                 <width>300</width>
                 <height>{{ vscale(66) }}</height>
-                <texture colordiffuse="FF323232" border="10">script.plex/white-square-rounded.png</texture>
+                <texture colordiffuse="D3111111" border="10">script.plex/white-square-rounded.png</texture>
             </control>
             <control type="label">
                 <visible>String.IsEmpty(ListItem.Property(with.indicator))</visible>

@@ -13,6 +13,16 @@
                     <default>false</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="debug_requests" type="boolean" label="33717">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="kiosk.always" type="boolean" label="33735" help="33736">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
                 <setting id="subtitle_use_extended_title" type="boolean" label="32950" help="32951">
                     <level>0</level>
                     <default>true</default>
@@ -66,6 +76,18 @@
                     </dependencies>
                     <control type="list" format="string"/>
                 </setting>
+                <setting id="playlist_max_size" type="integer" label="33738" help="33739">
+                    <level>0</level>
+                    <default>500</default>
+                    <constraints>
+                        <minimum>100</minimum>
+                        <step>50</step>
+                        <maximum>10000</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
                 <setting id="hubs_round_robin" type="boolean" label="33043">
                     <level>0</level>
                     <default>false</default>
@@ -96,6 +118,21 @@
         <!-- Player -->
         <category id="player" label="32464">
             <group id="2" label="">
+                <setting id="osd_hide_delay" type="number" label="33715" help="33716">
+                    <level>0</level>
+                    <default>4</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>15</maximum>
+                    </constraints>
+                    <control type="slider" format="number">
+                        <popup>false</popup>
+                    </control>
+                    <dependencies>
+                        <dependency type="enable" setting="auto_seek">true</dependency>
+                    </dependencies>
+                </setting>
                 <setting id="auto_seek" type="boolean" label="32466" help="32900">
                     <level>0</level>
                     <default>true</default>
@@ -137,9 +174,6 @@
                     <control type="slider" format="integer">
                         <popup>false</popup>
                     </control>
-                    <dependencies>
-                        <dependency type="enable" setting="use_alternate_seek">true</dependency>
-                    </dependencies>
                 </setting>
                 <setting id="show_media_ends_info" type="boolean" label="32540" help="32541">
                     <level>0</level>
@@ -202,7 +236,7 @@
             <group id="3" label="">
                 <setting id="auto_skip_offset" type="number" label="33629" help="33630">
                     <level>0</level>
-                    <default>2.5</default>
+                    <default>1</default>
                     <constraints>
                         <minimum>-10</minimum>
                         <step>0.5</step>
@@ -239,9 +273,9 @@
                         <popup>false</popup>
                     </control>
                 </setting>
-                <setting id="skip_intro_button_show_early_threshold1" type="integer" label="33509" help="33510">
+                <setting id="skip_intro_button_show_early_threshold2" type="integer" label="33509" help="33510">
                     <level>0</level>
-                    <default>70</default>
+                    <default>120</default>
                     <constraints>
                         <minimum>10</minimum>
                         <step>10</step>
@@ -254,11 +288,11 @@
                 </setting>
                 <setting id="intro_marker_max_offset" type="integer" label="33037" help="33038">
                     <level>0</level>
-                    <default>600</default>
+                    <default>1400</default>
                     <constraints>
                         <minimum>1</minimum>
                         <step>10</step>
-                        <maximum>1800</maximum>
+                        <maximum>3600</maximum>
                     </constraints>
                     <control type="slider" format="integer">
                         <heading>33510</heading>
@@ -421,6 +455,18 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="max_shutdown_wait" type="number" label="34016" help="34017">
+                    <level>0</level>
+                    <default>5</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>360</maximum>
+                    </constraints>
+                    <control type="slider" format="number">
+                        <popup>false</popup>
+                    </control>
+                </setting>
                 <setting id="honor_plextv_dnsrebind" type="boolean" label="33645" help="33646">
                     <level>0</level>
                     <default>true</default>
@@ -458,7 +504,7 @@
                 </setting>
                 <setting id="requests_timeout_read" type="number" label="33636" help="33637">
                     <level>0</level>
-                    <default>10</default>
+                    <default>5</default>
                     <constraints>
                         <minimum>0.5</minimum>
                         <step>0.5</step>
@@ -547,6 +593,18 @@
                         <minimum>2</minimum>
                         <step>1</step>
                         <maximum>32</maximum>
+                    </constraints>
+                    <control type="slider" format="number">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+                <setting id="requests_cache_expiry" type="number" label="33729">
+                    <level>0</level>
+                    <default>168</default>
+                    <constraints>
+                        <minimum>0</minimum>
+                        <step>1</step>
+                        <maximum>8760</maximum>
                     </constraints>
                     <control type="slider" format="number">
                         <popup>false</popup>
