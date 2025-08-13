@@ -22,7 +22,12 @@ from . import search
 from . import tracks
 from . import videoplayer
 from . import windowutils
-from .mixins import SeasonsMixin, DeleteMediaMixin, RatingsMixin, PlaybackBtnMixin, WatchlistUtilsMixin, ThemeMusicMixin
+from .mixins.seasons import SeasonsMixin
+from .mixins.delete_media import DeleteMediaMixin
+from .mixins.ratings import RatingsMixin
+from .mixins.playbackbtn import PlaybackBtnMixin
+from .mixins.watchlist import WatchlistUtilsMixin
+from .mixins.thememusic import ThemeMusicMixin
 
 
 class RelatedPaginator(pagination.BaseRelatedPaginator):

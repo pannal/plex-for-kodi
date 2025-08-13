@@ -25,7 +25,12 @@ from . import playersettings
 from . import search
 from . import videoplayer
 from . import windowutils
-from .mixins import SeasonsMixin, RatingsMixin, SpoilersMixin, PlaybackBtnMixin, ThemeMusicMixin, WatchlistUtilsMixin
+from .mixins.seasons import SeasonsMixin
+from .mixins.spoilers import SpoilersMixin
+from .mixins.playbackbtn import PlaybackBtnMixin
+from .mixins.thememusic import ThemeMusicMixin
+from .mixins.watchlist import WatchlistUtilsMixin
+from .mixins.ratings import RatingsMixin
 
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1)
 

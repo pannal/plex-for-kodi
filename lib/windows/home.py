@@ -25,7 +25,9 @@ from . import optionsdialog
 from . import playlists
 from . import search
 from . import background
-from .mixins import SpoilersMixin, removeFromWatchlistBlind
+from .mixins.spoilers import SpoilersMixin
+from .mixins.watchlist import removeFromWatchlistBlind
+
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
 HUB_PAGE_SIZE = 10

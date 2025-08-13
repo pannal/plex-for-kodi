@@ -21,7 +21,7 @@ from . import opener
 from . import pagination
 from . import search
 from . import windowutils
-from .mixins import SpoilersMixin
+from .mixins.spoilers import SpoilersMixin
 
 PASSOUT_PROTECTION_DURATION_SECONDS = 7200
 PASSOUT_LAST_VIDEO_DURATION_MILLIS = 1200000

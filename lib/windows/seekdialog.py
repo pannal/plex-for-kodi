@@ -24,7 +24,8 @@ from . import kodigui
 from . import windowutils
 from . import playersettings
 from . import optionsdialog
-from .mixins import SpoilersMixin, PlexSubtitleDownloadMixin
+from .mixins.spoilers import SpoilersMixin
+from .mixins.subtitledl import PlexSubtitleDownloadMixin
 
 KEY_MOVE_SET = frozenset(
     (

@@ -30,8 +30,8 @@ from . import preplay
 from . import search
 from . import subitems
 from . import windowutils
-from . import mixins
-from .mixins import PlaybackBtnMixin, removeFromWatchlistBlind
+from .mixins.playbackbtn import PlaybackBtnMixin
+from .mixins.watchlist import removeFromWatchlistBlind
 
 KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -370,7 +370,7 @@ class LibrarySettings(object):
         self._saveSettings()
 
 
-class LibraryWindow(mixins.PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin):
+class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin):
     bgXML = 'script-plex-blank.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
