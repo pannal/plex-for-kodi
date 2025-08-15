@@ -738,8 +738,6 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.extraListControl.reset()
         self.extraListControl.addItems(items)
 
-        self.setProperty('divider.{0}'.format(self.EXTRA_LIST_ID), has_prev and '1' or '')
-
         return True
 
     def fillRelated(self, has_prev=False):
@@ -751,8 +749,6 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         if not items:
             return False
-
-        self.setProperty('divider.{0}'.format(self.RELATED_LIST_ID), has_prev and '1' or '')
 
         return True
 

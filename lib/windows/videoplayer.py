@@ -680,8 +680,6 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
 
         if not items:
             return False
-
-        self.setProperty('divider.{0}'.format(self.RELATED_LIST_ID), has_prev and '1' or '')
         return True
 
     def fillRoles(self, has_prev=False):
@@ -702,8 +700,6 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
 
         if not items:
             return False
-
-        self.setProperty('divider.{0}'.format(self.ROLES_LIST_ID), has_prev and '1' or '')
 
         self.rolesListControl.reset()
         self.rolesListControl.addItems(items)

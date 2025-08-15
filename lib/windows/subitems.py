@@ -666,8 +666,6 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             self.relatedListControl.reset()
             return has_prev
 
-        self.setProperty('divider.{0}'.format(self.RELATED_LIST_ID), has_prev and '1' or '')
-
         items = self.relatedPaginator.paginate()
 
         if not items:
@@ -681,8 +679,6 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         if not self.mediaItem.roles:
             self.rolesListControl.reset()
             return has_prev
-
-        self.setProperty('divider.{0}'.format(self.ROLES_LIST_ID), has_prev and '1' or '')
 
         for role in self.mediaItem.combined_roles:
             mli = kodigui.ManagedListItem(role.tag, role.role or util.TRANSLATED_ROLES[role.translated_role],
