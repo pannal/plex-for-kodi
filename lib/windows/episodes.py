@@ -6,7 +6,7 @@ from kodi_six import xbmc
 from kodi_six import xbmcgui
 from collections import OrderedDict
 
-from plexnet import plexapp, playlist, plexplayer, util as pnUtil
+from plexnet import plexapp, playlist, plexplayer, plexlibrary, util as pnUtil
 
 from lib import backgroundthread
 from lib import metadata
@@ -338,8 +338,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             # access progress data for current show only
             vp = copy.deepcopy(VIDEO_PROGRESS[self.show_.ratingKey]).get(self.season.ratingKey, {})
 
-        if (self.manuallySelected and not VIDEO_PROGRESS) or self.cameFrom == "info":
-            if self.cameFrom == "info":
+        if (self.manuallySelected and not VIDEO_PROGRESS) or self.cameFrom in ("info", "show", "library"):
+            if self.cameFrom in ("info", "show", "library"):
                 self.cameFrom = None
                 return
             util.DEBUG_LOG("Episodes: ReInit: Not doing anything, as we've previously manually selected "
@@ -1149,12 +1149,17 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.updateItems()
             util.MONITOR.watchStatusChanged()
         elif choice['key'] == 'to_show':
+            self.cameFrom = "show"
             self.processCommand(opener.open(
                 self.season.parentRatingKey,
                 came_from=self.season.parentRatingKey)
             )
         elif choice['key'] == 'to_section':
-            self.goHome(self.show_.getLibrarySectionId())
+            self.cameFrom = "library"
+            section = plexlibrary.LibrarySection.fromFilter(self.show_)
+            self.processCommand(opener.sectionClicked(section,
+                came_from=self.show_.ratingKey)
+            )
         elif choice['key'] == 'delete':
             self.delete(mli.dataSource)
         elif choice['key'] == 'playback_settings':

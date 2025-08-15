@@ -126,7 +126,7 @@ class LibrarySection(plexobjects.PlexObject):
 
     @staticmethod
     def fromFilter(filter_):
-        cls = SECTION_IDS.get(filter_.getLibrarySectionType())
+        cls = SECTION_IDS.get(filter_.getLibrarySectionType(), SECTION_TYPES.get(filter_.TYPE, None))
         if not cls:
             return
         section = cls(None, initpath=filter_.initpath, server=filter_.server, container=filter_.container)

@@ -4,7 +4,7 @@ import os
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import plexplayer, media, util as pnUtil, plexapp
+from plexnet import plexplayer, media, util as pnUtil, plexapp, plexlibrary
 
 from lib import metadata
 from lib import util
@@ -333,7 +333,11 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         elif choice['key'] == 'to_show':
             self.processCommand(opener.open(self.video.grandparentRatingKey))
         elif choice['key'] == 'to_section':
-            self.goHome(self.video.getLibrarySectionId())
+            self.cameFrom = "library"
+            section = plexlibrary.LibrarySection.fromFilter(self.video)
+            self.processCommand(opener.sectionClicked(section,
+                                                      came_from=self.video.ratingKey)
+                                )
         elif choice['key'] == 'delete':
             self.delete()
         elif choice['key'] == 'refresh':

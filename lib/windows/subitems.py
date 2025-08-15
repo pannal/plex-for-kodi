@@ -4,7 +4,7 @@ import gc
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import playlist, util as pnUtil, plexapp
+from plexnet import playlist, util as pnUtil, plexapp, plexlibrary
 
 from lib import metadata
 from lib import util
@@ -538,7 +538,11 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             self.updateProperties()
             util.MONITOR.watchStatusChanged()
         elif choice['key'] == 'to_section':
-            self.goHome(self.mediaItem.getLibrarySectionId())
+            self.cameFrom = "library"
+            section = plexlibrary.LibrarySection.fromFilter(self.mediaItem)
+            self.processCommand(opener.sectionClicked(section,
+                                                      came_from=self.mediaItem.ratingKey)
+                                )
         elif choice['key'] == 'playback_settings':
             self.playbackSettings(self.mediaItem, pos, False)
         elif choice['key'] == 'delete':
