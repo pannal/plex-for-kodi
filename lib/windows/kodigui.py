@@ -112,7 +112,13 @@ BG_NA = "script.plex/home/background-fallback_black.png"
 
 
 class XMLBase(object):
+    defer_init = False
+    defer_init_time = 0.25
+
     def onInit(self, count=0):
+        if self.defer_init:
+            util.DEBUG_LOG("Kodigui: Deferring init of {} for {}s", self, self.defer_init_time)
+            util.MONITOR.waitForAbort(self.defer_init_time)
         try:
             self.getControl(666)
         except RuntimeError as e:

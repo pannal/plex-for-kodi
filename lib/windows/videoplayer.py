@@ -116,6 +116,9 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, Spoiler
         self.video = kwargs.get('video')
         self.resume = bool(kwargs.get('resume'))
 
+        if util.platformFlavor == "CoreELEC":
+            self.defer_init = True
+
         self.postPlayMode = False
         self.prev = None
         self.playlist = None
