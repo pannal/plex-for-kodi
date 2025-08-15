@@ -1526,11 +1526,11 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 util.DEBUG_LOG("Waiting for seekOnStart to apply: {}", self.handler.seekOnStart)
 
             waited = 0
-            while self.handler.seekOnStart and waited < 20 and not util.MONITOR.abortRequested():
+            while self.handler.seekOnStart and waited < 40 and not util.MONITOR.abortRequested():
                 util.MONITOR.waitForAbort(0.1)
                 waited += 1
 
-            if waited < 20:
+            if waited < 40:
                 self.doSeek(max(self.trueOffset() - 100, 100))
                 return
             util.LOG("Tried switching embedded subtitle stream to the correct one, but we've waited too long for "

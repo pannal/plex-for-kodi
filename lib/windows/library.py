@@ -1210,16 +1210,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         mli.setProperty('progress', util.getProgressImage(mli.dataSource))
 
     def setTitle(self):
-        if self.section.TYPE == 'artist':
-            self.setProperty('screen.title', T(32394, 'MUSIC').upper())
-        elif self.section.TYPE in ('photo', 'photodirectory'):
-            self.setProperty('screen.title', T(32349, 'photos').upper())
-        elif self.section.TYPE == 'collection':
-            self.setProperty('screen.title', T(32382, 'COLLECTION').upper())
-        elif self.section.TYPE == 'movies_shows':
-            self.setProperty('screen.title', T(34000, 'Watchlist').upper())
-        else:
-            self.setProperty('screen.title', self.section.TYPE == 'show' and T(32393, 'TV SHOWS').upper() or T(32348, 'movies').upper())
+        self.setProperty('screen.title', self.section.title.upper())
 
         self.updateFilterDisplay()
 

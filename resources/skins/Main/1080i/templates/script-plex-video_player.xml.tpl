@@ -631,15 +631,6 @@
                 <defaultcontrol>401</defaultcontrol>
                 <width>1920</width>
                 <height>{{ vscale(520) }}</height>
-                <control type="image">
-                    <visible>!String.IsEmpty(Window.Property(divider.401))</visible>
-                    <posx>60</posx>
-                    <posy>0</posy>
-                    <width>1800</width>
-                    <height>{{ vscale(2) }}</height>
-                    <texture>script.plex/white-square.png</texture>
-                    <colordiffuse>A0000000</colordiffuse>
-                </control>
                 <control type="label">
                     <posx>60</posx>
                     <posy>0</posy>
