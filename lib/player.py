@@ -714,8 +714,8 @@ class SeekPlayerHandler(BasePlayerHandler):
                     util.MONITOR.waitForAbort(util.addonSettings.coreelecResumeSeekWait / 1000.0)
 
                     util.DEBUG_LOG("OnPlayBackSeek: SeekOnStart: "
-                                   "Expecting to be within 5 seconds of {}, currently at: {}", self.seekOnStart,
-                                   p_time)
+                                   "Expecting to be within 5 seconds of {}, currently at: {}, CoreELEC resume seek wait: {}ms", self.seekOnStart,
+                                   p_time, util.addonSettings.coreelecResumeSeekWait)
 
                     tries = 0
                     max_tries = int(5000 / util.addonSettings.coreelecResumeSeekWait)
@@ -866,7 +866,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             if track:
                 currIdx = None
                 tries = 0
-                while currIdx != track.typeIndex and tries < 20:
+                while currIdx != track.typeIndex and tries < 40:
                     try:
                         playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
                         currIdx = \
