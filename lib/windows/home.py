@@ -1057,6 +1057,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                                 self.unhookSignals()
                             else:
                                 self.closeOption = "exit"
+                            self.doClose()
+                            return
                     finally:
                         self._checkingForExit = False
 
