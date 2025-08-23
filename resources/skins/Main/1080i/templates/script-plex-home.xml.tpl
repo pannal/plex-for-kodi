@@ -342,6301 +342,710 @@
         </control>
     </control>
 
-    <control type="group" id="500">
-        <visible>Integer.IsGreater(Container(400).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <width>1920</width>
-        <height>{{ vscale(440) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.400)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="400">
-            <posx>0</posx>
-            <posy>{{ vscale(30) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(440) }}</height>
-            <onup>101</onup>
-            <ondown>401</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>235.5</posx>
-                                <posy>{{ vscale(99.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>202</posx>
-                                <posy>{{ vscale(85.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(289) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>532</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(309) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.400))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(337) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
+    {% for id in range(0, 28) %}
+        {% with group_id = id + 500 & list_id = id+400 & bifur_id = id + 600 %}
+            <control type="group" id="{{ group_id }}">
+                <visible>Integer.IsGreater(Container({{ list_id }}).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
+                <width>1920</width>
+                <height>{{ vscale(440) }}</height>
+                <control type="image">
+                    <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
+                    <posx>60</posx>
+                    <posy>{{ vscale(12) }}</posy>
+                    <width>1800</width>
+                    <height>{{ vscale(2) }}</height>
+                    <texture>script.plex/white-square.png</texture>
+                    <colordiffuse>A0000000</colordiffuse>
                 </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="271,{{ vscale(152) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="271,{{ vscale(152) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(400)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>622</width>
-                            <height>{{ vscale(389) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
+                <control type="label">
+                    <posx>60</posx>
+                    <posy>0</posy>
+                    <width>1000</width>
+                    <height>{{ vscale(87) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <label>[UPPERCASE]$INFO[Window.Property(hub.{{ list_id }})][/UPPERCASE]</label>
+                </control>
+                <control type="list" id="{{ list_id }}">
+                    <posx>0</posx>
+                    <posy>{{ vscale(30) }}</posy>
+                    <width>1920</width>
+                    <height>{{ vscale(440) }}</height>
+                    <onup>101</onup>
+                    <ondown>{{ list_id + 1 }}</ondown>
+                    <onright>noop</onright>
+                    <onleft>noop</onleft>
+                    <scrolltime>200</scrolltime>
+                    <orientation>horizontal</orientation>
+                    <preloaditems>4</preloaditems>
+                    <!-- ITEM LAYOUT ########################################## -->
+                    <!-- 16x9 -->
+                    <itemlayout width="592" condition="String.IsEqual(Window.Property(hub.display.{{ list_id }}),16x9)">
                         <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
+                            <posx>55</posx>
+                            <posy>{{ vscale(64) }}</posy>
                             <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                <posx>5</posx>
+                                <posy>5</posy>
+                                <control type="group">
+                                    <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>532</width>
+                                        <height>{{ vscale(299) }}</height>
+                                        <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    </control>
+                                    <control type="image">
+                                        <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                        <posx>235.5</posx>
+                                        <posy>{{ vscale(99.5) }}</posy>
+                                        <width>61</width>
+                                        <height>{{ vscale(100) }}</height>
+                                        <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                    </control>
+                                    <control type="image">
+                                        <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                        <posx>202</posx>
+                                        <posy>{{ vscale(85.5) }}</posy>
+                                        <width>128</width>
+                                        <height>{{ vscale(128) }}</height>
+                                        <texture>script.plex/home/busy.gif</texture>
+                                    </control>
+                                </control>
                                 <control type="image">
                                     <posx>0</posx>
                                     <posy>0</posy>
                                     <width>532</width>
                                     <height>{{ vscale(299) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
                                 </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>235.5</posx>
-                                    <posy>{{ vscale(99.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>202</posx>
-                                    <posy>{{ vscale(85.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(289) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-
-                            <control type="label">
-                                <scroll>Control.HasFocus(400)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(309) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(400)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.400))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(337) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(400)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>542</width>
-                            <height>{{ vscale(309) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="600">
-        <visible>Integer.IsGreater(Container(400).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.400))</visible>
-        <width>10</width>
-        <height>{{ vscale(12) }}</height>
-    </control>
-
-    <control type="group" id="501">
-        <visible>Integer.IsGreater(Container(401).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>401</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.401)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="401">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>400</onup>
-            <ondown>402</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.401))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(401)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(401)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(401)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.401))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(401)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="601">
-        <visible>Integer.IsGreater(Container(401).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.401))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="502">
-        <visible>Integer.IsGreater(Container(402).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>402</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.402)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="402">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>401</onup>
-            <ondown>403</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.402))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(402)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(402)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(402)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.402))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(402)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="602">
-        <visible>Integer.IsGreater(Container(402).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.402))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="503">
-        <visible>Integer.IsGreater(Container(403).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>403</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.403)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="403">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>402</onup>
-            <ondown>404</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.403))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(403)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(403)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(403)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.403))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(403)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="603">
-        <visible>Integer.IsGreater(Container(403).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.403))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="504">
-        <visible>Integer.IsGreater(Container(404).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>404</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.404)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="404">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>403</onup>
-            <ondown>405</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.404))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(404)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(404)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(404)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.404))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(404)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="604">
-        <visible>Integer.IsGreater(Container(404).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.404))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="505">
-        <visible>Integer.IsGreater(Container(405).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>405</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.405)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="405">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>404</onup>
-            <ondown>406</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.405))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(405)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(405)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(405)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.405))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(405)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="605">
-        <visible>Integer.IsGreater(Container(405).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.405))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="506">
-        <visible>Integer.IsGreater(Container(406).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <width>1920</width>
-        <height>{{ vscale(440) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.406)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="406">
-            <posx>0</posx>
-            <posy>{{ vscale(30) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(440) }}</height>
-            <onup>405</onup>
-            <ondown>407</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>235.5</posx>
-                                <posy>{{ vscale(99.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>202</posx>
-                                <posy>{{ vscale(85.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(289) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>532</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                        
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(309) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.406))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(337) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="271,{{ vscale(152) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="271,{{ vscale(152) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(406)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>622</width>
-                            <height>{{ vscale(389) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
                                 <control type="image">
                                     <posx>0</posx>
                                     <posy>0</posy>
                                     <width>532</width>
                                     <height>{{ vscale(299) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    <texture background="true">$INFO[ListItem.Thumb]</texture>
+                                    <aspectratio>scale</aspectratio>
                                 </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>235.5</posx>
-                                    <posy>{{ vscale(99.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                <control type="group">
+                                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(289) }}</posy>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>532</width>
+                                        <height>{{ vscale(10) }}</height>
+                                        <texture>script.plex/white-square.png</texture>
+                                        <colordiffuse>C0000000</colordiffuse>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>1</posy>
+                                        <width>532</width>
+                                        <height>{{ vscale(8) }}</height>
+                                        <texture>$INFO[ListItem.Property(progress)]</texture>
+                                        <colordiffuse>FFCC7B19</colordiffuse>
+                                    </control>
                                 </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>202</posx>
-                                    <posy>{{ vscale(85.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
+                                {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
+
+                                <control type="label">
+                                    <scroll>false</scroll>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(309) }}</posy>
+                                    <width>532</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <aligny>center</aligny>
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label]</label>
+                                </control>
+                                <control type="label">
+                                    <scroll>false</scroll>
+                                    <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ list_id }}))</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(337) }}</posy>
+                                    <width>532</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <aligny>center</aligny>
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label2]</label>
                                 </control>
                             </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
+                        </control>
+                    </itemlayout>
+
+                    <!-- FOCUSED LAYOUT ####################################### -->
+                    <focusedlayout width="592" condition="String.IsEqual(Window.Property(hub.display.{{ list_id }}),16x9)">
+                        <control type="group">
+                            <posx>55</posx>
+                            <posy>{{ vscale(64) }}</posy>
                             <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                <animation effect="zoom" start="100" end="110" time="100" center="271,{{ vscale(152) }}" reversible="false">Focus</animation>
+                                <animation effect="zoom" start="110" end="100" time="100" center="271,{{ vscale(152) }}" reversible="false">UnFocus</animation>
                                 <posx>0</posx>
-                                <posy>{{ vscale(289) }}</posy>
+                                <posy>0</posy>
                                 <control type="image">
+                                    <visible>Control.HasFocus(400)</visible>
+                                    <posx>-40</posx>
+                                    <posy>{{ vscale(-40) }}</posy>
+                                    <width>622</width>
+                                    <height>{{ vscale(389) }}</height>
+                                    <texture border="42">script.plex/drop-shadow.png</texture>
+                                </control>
+                                <control type="group">
+                                    <posx>5</posx>
+                                    <posy>5</posy>
+                                    <control type="group">
+                                        <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>0</posy>
+                                            <width>532</width>
+                                            <height>{{ vscale(299) }}</height>
+                                            <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                        </control>
+                                        <control type="image">
+                                            <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                            <posx>235.5</posx>
+                                            <posy>{{ vscale(99.5) }}</posy>
+                                            <width>61</width>
+                                            <height>{{ vscale(100) }}</height>
+                                            <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                        </control>
+                                        <control type="image">
+                                            <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                            <posx>202</posx>
+                                            <posy>{{ vscale(85.5) }}</posy>
+                                            <width>128</width>
+                                            <height>{{ vscale(128) }}</height>
+                                            <texture>script.plex/home/busy.gif</texture>
+                                        </control>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>532</width>
+                                        <height>{{ vscale(299) }}</height>
+                                        <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>532</width>
+                                        <height>{{ vscale(299) }}</height>
+                                        <texture background="true">$INFO[ListItem.Thumb]</texture>
+                                        <aspectratio>scale</aspectratio>
+                                    </control>
+                                    <control type="group">
+                                        <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(289) }}</posy>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>0</posy>
+                                            <width>532</width>
+                                            <height>{{ vscale(10) }}</height>
+                                            <texture>script.plex/white-square.png</texture>
+                                            <colordiffuse>C0000000</colordiffuse>
+                                        </control>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>1</posy>
+                                            <width>532</width>
+                                            <height>{{ vscale(8) }}</height>
+                                            <texture>$INFO[ListItem.Property(progress)]</texture>
+                                            <colordiffuse>FFCC7B19</colordiffuse>
+                                        </control>
+                                    </control>
+                                    {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
+
+                                    <control type="label">
+                                        <scroll>Control.HasFocus(400)</scroll>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(309) }}</posy>
+                                        <width>532</width>
+                                        <height>{{ vscale(35) }}</height>
+                                        <font>font10</font>
+                                        <align>center</align>
+                                        <aligny>center</aligny>
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <label>$INFO[ListItem.Label]</label>
+                                    </control>
+                                    <control type="label">
+                                        <scroll>Control.HasFocus(400)</scroll>
+                                        <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ list_id }}))</visible>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(337) }}</posy>
+                                        <width>532</width>
+                                        <height>{{ vscale(35) }}</height>
+                                        <font>font10</font>
+                                        <align>center</align>
+                                        <aligny>center</aligny>
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <label>$INFO[ListItem.Label2]</label>
+                                    </control>
+                                </control>
+                                <control type="image">
+                                    <visible>Control.HasFocus({{ list_id }})</visible>
                                     <posx>0</posx>
                                     <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
+                                    <width>542</width>
+                                    <height>{{ vscale(309) }}</height>
+                                    <texture border="10">script.plex/home/selected.png</texture>
                                 </control>
                             </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                            <control type="label">
-                                <scroll>Control.HasFocus(406)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(309) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(406)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.406))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(337) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
                         </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(406)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>542</width>
-                            <height>{{ vscale(309) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="606">
-        <visible>Integer.IsGreater(Container(406).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.406))</visible>
-        <width>10</width>
-        <height>{{ vscale(12) }}</height>
-    </control>
-
-    <control type="group" id="507">
-        <visible>Integer.IsGreater(Container(407).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>407</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.407)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="407">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>406</onup>
-            <ondown>408</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
+                    </focusedlayout>
+                    <!-- poster -->
+                    <itemlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ list_id }}),poster)">
                         <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.407))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(407)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
+                            <posx>55</posx>
+                            <posy>{{ vscale(72) }}</posy>
                             <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                <posx>5</posx>
+                                <posy>5</posy>
+                                <control type="group">
+                                    <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(361) }}</height>
+                                        <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    </control>
+                                    <control type="image">
+                                        <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                        <posx>91.5</posx>
+                                        <posy>{{ vscale(130.5) }}</posy>
+                                        <width>61</width>
+                                        <height>{{ vscale(100) }}</height>
+                                        <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                    </control>
+                                    <control type="image">
+                                        <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                        <posx>58</posx>
+                                        <posy>{{ vscale(116.5) }}</posy>
+                                        <width>128</width>
+                                        <height>{{ vscale(128) }}</height>
+                                        <texture>script.plex/home/busy.gif</texture>
+                                    </control>
+                                </control>
                                 <control type="image">
                                     <posx>0</posx>
                                     <posy>0</posy>
                                     <width>244</width>
                                     <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
                                 </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(407)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(407)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.407))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(407)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="607">
-        <visible>Integer.IsGreater(Container(407).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.407))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="508">
-        <visible>Integer.IsGreater(Container(408).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>408</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.408)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="408">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>407</onup>
-            <ondown>409</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.408))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(408)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
                                 <control type="image">
                                     <posx>0</posx>
                                     <posy>0</posy>
                                     <width>244</width>
                                     <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    <texture background="true">$INFO[ListItem.Thumb]</texture>
+                                    <aspectratio>scale</aspectratio>
                                 </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                <control type="group">
+                                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(351) }}</posy>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(10) }}</height>
+                                        <texture>script.plex/white-square.png</texture>
+                                        <colordiffuse>C0000000</colordiffuse>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>1</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(8) }}</height>
+                                        <texture>$INFO[ListItem.Property(progress)]</texture>
+                                        <colordiffuse>FFCC7B19</colordiffuse>
+                                    </control>
                                 </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
+                                <control type="label">
+                                    <scroll>false</scroll>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(371) }}</posy>
+                                    <width>244</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label] LOLEK</label>
                                 </control>
+                                <control type="label">
+                                    <scroll>false</scroll>
+                                    <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ list_id }}))</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(398) }}</posy>
+                                    <width>244</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label2] KEKLEK</label>
+                                </control>
+                                {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
+
                             </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
+                        </control>
+                    </itemlayout>
+
+                    <!-- FOCUSED LAYOUT ####################################### -->
+                    <focusedlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ list_id }}),poster)">
+                        <control type="group">
+                            <posx>55</posx>
+                            <posy>{{ vscale(72) }}</posy>
                             <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
+                                <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
                                 <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
+                                <posy>0</posy>
                                 <control type="image">
+                                    <visible>Control.HasFocus({{ list_id }})</visible>
+                                    <posx>-40</posx>
+                                    <posy>{{ vscale(-40) }}</posy>
+                                    <width>334</width>
+                                    <height>{{ vscale(451) }}</height>
+                                    <texture border="42">script.plex/drop-shadow.png</texture>
+                                </control>
+                                <control type="group">
+                                    <posx>5</posx>
+                                    <posy>5</posy>
+                                    <control type="group">
+                                        <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>0</posy>
+                                            <width>244</width>
+                                            <height>{{ vscale(361) }}</height>
+                                            <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                        </control>
+                                        <control type="image">
+                                            <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                            <posx>91.5</posx>
+                                            <posy>{{ vscale(130.5) }}</posy>
+                                            <width>61</width>
+                                            <height>{{ vscale(100) }}</height>
+                                            <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                        </control>
+                                        <control type="image">
+                                            <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                            <posx>58</posx>
+                                            <posy>{{ vscale(116.5) }}</posy>
+                                            <width>128</width>
+                                            <height>{{ vscale(128) }}</height>
+                                            <texture>script.plex/home/busy.gif</texture>
+                                        </control>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(361) }}</height>
+                                        <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(361) }}</height>
+                                        <texture background="true">$INFO[ListItem.Thumb]</texture>
+                                        <aspectratio>scale</aspectratio>
+                                    </control>
+                                    <control type="group">
+                                        <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(351) }}</posy>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>0</posy>
+                                            <width>244</width>
+                                            <height>{{ vscale(10) }}</height>
+                                            <texture>script.plex/white-square.png</texture>
+                                            <colordiffuse>C0000000</colordiffuse>
+                                        </control>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>1</posy>
+                                            <width>244</width>
+                                            <height>{{ vscale(8) }}</height>
+                                            <texture>$INFO[ListItem.Property(progress)]</texture>
+                                            <colordiffuse>FFCC7B19</colordiffuse>
+                                        </control>
+                                    </control>
+                                    <control type="label">
+                                        <scroll>Control.HasFocus({{ list_id }})</scroll>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(371) }}</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(35) }}</height>
+                                        <font>font10</font>
+                                        <align>center</align>
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <label>$INFO[ListItem.Label]</label>
+                                    </control>
+                                    <control type="label">
+                                        <scroll>Control.HasFocus({{ list_id }})</scroll>
+                                        <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ list_id }}))</visible>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(398) }}</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(35) }}</height>
+                                        <font>font10</font>
+                                        <align>center</align>
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <label>$INFO[ListItem.Label2]</label>
+                                    </control>
+                                    {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
+                                </control>
+                                <control type="image">
+                                    <visible>Control.HasFocus({{ list_id }})</visible>
                                     <posx>0</posx>
                                     <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
+                                    <width>254</width>
+                                    <height>{{ vscale(371) }}</height>
+                                    <texture border="10">script.plex/home/selected.png</texture>
                                 </control>
                             </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(408)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(408)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.408))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
                         </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(408)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="608">
-        <visible>Integer.IsGreater(Container(408).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.408))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="509">
-        <visible>Integer.IsGreater(Container(409).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>409</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.409)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="409">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>408</onup>
-            <ondown>410</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
+                    </focusedlayout>
+                    <!-- square -->
+                    <itemlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ list_id }}),square)">
                         <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.409))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(409)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
+                            <posx>55</posx>
+                            <posy>{{ vscale(72) }}</posy>
                             <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                <posx>5</posx>
+                                <posy>5</posy>
+                                <control type="group">
+                                    <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(244) }}</height>
+                                        <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    </control>
+                                    <control type="image">
+                                        <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                        <posx>91.5</posx>
+                                        <posy>{{ vscale(72) }}</posy>
+                                        <width>61</width>
+                                        <height>{{ vscale(100) }}</height>
+                                        <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                    </control>
+                                    <control type="image">
+                                        <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                        <posx>58</posx>
+                                        <posy>{{ vscale(58) }}</posy>
+                                        <width>128</width>
+                                        <height>{{ vscale(128) }}</height>
+                                        <texture>script.plex/home/busy.gif</texture>
+                                    </control>
+                                </control>
                                 <control type="image">
                                     <posx>0</posx>
                                     <posy>0</posy>
                                     <width>244</width>
                                     <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
                                 </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(409)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(409)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.409))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(409)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="609">
-        <visible>Integer.IsGreater(Container(409).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.409))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="510">
-        <visible>Integer.IsGreater(Container(410).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>410</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.410)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="410">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>409</onup>
-            <ondown>411</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.410))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(410)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
                                 <control type="image">
                                     <posx>0</posx>
                                     <posy>0</posy>
                                     <width>244</width>
                                     <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    <texture background="true">$INFO[ListItem.Thumb]</texture>
+                                    <aspectratio>scale</aspectratio>
                                 </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
+                                <control type="group">
+                                    <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
                                     <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
+                                    <posy>{{ vscale(234) }}</posy>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(10) }}</height>
+                                        <texture>script.plex/white-square.png</texture>
+                                        <colordiffuse>C0000000</colordiffuse>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>1</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(8) }}</height>
+                                        <texture>$INFO[ListItem.Property(progress)]</texture>
+                                        <colordiffuse>FFCC7B19</colordiffuse>
+                                    </control>
                                 </control>
-                                <control type="image">
+                                <control type="label">
+                                    <scroll>false</scroll>
                                     <posx>0</posx>
-                                    <posy>1</posy>
+                                    <posy>{{ vscale(254) }}</posy>
                                     <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label]</label>
                                 </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(410)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(410)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.410))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
+                                <control type="label">
+                                    <scroll>false</scroll>
+                                    <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ list_id }}))</visible>
+                                    <posx>0</posx>
+                                    <posy>{{ vscale(281) }}</posy>
+                                    <width>244</width>
+                                    <height>{{ vscale(35) }}</height>
+                                    <font>font10</font>
+                                    <align>center</align>
+                                    <textcolor>FFFFFFFF</textcolor>
+                                    <label>$INFO[ListItem.Label2]</label>
+                                </control>
                             </control>
                         </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(410)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="610">
-        <visible>Integer.IsGreater(Container(410).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.410))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
+                    </itemlayout>
 
-    <control type="group" id="511">
-        <visible>Integer.IsGreater(Container(411).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>411</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.411)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="411">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>410</onup>
-            <ondown>412</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
+                    <!-- FOCUSED LAYOUT ####################################### -->
+                    <focusedlayout width="287" condition="String.IsEqual(Window.Property(hub.display.{{ list_id }}),square)">
                         <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.411))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(411)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
+                            <posx>55</posx>
+                            <posy>{{ vscale(72) }}</posy>
                             <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
+                                <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
+                                <posx>0</posx>
+                                <posy>0</posy>
                                 <control type="image">
+                                    <visible>Control.HasFocus({{ list_id }})</visible>
+                                    <posx>-40</posx>
+                                    <posy>{{ vscale(-40) }}</posy>
+                                    <width>324</width>
+                                    <height>{{ vscale(324) }}</height>
+                                    <texture border="42">script.plex/drop-shadow.png</texture>
+                                </control>
+                                <control type="group">
+                                    <posx>5</posx>
+                                    <posy>5</posy>
+                                    <control type="group">
+                                        <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>0</posy>
+                                            <width>244</width>
+                                            <height>{{ vscale(244) }}</height>
+                                            <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                        </control>
+                                        <control type="image">
+                                            <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                            <posx>91.5</posx>
+                                            <posy>{{ vscale(72) }}</posy>
+                                            <width>61</width>
+                                            <height>{{ vscale(100) }}</height>
+                                            <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
+                                        </control>
+                                        <control type="image">
+                                            <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
+                                            <posx>58</posx>
+                                            <posy>{{ vscale(58) }}</posy>
+                                            <width>128</width>
+                                            <height>{{ vscale(128) }}</height>
+                                            <texture>script.plex/home/busy.gif</texture>
+                                        </control>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(244) }}</height>
+                                        <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
+                                    </control>
+                                    <control type="image">
+                                        <posx>0</posx>
+                                        <posy>0</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(244) }}</height>
+                                        <texture background="true">$INFO[ListItem.Thumb]</texture>
+                                        <aspectratio>scale</aspectratio>
+                                    </control>
+                                    <control type="group">
+                                        <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(234) }}</posy>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>0</posy>
+                                            <width>244</width>
+                                            <height>{{ vscale(10) }}</height>
+                                            <texture>script.plex/white-square.png</texture>
+                                            <colordiffuse>C0000000</colordiffuse>
+                                        </control>
+                                        <control type="image">
+                                            <posx>0</posx>
+                                            <posy>1</posy>
+                                            <width>244</width>
+                                            <height>{{ vscale(8) }}</height>
+                                            <texture>$INFO[ListItem.Property(progress)]</texture>
+                                            <colordiffuse>FFCC7B19</colordiffuse>
+                                        </control>
+                                    </control>
+                                    <control type="label">
+                                        <scroll>Control.HasFocus(405)</scroll>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(254) }}</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(35) }}</height>
+                                        <font>font10</font>
+                                        <align>center</align>
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <label>$INFO[ListItem.Label]</label>
+                                    </control>
+                                    <control type="label">
+                                        <scroll>Control.HasFocus(405)</scroll>
+                                        <visible>!String.IsEmpty(Window.Property(hub.text2lines.{{ list_id }}))</visible>
+                                        <posx>0</posx>
+                                        <posy>{{ vscale(281) }}</posy>
+                                        <width>244</width>
+                                        <height>{{ vscale(35) }}</height>
+                                        <font>font10</font>
+                                        <align>center</align>
+                                        <textcolor>FFFFFFFF</textcolor>
+                                        <label>$INFO[ListItem.Label2]</label>
+                                    </control>
+                                </control>
+                                <control type="image">
+                                    <visible>Control.HasFocus(405)</visible>
                                     <posx>0</posx>
                                     <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
+                                    <width>254</width>
+                                    <height>{{ vscale(254) }}</height>
+                                    <texture border="10">script.plex/home/selected.png</texture>
                                 </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(411)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(411)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.411))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
                             </control>
                         </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(411)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
+                    </focusedlayout>
                 </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="611">
-        <visible>Integer.IsGreater(Container(411).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.411))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="512">
-        <visible>Integer.IsGreater(Container(412).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>412</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.412)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="412">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>411</onup>
-            <ondown>420</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.412))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(412)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(412)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(412)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.412))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(412)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="612">
-        <visible>Integer.IsGreater(Container(412).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.412))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="520">
-        <visible>Integer.IsGreater(Container(420).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>420</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.420)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="420">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>412</onup>
-            <ondown>421</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.420))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(420)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(420)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(420)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.420))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(420)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="620">
-        <visible>Integer.IsGreater(Container(420).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.420))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="521">
-        <visible>Integer.IsGreater(Container(421).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>421</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.421)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="421">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>420</onup>
-            <ondown>422</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.421))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(421)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(421)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(421)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.421))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(421)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="621">
-        <visible>Integer.IsGreater(Container(421).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.421))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="522">
-        <visible>Integer.IsGreater(Container(422).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>422</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(392) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.422)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="422">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(392) }}</height>
-            <onup>421</onup>
-            <ondown>413</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(72) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(58) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(244) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(234) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(254) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.422))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(281) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="122,{{ vscale(122) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="122,{{ vscale(122) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(422)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>324</width>
-                            <height>{{ vscale(324) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(244) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(72) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(58) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(244) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(234) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(422)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(254) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(422)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.422))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(281) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(422)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(254) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="622">
-        <visible>Integer.IsGreater(Container(422).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.422))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="513">
-        <visible>Integer.IsGreater(Container(413).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>413</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.413)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="413">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>422</onup>
-            <ondown>414</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.413))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(413)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(413)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(413)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.413))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(413)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="613">
-        <visible>Integer.IsGreater(Container(413).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.413))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="514">
-        <visible>Integer.IsGreater(Container(414).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>414</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.414)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="414">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>413</onup>
-            <ondown>415</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.414))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(414)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(414)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(414)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.414))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(414)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="614">
-        <visible>Integer.IsGreater(Container(414).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.414))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="515">
-        <visible>Integer.IsGreater(Container(415).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>415</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.415)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="415">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>414</onup>
-            <ondown>416</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.415))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(415)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(415)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(415)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.415))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(415)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="615">
-        <visible>Integer.IsGreater(Container(415).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.415))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="516">
-        <visible>Integer.IsGreater(Container(416).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <defaultcontrol>416</defaultcontrol>
-        <width>1920</width>
-        <height>{{ vscale(515) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.416)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="416">
-            <posx>0</posx>
-            <posy>{{ vscale(29) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(515) }}</height>
-            <onup>415</onup>
-            <ondown>417</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>91.5</posx>
-                                <posy>{{ vscale(130.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>58</posx>
-                                <posy>{{ vscale(116.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>244</width>
-                            <height>{{ vscale(361) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(351) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>244</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(371) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.416))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(398) }}</posy>
-                            <width>244</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="287">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(72) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="127,{{ vscale(180.5) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="127,{{ vscale(180.5) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(416)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>334</width>
-                            <height>{{ vscale(451) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(361) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>91.5</posx>
-                                    <posy>{{ vscale(130.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>58</posx>
-                                    <posy>{{ vscale(116.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>244</width>
-                                <height>{{ vscale(361) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(351) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>244</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(416)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(371) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(416)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.416))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(398) }}</posy>
-                                <width>244</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=244 & uw_size=48 & with_count=True & scale="medium" %}
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(416)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>254</width>
-                            <height>{{ vscale(371) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="616">
-        <visible>Integer.IsGreater(Container(416).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.416))</visible>
-        <width>10</width>
-        <height>{{ vscale(7) }}</height>
-    </control>
-
-    <control type="group" id="517">
-        <visible>Integer.IsGreater(Container(417).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <width>1920</width>
-        <height>{{ vscale(440) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.417)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="417">
-            <posx>0</posx>
-            <posy>{{ vscale(30) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(440) }}</height>
-            <onup>416</onup>
-            <ondown>418</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>235.5</posx>
-                                <posy>{{ vscale(99.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>202</posx>
-                                <posy>{{ vscale(85.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(289) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>532</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(309) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.417))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(337) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="271,{{ vscale(152) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="271,{{ vscale(152) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(417)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>622</width>
-                            <height>{{ vscale(389) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(299) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>235.5</posx>
-                                    <posy>{{ vscale(99.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>202</posx>
-                                    <posy>{{ vscale(85.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(289) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                            <control type="label">
-                                <scroll>Control.HasFocus(417)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(309) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(417)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.417))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(337) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(417)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>542</width>
-                            <height>{{ vscale(309) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="617">
-        <visible>Integer.IsGreater(Container(417).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.417))</visible>
-        <width>10</width>
-        <height>{{ vscale(12) }}</height>
-    </control>
-
-    <control type="group" id="518">
-        <visible>Integer.IsGreater(Container(418).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <width>1920</width>
-        <height>{{ vscale(440) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.418)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="418">
-            <posx>0</posx>
-            <posy>{{ vscale(30) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(440) }}</height>
-            <onup>417</onup>
-            <ondown>419</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>235.5</posx>
-                                <posy>{{ vscale(99.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>202</posx>
-                                <posy>{{ vscale(85.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(289) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>532</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(309) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.418))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(337) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="271,{{ vscale(152) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="271,{{ vscale(152) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(418)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>622</width>
-                            <height>{{ vscale(389) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(299) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>235.5</posx>
-                                    <posy>{{ vscale(99.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>202</posx>
-                                    <posy>{{ vscale(85.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(289) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                            <control type="label">
-                                <scroll>Control.HasFocus(418)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(309) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(418)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.418))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(337) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(418)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>542</width>
-                            <height>{{ vscale(309) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="618">
-        <visible>Integer.IsGreater(Container(418).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.418))</visible>
-        <width>10</width>
-        <height>{{ vscale(12) }}</height>
-    </control>
-
-    <control type="group" id="519">
-        <visible>Integer.IsGreater(Container(419).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <width>1920</width>
-        <height>{{ vscale(440) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.419)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="419">
-            <posx>0</posx>
-            <posy>{{ vscale(30) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(440) }}</height>
-            <onup>418</onup>
-            <ondown>423</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>235.5</posx>
-                                <posy>{{ vscale(99.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>202</posx>
-                                <posy>{{ vscale(85.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(289) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>532</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(309) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.419))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(337) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="271,{{ vscale(152) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="271,{{ vscale(152) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(419)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>622</width>
-                            <height>{{ vscale(389) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(299) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>235.5</posx>
-                                    <posy>{{ vscale(99.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>202</posx>
-                                    <posy>{{ vscale(85.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(289) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                            <control type="label">
-                                <scroll>Control.HasFocus(419)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(309) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(419)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.419))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(337) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(419)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>542</width>
-                            <height>{{ vscale(309) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="619">
-        <visible>Integer.IsGreater(Container(419).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.419))</visible>
-        <width>10</width>
-        <height>{{ vscale(12) }}</height>
-    </control>
-
-    <control type="group" id="523">
-        <visible>Integer.IsGreater(Container(423).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
-        <width>1920</width>
-        <height>{{ vscale(440) }}</height>
-        <control type="image">
-            <visible>!String.IsEmpty(Window.Property(bifurcation_lines))</visible>
-            <posx>60</posx>
-            <posy>{{ vscale(12) }}</posy>
-            <width>1800</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
-        <control type="label">
-            <posx>60</posx>
-            <posy>0</posy>
-            <width>1000</width>
-            <height>{{ vscale(87) }}</height>
-            <font>font12</font>
-            <align>left</align>
-            <aligny>center</aligny>
-            <textcolor>FFFFFFFF</textcolor>
-            <label>[UPPERCASE]$INFO[Window.Property(hub.423)][/UPPERCASE]</label>
-        </control>
-        <control type="list" id="423">
-            <posx>0</posx>
-            <posy>{{ vscale(30) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(440) }}</height>
-            <onup>419</onup>
-            <ondown>423</ondown>
-            <onright>noop</onright>
-            <onleft>noop</onleft>
-            <scrolltime>200</scrolltime>
-            <orientation>horizontal</orientation>
-            <preloaditems>4</preloaditems>
-            <!-- ITEM LAYOUT ########################################## -->
-            <itemlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <posx>5</posx>
-                        <posy>5</posy>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>235.5</posx>
-                                <posy>{{ vscale(99.5) }}</posy>
-                                <width>61</width>
-                                <height>{{ vscale(100) }}</height>
-                                <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                            </control>
-                            <control type="image">
-                                <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                <posx>202</posx>
-                                <posy>{{ vscale(85.5) }}</posy>
-                                <width>128</width>
-                                <height>{{ vscale(128) }}</height>
-                                <texture>script.plex/home/busy.gif</texture>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                        </control>
-                        <control type="image">
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>532</width>
-                            <height>{{ vscale(299) }}</height>
-                            <texture background="true">$INFO[ListItem.Thumb]</texture>
-                            <aspectratio>scale</aspectratio>
-                        </control>
-                        <control type="group">
-                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(289) }}</posy>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(10) }}</height>
-                                <texture>script.plex/white-square.png</texture>
-                                <colordiffuse>C0000000</colordiffuse>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>1</posy>
-                                <width>532</width>
-                                <height>{{ vscale(8) }}</height>
-                                <texture>$INFO[ListItem.Property(progress)]</texture>
-                                <colordiffuse>FFCC7B19</colordiffuse>
-                            </control>
-                        </control>
-                        {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <posx>0</posx>
-                            <posy>{{ vscale(309) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label]</label>
-                        </control>
-                        <control type="label">
-                            <scroll>false</scroll>
-                            <visible>!String.IsEmpty(Window.Property(hub.text2lines.423))</visible>
-                            <posx>0</posx>
-                            <posy>{{ vscale(337) }}</posy>
-                            <width>532</width>
-                            <height>{{ vscale(35) }}</height>
-                            <font>font10</font>
-                            <align>center</align>
-                            <aligny>center</aligny>
-                            <textcolor>FFFFFFFF</textcolor>
-                            <label>$INFO[ListItem.Label2]</label>
-                        </control>
-                    </control>
-                </control>
-            </itemlayout>
-
-            <!-- FOCUSED LAYOUT ####################################### -->
-            <focusedlayout width="592">
-                <control type="group">
-                    <posx>55</posx>
-                    <posy>{{ vscale(64) }}</posy>
-                    <control type="group">
-                        <animation effect="zoom" start="100" end="110" time="100" center="271,{{ vscale(152) }}" reversible="false">Focus</animation>
-                        <animation effect="zoom" start="110" end="100" time="100" center="271,{{ vscale(152) }}" reversible="false">UnFocus</animation>
-                        <posx>0</posx>
-                        <posy>0</posy>
-                        <control type="image">
-                            <visible>Control.HasFocus(423)</visible>
-                            <posx>-40</posx>
-                            <posy>{{ vscale(-40) }}</posy>
-                            <width>622</width>
-                            <height>{{ vscale(389) }}</height>
-                            <texture border="42">script.plex/drop-shadow.png</texture>
-                        </control>
-                        <control type="group">
-                            <posx>5</posx>
-                            <posy>5</posy>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(is.end))</visible>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(299) }}</height>
-                                    <texture colordiffuse="FF404040">script.plex/white-square.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>235.5</posx>
-                                    <posy>{{ vscale(99.5) }}</posy>
-                                    <width>61</width>
-                                    <height>{{ vscale(100) }}</height>
-                                    <texture colordiffuse="40000000">script.plex/indicators/chevron-white.png</texture>
-                                </control>
-                                <control type="image">
-                                    <visible>!String.IsEmpty(ListItem.Property(is.updating))</visible>
-                                    <posx>202</posx>
-                                    <posy>{{ vscale(85.5) }}</posy>
-                                    <width>128</width>
-                                    <height>{{ vscale(128) }}</height>
-                                    <texture>script.plex/home/busy.gif</texture>
-                                </control>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture>$INFO[ListItem.Property(thumb.fallback)]</texture>
-                            </control>
-                            <control type="image">
-                                <posx>0</posx>
-                                <posy>0</posy>
-                                <width>532</width>
-                                <height>{{ vscale(299) }}</height>
-                                <texture background="true">$INFO[ListItem.Thumb]</texture>
-                                <aspectratio>scale</aspectratio>
-                            </control>
-                            <control type="group">
-                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(289) }}</posy>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>0</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(10) }}</height>
-                                    <texture>script.plex/white-square.png</texture>
-                                    <colordiffuse>C0000000</colordiffuse>
-                                </control>
-                                <control type="image">
-                                    <posx>0</posx>
-                                    <posy>1</posy>
-                                    <width>532</width>
-                                    <height>{{ vscale(8) }}</height>
-                                    <texture>$INFO[ListItem.Property(progress)]</texture>
-                                    <colordiffuse>FFCC7B19</colordiffuse>
-                                </control>
-                            </control>
-                            {% include "includes/watched_indicator.xml.tpl" with xoff=532 & uw_size=48 & with_count=True %}
-                            <control type="label">
-                                <scroll>Control.HasFocus(423)</scroll>
-                                <posx>0</posx>
-                                <posy>{{ vscale(309) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label]</label>
-                            </control>
-                            <control type="label">
-                                <scroll>Control.HasFocus(423)</scroll>
-                                <visible>!String.IsEmpty(Window.Property(hub.text2lines.423))</visible>
-                                <posx>0</posx>
-                                <posy>{{ vscale(337) }}</posy>
-                                <width>532</width>
-                                <height>{{ vscale(35) }}</height>
-                                <font>font10</font>
-                                <align>center</align>
-                                <aligny>center</aligny>
-                                <textcolor>FFFFFFFF</textcolor>
-                                <label>$INFO[ListItem.Label2]</label>
-                            </control>
-                        </control>
-                        <control type="image">
-                            <visible>Control.HasFocus(423)</visible>
-                            <posx>0</posx>
-                            <posy>0</posy>
-                            <width>542</width>
-                            <height>{{ vscale(309) }}</height>
-                            <texture border="10">script.plex/home/selected.png</texture>
-                        </control>
-                    </control>
-                </control>
-            </focusedlayout>
-        </control>
-    </control>
-    <control type="group" id="623">
-        <visible>Integer.IsGreater(Container(423).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.423))</visible>
-        <width>10</width>
-        <height>{{ vscale(12) }}</height>
-    </control>
+            </control>
+            <control type="group" id="{{ bifur_id }}">
+                <visible>Integer.IsGreater(Container({{ list_id }}).NumItems,0) + !String.IsEmpty(Window.Property(hub.text2lines.{{ list_id }}))</visible>
+                <width>10</width>
+                <height>{{ vscale(12) }}</height>
+            </control>
+        {% endwith %}
+    {% endfor %}
 
     <control type="label">
         <!-- DUMMY -->

@@ -2433,6 +2433,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not hubitems:
             hub.reset()
 
+        self.setProperty('hub.display.4{0:02d}'.format(index), "poster")
         self.setProperty('hub.4{0:02d}'.format(index), hub.title or kwargs.get('title'))
         self.setProperty('hub.text2lines.4{0:02d}'.format(index), text2lines and '1' or '')
 
