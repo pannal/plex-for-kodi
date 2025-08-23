@@ -177,7 +177,7 @@
                     <height>{{ vscale(34) }}</height>
                     <font>font12</font>
                     <align>center</align>
-                    <aligny>center</aligny>
+                    <aligny>top</aligny>
                     <focusedcolor>FFFFFFFF</focusedcolor>
                     <textcolor>FFFFFFFF</textcolor>
                     <textoffsetx>15</textoffsetx>
@@ -192,7 +192,7 @@
                     <height>{{ vscale(34) }}</height>
                     <font>font12</font>
                     <align>center</align>
-                    <aligny>center</aligny>
+                    <aligny>top</aligny>
                     <focusedcolor>FFFFFFFF</focusedcolor>
                     <textcolor>FFFFFFFF</textcolor>
                     <textoffsetx>15</textoffsetx>
@@ -293,7 +293,7 @@
                             <height>{{ vscale(34) }}</height>
                             <font>font12</font>
                             <align>center</align>
-                            <aligny>center</aligny>
+                            <aligny>top</aligny>
                             <focusedcolor>FFFFFFFF</focusedcolor>
                             <textcolor>FFFFFFFF</textcolor>
                             <textoffsetx>15</textoffsetx>
@@ -306,7 +306,7 @@
                             <height>{{ vscale(34) }}</height>
                             <font>font12</font>
                             <align>left</align>
-                            <aligny>center</aligny>
+                            <aligny>top</aligny>
                             <textcolor>FFFFFFFF</textcolor>
                             <label>$INFO[Window.Property(audio)]</label>
                         </control>
@@ -317,7 +317,7 @@
                             <height>{{ vscale(34) }}</height>
                             <font>font12</font>
                             <align>center</align>
-                            <aligny>center</aligny>
+                            <aligny>top</aligny>
                             <focusedcolor>FFFFFFFF</focusedcolor>
                             <textcolor>FFFFFFFF</textcolor>
                             <textoffsetx>15</textoffsetx>
@@ -331,7 +331,7 @@
                             <height>{{ vscale(34) }}</height>
                             <font>font12</font>
                             <align>left</align>
-                            <aligny>center</aligny>
+                            <aligny>top</aligny>
                             <textcolor>FFFFFFFF</textcolor>
                             <label>$INFO[Window.Property(subtitles)]</label>
                         </control>
@@ -360,15 +360,6 @@
                 <height>{{ vscale(8) }}</height>
                 <texture>script.plex/white-square.png</texture>
                 <colordiffuse>FFCC7B19</colordiffuse>
-            </control>
-            <control type="image">
-                <visible>!Control.IsVisible(500)</visible>
-                <posx>0</posx>
-                <posy>{{ vscale(565) }}</posy>
-                <width>1920</width>
-                <height>{{ vscale(2) }}</height>
-                <texture>script.plex/white-square.png</texture>
-                <colordiffuse>A0000000</colordiffuse>
             </control>
         </control>
     {% endblock %}
@@ -752,6 +743,32 @@
                                 <texture background="true">$INFO[ListItem.Thumb]</texture>
                                 <aspectratio>scale</aspectratio>
                             </control>
+                            <control type="group">
+                                <posx>0</posx>
+                                <posy>0</posy>
+                                <width>299</width>
+                                <height>{{ vscale(168) }}</height>
+                                <control type="image">
+                                    <right>10</right>
+                                    <bottom>10</bottom>
+                                    <width>64</width>
+                                    <height>26</height>
+                                    <texture>script.plex/white-square-rounded.png</texture>
+                                    <colordiffuse>99000000</colordiffuse>
+                                </control>
+                                <control type="label">
+                                    <animation effect="zoom" start="60" end="60" time="0" reversible="false" center="auto" condition="true">Conditional</animation>
+                                    <right>42</right>
+                                    <bottom>10</bottom>
+                                    <width>auto</width>
+                                    <height>26</height>
+                                    <font>font32_title</font>
+                                    <align>center</align>
+                                    <aligny>center</aligny>
+                                    <textcolor>FFEEEEEE</textcolor>
+                                    <label>$INFO[ListItem.Property(extra.duration)]</label>
+                                </control>
+                            </control>
                             <control type="textbox">
                                 <posx>0</posx>
                                 <posy>{{ vscale(180) }}</posy>
@@ -802,6 +819,32 @@
                                     <height>{{ vscale(168) }}</height>
                                     <texture background="true">$INFO[ListItem.Thumb]</texture>
                                     <aspectratio>scale</aspectratio>
+                                </control>
+                                <control type="group">
+                                    <posx>0</posx>
+                                    <posy>0</posy>
+                                    <width>299</width>
+                                    <height>{{ vscale(168) }}</height>
+                                    <control type="image">
+                                        <right>10</right>
+                                        <bottom>10</bottom>
+                                        <width>64</width>
+                                        <height>26</height>
+                                        <texture>script.plex/white-square-rounded.png</texture>
+                                        <colordiffuse>99000000</colordiffuse>
+                                    </control>
+                                    <control type="label">
+                                        <animation effect="zoom" start="60" end="60" time="0" reversible="false" center="auto" condition="true">Conditional</animation>
+                                        <right>42</right>
+                                        <bottom>10</bottom>
+                                        <width>auto</width>
+                                        <height>26</height>
+                                        <font>font32_title</font>
+                                        <align>center</align>
+                                        <aligny>center</aligny>
+                                        <textcolor>FFEEEEEE</textcolor>
+                                        <label>$INFO[ListItem.Property(extra.duration)]</label>
+                                    </control>
                                 </control>
                                 <control type="textbox">
                                     <posx>0</posx>

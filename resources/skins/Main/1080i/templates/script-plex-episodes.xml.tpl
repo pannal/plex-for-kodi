@@ -287,7 +287,7 @@
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>center</align>
-                <aligny>center</aligny>
+                <aligny>top</aligny>
                 <focusedcolor>FFFFFFFF</focusedcolor>
                 <textcolor>FFFFFFFF</textcolor>
                 <textoffsetx>15</textoffsetx>
@@ -324,7 +324,7 @@
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>center</align>
-                <aligny>center</aligny>
+                <aligny>top</aligny>
                 <focusedcolor>FFFFFFFF</focusedcolor>
                 <textcolor>FFFFFFFF</textcolor>
                 <textoffsetx>15</textoffsetx>
@@ -337,7 +337,7 @@
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>left</align>
-                <aligny>center</aligny>
+                <aligny>top</aligny>
                 <textcolor>FFFFFFFF</textcolor>
                 <label>$INFO[Container(400).ListItem.Property(audio)]</label>
             </control>
@@ -348,7 +348,7 @@
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>center</align>
-                <aligny>center</aligny>
+                <aligny>top</aligny>
                 <focusedcolor>FFFFFFFF</focusedcolor>
                 <textcolor>FFFFFFFF</textcolor>
                 <textoffsetx>15</textoffsetx>
@@ -362,7 +362,7 @@
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>left</align>
-                <aligny>center</aligny>
+                <aligny>top</aligny>
                 <textcolor>FFFFFFFF</textcolor>
                 <scroll>true</scroll>
                 <scrollspeed>15</scrollspeed>
@@ -390,15 +390,6 @@
             <height>{{ vscale(8) }}</height>
             <texture>script.plex/white-square.png</texture>
             <colordiffuse>FFCC7B19</colordiffuse>
-        </control>
-        <control type="image">
-            <visible>!Control.IsVisible(500)</visible>
-            <posx>0</posx>
-            <posy>{{ vscale(565) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
         </control>
     </control>
 

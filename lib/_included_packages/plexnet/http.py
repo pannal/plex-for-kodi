@@ -55,6 +55,7 @@ def pgetaddrinfo(host, port, *args, **kwargs):
 
 
 socket.getaddrinfo = pgetaddrinfo
+socket.getaddrinfo_orig = _getaddrinfo
 
 
 def GET(*args, **kwargs):

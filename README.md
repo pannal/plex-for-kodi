@@ -29,7 +29,7 @@ Master branch is based off of the official plex-for-kodi master branch.
 * Optional, recommended: Install Plextuary skin using the above
 
 ### Manual
-* Checkout any branch of this GitHub repository, rename to `script.plexmod` and use as an addon
+* Checkout any branch of this GitHub repository, rename to `script.plexmod` and use as an addon (for it to work with "Install from zip", the contents of the zip should be the folder `script.plexmod`.
 
 ## Translation
 You can help! Join the translation effort at [POEditor](https://poeditor.com/join/project/ASOl50YAXg) (thanks for the free open source license, guys).

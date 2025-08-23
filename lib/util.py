@@ -49,7 +49,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 51
+THEME_VERSION = 54
 
 xbmc.log('script.plexmod: Kodi {0}.{1} (build {2})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER),
          xbmc.LOGINFO)
@@ -213,7 +213,7 @@ def durationToText(seconds):
     return '0 seconds'
 
 
-def durationToShortText(ms, shortHourMins=False):
+def durationToShortText(ms, shortHourMins=False, shortSeconds=False):
     """
     Converts seconds to a short user friendly string
     Example: 143 -> 2m 23s
@@ -238,7 +238,7 @@ def durationToShortText(ms, shortHourMins=False):
     secs = int(left % 60000)
     if secs:
         secs /= 1000
-        return '{0} s'.format(secs)
+        return '{0} s'.format(round(secs) if shortSeconds and round(secs) == int(secs) else secs)
     return '0 s'
 
 

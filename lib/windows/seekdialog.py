@@ -193,6 +193,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self._ignoreInput = False
         self._ignoreTick = False
         self._abortBufferWait = False
+        self._playerDebugActive = False
         self.no_spoilers = util.getSetting('no_episode_spoilers4')
         self.no_time_no_osd_spoilers = util.getSetting('no_osd_time_spoilers')
         self.clientLikePlex = util.getSetting('player_official')
@@ -609,9 +610,12 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         self.player.playState == self.player.STATE_PLAYING:
                     self.hideOSD()
 
-                if action == xbmcgui.ACTION_CONTEXT_MENU:
+                if action == xbmcgui.ACTION_CONTEXT_MENU or (self.getProperty('show.PPI') and action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT)):
                     if self.getProperty('show.PPI'):
-                        self.showPPIDialog(real_ppi=True)
+                        if action == xbmcgui.ACTION_MOVE_LEFT:
+                            self.showPPIDialog(real_ppi=True, debug=True)
+                        else:
+                            self.showPPIDialog(real_ppi=True)
                         return
 
                 passThroughMain = False
@@ -791,10 +795,15 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                     self.player.trigger("action", action="prev")
 
                 if action in cancelActions + (xbmcgui.ACTION_SELECT_ITEM,):
-                    if self.getProperty('show.PPI') and action in cancelActions:
-                        self.hidePPIDialog()
-                        self.hideOSD()
-                        return
+                    if action in cancelActions:
+                        if self.getProperty('show.PPI'):
+                            self.hidePPIDialog()
+                            self.hideOSD()
+                            return
+                        if self._playerDebugActive:
+                            xbmc.executebuiltin('Action(playerdebug)')
+                            self._playerDebugActive = False
+                            return
 
                     # immediate marker timer actions
                     if self.countingDownMarker:
@@ -810,9 +819,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                             # behaviour
                             elif util.addonSettings.skipMarkerTimerImmediate \
                                     and action == xbmcgui.ACTION_SELECT_ITEM and \
-                                    self._currentMarker["countdown"] is not None and \
-                                    self._currentMarker["countdown_initial"] is not None and \
-                                    self._currentMarker["countdown"] < self._currentMarker["countdown_initial"]:
+                                    self._currentMarker["countdown"] is not None:
+                                    #self._currentMarker["countdown_initial"] is not None and \
+                                    #self._currentMarker["countdown"] < self._currentMarker["countdown_initial"]:
                                 self.displayMarkers(immediate=True)
                                 self.hideOSD(skipMarkerFocus=True)
                                 return
@@ -1006,12 +1015,16 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         finally:
             kodigui.BaseDialog.doClose(self)
 
-    def showPPIDialog(self, real_ppi=False):
+    def showPPIDialog(self, real_ppi=False, debug=False):
         from lib.cache import kcm
         if self.getProperty('show.PPI'):
             if real_ppi:
                 self.setProperty('show.PPI', '')
-                xbmc.executebuiltin('Action(PlayerProcessInfo)')
+                if debug:
+                    xbmc.executebuiltin('Action(playerdebug)')
+                    self._playerDebugActive = True
+                else:
+                    xbmc.executebuiltin('Action(playerprocessinfo)')
             return
 
         for attrib in SESSION_ATTRIBUTE_TYPES.values():
@@ -2267,13 +2280,19 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         # go to next video immediately (post play or next episode on bingeMode)
         if self.handler.playlist and self.handler.playlist.hasNext():
-            if not self.handler.queuingNext:
-                # skip final marker
-                util.DEBUG_LOG("{}: {} final marker, going to next video", context,
-                    immediate and "Immediately skipping" or "Skipping")
-                self.prepareNewPlayback(queuing_next=True, ignore_tick=True, ignore_input=True, with_timeline=False)
+            if self.bingeMode or self.skipPostPlay:
+                if not self.handler.queuingNext:
+                    # skip final marker
+                    util.DEBUG_LOG("{}: {} final marker, going to next video", context,
+                        immediate and "Immediately skipping" or "Skipping")
+                    self.prepareNewPlayback(queuing_next=True, ignore_tick=True, ignore_input=True, with_timeline=False)
+                    self.player.stop()
+                return True
+            else:
+                util.DEBUG_LOG("{}: Skipping final marker in episode, stopping", context)
+                self.handler.endedManually = True
                 self.player.stop()
-            return True
+                return True
         else:
             util.DEBUG_LOG("{}: Skipping final marker, stopping", context)
             self.stop()

@@ -27,6 +27,7 @@ from . import search
 from . import background
 from .mixins.spoilers import SpoilersMixin
 from .mixins.watchlist import removeFromWatchlistBlind
+from .mixins.common import CommonMixin
 
 
 HUBS_REFRESH_INTERVAL = 300  # 5 Minutes
@@ -286,7 +287,7 @@ class ServerListItem(kodigui.ManagedListItem):
         self.unHookSignals()
 
 
-class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
+class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMixin):
     xmlFile = 'script-plex-home.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -472,7 +473,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
         self.sectionList = kodigui.ManagedControlList(self, self.SECTION_LIST_ID, 7)
         self.serverList = kodigui.ManagedControlList(self, self.SERVER_LIST_ID, 10)
-        self.userList = kodigui.ManagedControlList(self, self.USER_LIST_ID, 3)
+        self.userList = kodigui.ManagedControlList(self, self.USER_LIST_ID, 5)
 
         self.hubControls = (
             kodigui.ManagedControlList(self, self.HUB_AR16X9_00, 5),
@@ -578,8 +579,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             # if we're set to honor dnsRebindingProtection=1 and the server has this flag at 0 or
             # if we're set to honor publicAddressMatches=1 and the server has this flag at 0, and we haven't seen the
             # server locally, skip plex.direct handling
-            if ((util.addonSettings.honorPlextvDnsrebind and not server.dnsRebindingProtection) or
-                    (util.addonSettings.honorPlextvPam and not server.sameNetwork and not server.anyLANConnection)):
+            if (((util.addonSettings.honorPlextvDnsrebind and not server.dnsRebindingProtection) or
+                    (util.addonSettings.honorPlextvPam and not server.sameNetwork and not server.anyLANConnection))
+                    and not server.anyPDHostNotResolvable):
                 util.DEBUG_LOG("Ignoring DNS handling for plex.direct connections of: {}", server)
                 continue
             hosts += [c.address for c in server.connections]
@@ -775,9 +777,22 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         self._updateSourceChanged = value
 
 
+    def doUpdate(self):
+        self._shuttingDown = True
+        self._ignoreTick = True
+        self.stopRetryingRequests()
+
+        # fixme: add "update" to the list of closeOptions for which we should force quit if necessary?
+        # self.closeOption = "update"
+        self.unhookSignals()
+        self.doClose()
+        return True
+
+
     def service_responder(self):
-        if util.getGlobalProperty('update_available'):
+        if util.getGlobalProperty('notify_update'):
             is_downgrade = bool(util.getGlobalProperty('update_is_downgrade', consume=True))
+            self.showBusy(False)
             button = optionsdialog.show(
                 T(33670, 'Update available'),
                 T(33671, 'Current: {current_version}\nNew: {new_version}\n\nChangelog:\n{changelog}').format(
@@ -787,32 +802,33 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 ),
                 T(33683, 'Exit, download and install'),
                 T(33684, 'Later') if not is_downgrade else T(32329, 'No'),
-                delay_buttons=1.8, big=True
+                delay_buttons=1.8, big=True, close_timeout=3600
             )
             if button == 0:
                 resp = "commence"
             else:
                 resp = "cancel"
             util.setGlobalProperty('update_response', resp, wait=True)
-            util.setGlobalProperty('update_available', '', wait=True)
+            util.setGlobalProperty('notify_update', '', wait=True)
 
             if resp == "commence":
                 # wait for it to be consumed
                 try:
                     util.waitForConsumption('update_response', timeout=200)
                 finally:
-                    self._shuttingDown = True
-                    self._ignoreTick = True
-                    self.stopRetryingRequests()
-
-                    # fixme: add "update" to the list of closeOptions for which we should force quit if necessary?
-                    #self.closeOption = "update"
-                    self.unhookSignals()
-                    self.doClose()
-                    return True
+                    return self.doUpdate()
 
     def tick(self):
+        if self._shuttingDown:
+            util.DEBUG_LOG("Home: Not ticking, shutdown flag set")
+            return
+
+        if self.movingSection:
+            util.DEBUG_LOG("Home: Not ticking, currently moving a section")
+            return
+
         if self.is_active and self.service_responder():
+            util.DEBUG_LOG("Home: Not ticking, service responder signalled positive exit")
             return
 
         if self.is_active and self._updateSourceChanged:
@@ -893,12 +909,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
     def onAction(self, action):
         controlID = self.getFocusId()
-
         if self._ignoreInput or self._shuttingDown:
             return
 
         try:
             if self._skipNextAction:
+                util.DEBUG_LOG("Home: Skipping next action")
                 self._skipNextAction = False
                 return
 
@@ -981,6 +997,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                     _continue = self.checkHubItem(controlID, action=action)
                     if not _continue:
                         return
+                elif self.isWatchedAction(action):
+                    self.toggleWatched(controlID)
+                    return
                 elif action == xbmcgui.ACTION_PLAYER_PLAY:
                     self.hubItemClicked(controlID, auto_play=True)
                     return
@@ -1102,6 +1121,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if 399 < controlID < 500:
             self.setProperty('hub.focus', str(self.hubFocusIndexes[controlID - 400]))
 
+        if self.movingSection:
+            return
+
         if (controlID == self.SECTION_LIST_ID and not self.changingServer and not self._checkingForExit and not
         self._shuttingDown):
             self.checkSectionItem()
@@ -1149,6 +1171,29 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         ret.button = button
 
         return ret
+
+    def toggleWatched(self, controlID=None, item=None, state=None):
+        if not controlID and not item:
+            return
+
+        if controlID:
+            control = self.hubControls[controlID - 400]
+            mli = control.getSelectedItem()
+            if not mli:
+                return
+
+            if mli.dataSource is None:
+                return
+            item = mli.dataSource
+
+        if super(HomeWindow, self).toggleWatched(item, state=state) is None:
+            return
+
+        if item.isFullyWatched:
+            guid = item.show().guid if item.TYPE in ('episode', 'season') else item.guid
+            removeFromWatchlistBlind(guid)
+        self._updateOnDeckHubs()
+
 
     def searchButtonClicked(self):
         self.processCommand(search.dialog(self))
@@ -1214,7 +1259,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
     def refreshLastSection(self, *args, **kwargs):
         self.enableUpdates()
-        if not xbmc.Player().isPlayingVideo() and not self._shuttingDown:
+        if not xbmc.Player().isPlayingVideo() and not self._shuttingDown and self.is_active:
             util.LOG("Refreshing last section after wake events")
             self.showHubs(self.lastSection, force=True, update=True)
 
@@ -1678,12 +1723,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                     return
 
             if choice["key"] == "mark_watched":
-                mli.dataSource.markWatched()
-                if mli.dataSource.isFullyWatched:
-                    guid = mli.dataSource.show().guid if mli.dataSource.TYPE in ('episode',
-                                                                                 'season') else mli.dataSource.guid
-                    removeFromWatchlistBlind(guid)
-                self._updateOnDeckHubs()
+                self.toggleWatched(item=mli.dataSource, state=True)
 
             elif choice["key"] == "mark_unwatched":
                 mli.dataSource.markUnwatched()
@@ -1776,6 +1816,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                 self.sectionList.selectItem(0)
 
             self.sectionList.moveItem(item, next_index)
+            self.sectionList.selectItem(next_index)
 
         elif action == xbmcgui.ACTION_SELECT_ITEM:
             stop_moving()
@@ -1967,9 +2008,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
                                                     {"index": 999})["index"])
 
             self.sectionHubs[section.key] = hubs
+            self.setBoolProperty('loading.content', False)
             if self.lastSection == section:
-                if section.server.DEFER_HUBS:
-                    self.setBoolProperty('loading.content', False)
                 self.showHubs(section, update=update, reselect_pos_dict=reselect_pos_dict)
 
     def updateHubCallback(self, hub, items=None, reselect_pos=None):
@@ -2710,6 +2750,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
 
     def showUserMenu(self, mouse=False):
         items = []
+        if util.getGlobalProperty("update_available"):
+            items.append(kodigui.ManagedListItem(T(33670, 'Update available'), data_source='update'))
         if plexapp.ACCOUNT.isSignedIn:
             if not len(plexapp.ACCOUNT.homeUsers) and not util.addonSettings.cacheHomeUsers:
                 plexapp.ACCOUNT.updateHomeUsers(refreshSubscription=True)
@@ -2731,6 +2773,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
             items[-1].setProperty('last', '1')
         else:
             items[0].setProperty('only', '1')
+        # somehow dynamically setting the list height here doesn't work. We need a height that's bigger than our
+        # possible available items in the template
 
         self.userList.reset()
         self.userList.addItems(items)
@@ -2761,6 +2805,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, SpoilersMixin):
         if option == 'settings':
             from . import settings
             settings.openWindow()
+        elif option == 'update':
+            self.setBoolProperty('show.options', False)
+            self.showBusy()
+            self.setFocusId(self.SECTION_LIST_ID)
+            util.setGlobalProperty('update_requested', '1', wait=True)
         elif option == 'go_online':
             plexapp.ACCOUNT.refreshAccount()
         elif option == 'refresh_users':

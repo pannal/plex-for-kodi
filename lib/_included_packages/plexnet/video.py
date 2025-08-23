@@ -522,6 +522,7 @@ class PlayableVideo(CachableItemsMixin, Video, media.RelatedMixin):
     _audioStreams = None
     _subtitleStreams = None
     _current_subtitle_idx = None
+    isExtra = False
 
     def _setData(self, data):
         Video._setData(self, data)

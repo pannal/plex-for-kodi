@@ -32,6 +32,7 @@ from . import subitems
 from . import windowutils
 from .mixins.playbackbtn import PlaybackBtnMixin
 from .mixins.watchlist import removeFromWatchlistBlind
+from .mixins.common import CommonMixin
 
 KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -370,7 +371,7 @@ class LibrarySettings(object):
         self._saveSettings()
 
 
-class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin):
+class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin, CommonMixin):
     bgXML = 'script-plex-blank.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -533,6 +534,12 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                             return
                 else:
                     return
+            elif self.isWatchedAction(action):
+                mli = self.showPanelControl.getSelectedItem()
+                if not mli or not mli.dataSource:
+                    return
+                self.toggleWatched(mli)
+                return
 
             elif action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_CONTEXT_MENU):
                 if not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.OPTIONS_GROUP_ID)) and \
@@ -588,6 +595,17 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             return
 
         self.showPhotoItemProperties(mli.dataSource)
+
+    def toggleWatched(self, mli, state=None, **kw):
+        item = mli.dataSource
+        guid = item.show().guid if item.TYPE in ('episode', 'season') else item.guid
+        watched = super(LibraryWindow, self).toggleWatched(item)
+        if watched is None:
+            return
+
+        if watched:
+            removeFromWatchlistBlind(guid)
+        self.updateUnwatchedAndProgress(mli)
 
     def itemOptions(self):
         mli = self.showPanelControl.getSelectedItem()
@@ -647,14 +665,11 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                         return True
 
                 if choice["key"] == "mark_watched":
-                    mli.dataSource.markWatched()
-                    if mli.dataSource.isFullyWatched:
-                        removeFromWatchlistBlind(guid)
-                    self.updateUnwatchedAndProgress(mli)
+                    self.toggleWatched(mli, state=True)
 
                 elif choice["key"] == "mark_unwatched":
-                    mli.dataSource.markUnwatched()
-                    self.updateUnwatchedAndProgress(mli)
+                    self.toggleWatched(mli, state=False)
+
                 elif choice["key"] == "remove_from_watchlist":
                     removeFromWatchlistBlind(guid)
                     self.doRefill()
@@ -1369,7 +1384,8 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         while backgroundthread.BGThreader.working() and not util.MONITOR.abortRequested():
             util.MONITOR.waitForAbort(0.1)
 
-        self.keyListControl.addItems(jitems)
+        if jitems:
+            self.keyListControl.addItems(jitems)
 
         self.showPanelControl.selectItem(0)
         self.setFocusId(self.POSTERS_PANEL_ID)

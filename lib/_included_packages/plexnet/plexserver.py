@@ -129,6 +129,10 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
     def anyLANConnection(self):
         return any(c.localVerified for c in self.connections)
 
+    @property
+    def anyPDHostNotResolvable(self):
+        return any(".plex.direct:" in c.address and not c.pdHostnameResolved for c in self.connections)
+
     def getObject(self, key, assume_container=False):
         data = self.query(key)
 

@@ -45,6 +45,9 @@ class PlexHostsManager(object):
     def hadHosts(self):
         return bool(self._orig_hosts)
 
+    def getOrigHosts(self):
+        return self._orig_hosts or {}
+
     def newHosts(self, hosts, source="stored"):
         """
         hosts should be a list of plex.direct connection uri's

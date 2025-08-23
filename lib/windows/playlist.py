@@ -7,6 +7,7 @@ from kodi_six import xbmc
 from kodi_six import xbmcgui
 from six.moves import range
 
+from plexnet import signalsmixin
 from lib import backgroundthread
 from lib import player
 from lib import util
@@ -56,7 +57,7 @@ class ChunkRequestTask(backgroundthread.Task):
             util.DEBUG_LOG('404 on playlist: {0}', lambda: repr(self.WINDOW.playlist.title))
 
 
-class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
+class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin, signalsmixin.SignalsMixin):
     xmlFile = 'script-plex-playlist.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -82,16 +83,20 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
     def __init__(self, *args, **kwargs):
         kodigui.ControlledWindow.__init__(self, *args, **kwargs)
+        signalsmixin.SignalsMixin.__init__(self)
         self.playlist = kwargs.get('playlist')
         self.exitCommand = None
         self.tasks = backgroundthread.Tasks()
         self.isPlaying = False
+        self.video_progress = {}
         ChunkRequestTask.WINDOW = self
 
     def onFirstInit(self):
         self.playlistListControl = kodigui.ManagedControlList(self, self.PLAYLIST_LIST_ID, 5)
         self.setProperties()
         player.PLAYER.on('new.video', self.onNewVideo)
+        player.PLAYER.on('video.progress', self.onVideoProgress)
+        self.on('playlist.filled', self.onPlaylistFilled)
 
         self.fillPlaylist()
         self.setFocusId(self.PLAYLIST_LIST_ID)
@@ -113,6 +118,14 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     def onNewVideo(self, *args, **kwargs):
         video = kwargs.get("video")
         self.playlist.setCurrent(self.playlist.getPosFromItem(video))
+
+    def onVideoProgress(self, data=None, **kwargs):
+        if not data:
+            return
+
+        util.DEBUG_LOG("Storing video progress data: {}", data)
+        gprk, prk, rk, state = data
+        self.video_progress[rk] = state
 
     def onAction(self, action):
         try:
@@ -143,6 +156,8 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
     def doClose(self):
         player.PLAYER.off('new.video', self.onNewVideo)
+        player.PLAYER.off('video.progress', self.onVideoProgress)
+        self.off('playlist.filled', self.onPlaylistFilled)
         kodigui.ControlledWindow.doClose(self)
         self.tasks.cancel()
         ChunkRequestTask.reset()
@@ -236,6 +251,7 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         finally:
             self.isPlaying = False
             self.restartFill()
+            self.video_progress = {}
 
     def restartFill(self):
         threading.Thread(target=self._restartFill).start()
@@ -252,7 +268,8 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
                 else:
                     break
             # Update the progress for videos
-            elif mli.dataSource.type in ('episode', 'movie', 'clip'):
+            elif mli.dataSource.type in ('episode', 'movie', 'clip') and mli.dataSource.ratingKey in self.video_progress:
+                mli.dataSource.clearCache()
                 mli.dataSource.reload()
                 self.updateListItem(idx, mli.dataSource)
         else:
@@ -325,8 +342,8 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         mli.setThumbnailImage(episode.thumb.asTranscodedImageURL(*self.LI_AR16X9_THUMB_DIM))
         mli.setProperty('track.duration', util.durationToShortText(episode.duration.asInt()))
         mli.setProperty('video', '1')
-        mli.setProperty('watched', episode.isWatched and '1' or '')
-        mli.setProperty('unwatched', episode.isWatched and '' or '1')
+        mli.setProperty('watched', episode.isFullyWatched and '1' or '')
+        mli.setProperty('unwatched', episode.isFullyWatched and '' or '1')
 
     def createMovieListItem(self, mli, movie):
         mli.setLabel(movie.defaultTitle)
@@ -336,6 +353,23 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         mli.setProperty('video', '1')
         mli.setProperty('watched', movie.isWatched and '1' or '')
         mli.setProperty('unwatched', movie.isWatched and '' or '1')
+
+
+    def onPlaylistFilled(self, *args, **kwargs):
+        start = kwargs.get("start", None)
+        item_count = kwargs.get("item_count", None)
+        uc = self.playlist.userCurrent()
+        item_pos = self.playlist.getPosFromItem(uc)
+
+        if item_pos > -1 and start is not None and item_count is not None and start <= item_pos < start + item_count:
+            util.DEBUG_LOG("Playlist: Relevant task finished, selecting "
+                           "user-relevant current item: {} (pos: {}, range: {}-{})", uc, item_pos, start, start + item_count)
+            self.playlist.setCurrent(item_pos)
+            success = self.playlistListControl.setSelectedItemByDataSource(self.playlist.current())
+            if not success:
+                util.LOG("Playlist: Couldn't find item in playlist (current: {}, user-current: {})",
+                         self.playlist.current(), self.playlist.userCurrent())
+
 
     @busy.dialog()
     def fillPlaylist(self):
@@ -355,16 +389,17 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.playlistListControl.reset()
         self.playlistListControl.addItems(items)
 
-        self.playlist.setCurrent(self.playlist.getPosFromItem(self.playlist.userCurrent()))
-        self.playlistListControl.setSelectedItemByDataSource(self.playlist.current())
-
         if total <= min(util.addonSettings.playlistMaxSize, PLAYLIST_PAGE_SIZE):
+            self.trigger('playlist.filled', start=0, item_count=total)
             return
 
-        for start in range(endoffirst, total, PLAYLIST_PAGE_SIZE):
+        batchSize = min(util.addonSettings.playlistMaxSize, PLAYLIST_PAGE_SIZE)
+        self.trigger('playlist.filled', start=0, item_count=batchSize)
+
+        for start in range(endoffirst, total, batchSize):
             if util.MONITOR.abortRequested():
                 break
-            self.tasks.add(ChunkRequestTask().setup(start, PLAYLIST_PAGE_SIZE))
+            self.tasks.add(ChunkRequestTask().setup(start, batchSize))
 
         backgroundthread.BGThreader.addTasksToFront(self.tasks)
 
@@ -375,3 +410,5 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
 
             idx = start + i
             self.updateListItem(idx, pi)
+
+        self.trigger('playlist.filled', start=start, item_count=len(items))

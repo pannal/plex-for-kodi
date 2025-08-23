@@ -227,6 +227,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.waitingForSOS = False
         self.chapters = None
         self.stoppedManually = False
+        self.endedManually = False
         self.inBingeMode = False
         self.skipPostPlay = False
         self.prePlayWitnessed = False
@@ -249,6 +250,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._subtitleStreamOffset = None
         self.mode = self.MODE_RELATIVE
         self.ended = False
+        self.endedManually = False
         self.stoppedManually = False
         self.prePlayWitnessed = False
         self.queuingNext = False
@@ -309,10 +311,13 @@ class SeekPlayerHandler(BasePlayerHandler):
         if util.getUserSetting('post_play_never', False):
             return False
 
+        if self.player.video and self.player.video.isExtra:
+            return False
+
         if self.playlist and self.playlist.TYPE == 'playlist':
             return False
 
-        if not self.stoppedManually and self.skipPostPlay:
+        if not (self.stoppedManually or self.endedManually) and self.skipPostPlay:
             return False
 
         if (not util.addonSettings.postplayAlways and self._lastDuration <= FIVE_MINUTES_MILLIS)\
@@ -353,7 +358,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             if self.showPostPlay():
                 return True
 
-        if not self.playlist or self.stoppedManually or (self.playlist and not hasNext):
+        if not self.playlist or self.stoppedManually or self.endedManually or (self.playlist and not hasNext):
             return False
 
         self.player.playVideoPlaylist(self.playlist, handler=self, resume=False)
@@ -568,7 +573,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         watchedByPerc = self.getVideoPlayedFac(ref=ref) >= self.playedThresholdPerc / 100.0 or self.player.isExternal
 
         if playedAtBH == 0 or not self.player.video.has_credit_markers:
-            util.DEBUG_LOG("SeekPlayerHandler: Watched item due to percentage")
+            util.DEBUG_LOG("SeekPlayerHandler: Watched item due to percentage: {}", watchedByPerc)
             return watchedByPerc
         elif playedAtBH == 1 and self.creditMarkerHit == "final":
             util.DEBUG_LOG("SeekPlayerHandler: Watched item due to final credits marker")
@@ -635,7 +640,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                         return
 
         if (self.seeking not in (self.SEEK_IN_PROGRESS, self.SEEK_PLAYLIST) or
-                (self.seeking == self.SEEK_PLAYLIST and self.stoppedManually)):
+                (self.seeking == self.SEEK_PLAYLIST and (self.stoppedManually or self.endedManually))):
             self.hideOSD(delete=True)
             self.sessionEnded()
 
@@ -940,6 +945,7 @@ class SeekPlayerHandler(BasePlayerHandler):
 
             if not self.playlist or not self.playlist.hasNext():
                 if not self.shouldShowPostPlay():
+                    util.DEBUG_LOG("SeekHandler: Not showing post-play (VideoWindowClosed)")
                     self.sessionEnded()
 
     def onVideoOSD(self):

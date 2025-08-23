@@ -82,6 +82,7 @@ class PlexConnection(object):
         self.refreshed = True
         self.score = 0
         self.request = None
+        self.pdHostnameResolved = False
 
         self.lastTestedAt = 0
         self.hasPendingRequest = False
@@ -94,6 +95,9 @@ class PlexConnection(object):
         # check whether hostname is on LAN
         if HAS_ICMPLIB and util.CHECK_LOCAL and not skipLocalCheck:
             self.checkLocal()
+
+        if not util.NO_HOST_CHECK:
+            self.checkNativeResolve()
 
         self.getScore(True)
 
@@ -127,6 +131,18 @@ class PlexConnection(object):
             if addr in network:
                 return network
         return False
+
+    def checkNativeResolve(self):
+        pUrl = urlparse(self.address)
+        hostname = pUrl.hostname
+        if hostname.endswith("plex.direct") and hostname not in util.SKIP_HOST_CHECK:
+            try:
+                ips = util.resolve(hostname, use_orig=True)
+                self.pdHostnameResolved = True
+                util.DEBUG_LOG("Natively resolved hostname: {} to {}", hostname, ips)
+            except Exception as e:
+                util.DEBUG_LOG("Couldn't resolve hostname: {}, {}", hostname, e)
+                self.pdHostnameResolved = False
 
     def checkLocal(self):
         pUrl = urlparse(self.address)

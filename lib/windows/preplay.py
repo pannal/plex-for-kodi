@@ -24,6 +24,8 @@ from .mixins.ratings import RatingsMixin
 from .mixins.playbackbtn import PlaybackBtnMixin
 from .mixins.thememusic import ThemeMusicMixin
 from .mixins.watchlist import WatchlistUtilsMixin
+from .mixins.roles import RolesMixin
+from .mixins.common import CommonMixin
 
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1, includeReviews=1)
 
@@ -34,7 +36,7 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
 
 
 class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixin, PlaybackBtnMixin, ThemeMusicMixin,
-                    WatchlistUtilsMixin):
+                    RolesMixin, CommonMixin, WatchlistUtilsMixin):
     xmlFile = 'script-plex-pre_play.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -59,6 +61,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
     HOME_BUTTON_ID = 201
     SEARCH_BUTTON_ID = 202
 
+    MAIN_BUTTON_GROUP_ID = 300
     INFO_BUTTON_ID = 304
     PLAY_BUTTON_ID = 302
     TRAILER_BUTTON_ID = 303
@@ -178,12 +181,16 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                         self.setFocusId(self.OPTIONS_GROUP_ID)
                         return
 
-            elif action == xbmcgui.ACTION_LAST_PAGE and xbmc.getCondVisibility('ControlGroup(300).HasFocus(0)'):
+            elif self.isWatchedAction(action) and xbmc.getCondVisibility('ControlGroup({}).HasFocus(0)'.format(self.MAIN_BUTTON_GROUP_ID)):
+                self.toggleWatched(self.video)
+                return
+
+            elif action == xbmcgui.ACTION_LAST_PAGE and xbmc.getCondVisibility('ControlGroup({}).HasFocus(0)'.format(self.MAIN_BUTTON_GROUP_ID)):
                 next(self)
             elif action == xbmcgui.ACTION_NEXT_ITEM:
                 self.setFocusId(300)
                 next(self)
-            elif action == xbmcgui.ACTION_FIRST_PAGE and xbmc.getCondVisibility('ControlGroup(300).HasFocus(0)'):
+            elif action == xbmcgui.ACTION_FIRST_PAGE and xbmc.getCondVisibility('ControlGroup({}).HasFocus(0)'.format(self.MAIN_BUTTON_GROUP_ID)):
                 self.prev()
             elif action == xbmcgui.ACTION_PREV_ITEM:
                 self.setFocusId(300)
@@ -215,7 +222,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         elif controlID == self.ROLES_LIST_ID:
             if self.fromWatchlist:
                 return
-            self.roleClicked()
+            if not self.roleClicked():
+                return
         elif controlID == self.PLAY_BUTTON_ID:
             self.playVideo()
         elif controlID in self.WL_RELEVANT_BTNS and self.fromWatchlist and self.wl_availability:
@@ -251,6 +259,17 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.setProperty('on.extras', '')
         elif xbmc.getCondVisibility('ControlGroup(50).HasFocus(0) + !ControlGroup(300).HasFocus(0)'):
             self.setProperty('on.extras', '1')
+
+    def toggleWatched(self, item, state=None, **kw):
+        watched = super(PrePlayWindow, self).toggleWatched(item, state=state, **kw)
+        if watched is None:
+            return
+
+        if watched:
+            self.wl_auto_remove(self.video)
+            self.checkIsWatchlisted(self.video)
+        self.refreshInfo()
+        util.MONITOR.watchStatusChanged()
 
     def searchButtonClicked(self):
         self.processCommand(search.dialog(self, section_id=self.video.getLibrarySectionId() or None))
@@ -319,15 +338,9 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         if choice['key'] == 'play_next':
             xbmc.executebuiltin('PlayerControl(Next)')
         elif choice['key'] == 'mark_watched':
-            self.video.markWatched(**VIDEO_RELOAD_KW)
-            self.wl_auto_remove(self.video)
-            self.refreshInfo()
-            self.checkIsWatchlisted(self.video)
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(self.video, state=True, **VIDEO_RELOAD_KW)
         elif choice['key'] == 'mark_unwatched':
-            self.video.markUnwatched(**VIDEO_RELOAD_KW)
-            self.refreshInfo()
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(self.video, state=False, **VIDEO_RELOAD_KW)
         elif choice['key'] == 'to_season':
             self.processCommand(opener.open(self.video.parentRatingKey))
         elif choice['key'] == 'to_show':
@@ -391,32 +404,6 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         success = self.video.delete()
         util.LOG('Media DELETE: {0} - {1}', self.video, success and 'SUCCESS' or 'FAILED')
         return success
-
-    def roleClicked(self):
-        mli = self.rolesListControl.getSelectedItem()
-        if not mli:
-            return
-
-        sectionRoles = busy.widthDialog(mli.dataSource.sectionRoles, '')
-
-        if not sectionRoles:
-            util.DEBUG_LOG('No sections found for actor')
-            return
-
-        if len(sectionRoles) > 1:
-            x, y = self.getRoleItemDDPosition()
-
-            options = [{'role': r, 'display': r.reasonTitle} for r in sectionRoles]
-            choice = dropdown.showDropdown(options, (x, y), pos_is_bottom=False)
-
-            if not choice:
-                return
-
-            role = choice['role']
-        else:
-            role = sectionRoles[0]
-
-        self.processCommand(opener.open(role))
 
     def getVideos(self):
         if not self.videos:
@@ -495,21 +482,6 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.video = self.videos[pos]
 
         return True
-
-    def getRoleItemDDPosition(self):
-        y = util.vscale(600)
-
-        tries = 0
-        focus = xbmc.getInfoLabel('Container(400).Position')
-        while tries < 2 and focus == '':
-            focus = xbmc.getInfoLabel('Container(400).Position')
-            xbmc.sleep(250)
-            tries += 1
-
-        focus = int(focus)
-
-        x = ((focus + 1) * 304) - 100
-        return x, y
 
     def playVideo(self, from_auto_play=False):
         if self.playBtnClicked:
@@ -729,6 +701,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                 mli.setProperty(
                     'thumb.fallback', 'script.plex/thumb_fallbacks/{0}.png'.format(extra.type in ('show', 'season', 'episode') and 'show' or 'movie')
                 )
+                mli.setProperty('extra.duration', extra.duration and util.simplifiedTimeDisplay(extra.duration.asInt()))
                 items.append(mli)
                 idx += 1
 

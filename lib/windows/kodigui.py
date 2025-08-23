@@ -99,6 +99,9 @@ class BaseFunctions(object):
     def setBoolProperty(self, key, boolean):
         self.setProperty(key, boolean and '1' or '')
 
+    def getBoolProperty(self, key):
+        return self.getProperty(key) == '1'
+
     def waitForVisibility(self, control):
         return waitForVisibility(control)
 
@@ -116,59 +119,60 @@ class XMLBase(object):
     defer_init_time = 0.25
 
     def onInit(self, count=0):
-        if self.defer_init:
-            util.DEBUG_LOG("Kodigui: Deferring init of {} for {}s", self, self.defer_init_time)
-            util.MONITOR.waitForAbort(self.defer_init_time)
-        try:
-            self.getControl(666)
-        except RuntimeError as e:
-            if e.args and "Non-Existent Control" in e.args[0]:
-                if count < 8:
-                    # retry
-                    xbmc.sleep(250)
-                    return self.onInit(count=count+1)
+        if not self.started:
+            if self.defer_init:
+                util.DEBUG_LOG("Kodigui: Deferring init of {} for {}s", self, self.defer_init_time)
+                util.MONITOR.waitForAbort(self.defer_init_time)
+            try:
+                self.getControl(666)
+            except RuntimeError as e:
+                if e.args and "Non-Existent Control" in e.args[0]:
+                    if count < 8:
+                        # retry
+                        xbmc.sleep(250)
+                        return self.onInit(count=count+1)
 
-                util.ERROR("Possibly broken XML file: {}, triggering recompilation.".format(self.xmlFile))
-                util.showNotification("Recompiling templates", time_ms=1000,
-                                      header="Possibly broken XML file(s)")
+                    util.ERROR("Possibly broken XML file: {}, triggering recompilation.".format(self.xmlFile))
+                    util.showNotification("Recompiling templates", time_ms=1000,
+                                          header="Possibly broken XML file(s)")
 
-                try:
-                    if xbmc.Player().isPlaying():
-                        try:
-                            xbmc.Player().stop()
-                        except:
-                            pass
-
-                    tries = 0
-                    while xbmc.Player().isPlaying() and tries < 50:
-                        util.MONITOR.waitForAbort(0.1)
-                        tries += 1
-                except:
-                    pass
-
-                xbmc.sleep(1000)
-
-                if self.__class__.__name__ == "HomeWindow":
                     try:
-                        self._errored = True
-                        self.closeWRecompileTpls()
-                    finally:
-                        return
-                elif self.__class__.__name__ == "BackgroundWindow":
+                        if xbmc.Player().isPlaying():
+                            try:
+                                xbmc.Player().stop()
+                            except:
+                                pass
+
+                        tries = 0
+                        while xbmc.Player().isPlaying() and tries < 50:
+                            util.MONITOR.waitForAbort(0.1)
+                            tries += 1
+                    except:
+                        pass
+
+                    xbmc.sleep(1000)
+
+                    if self.__class__.__name__ == "HomeWindow":
+                        try:
+                            self._errored = True
+                            self.closeWRecompileTpls()
+                        finally:
+                            return
+                    elif self.__class__.__name__ == "BackgroundWindow":
+                        try:
+                            self._errored = True
+                            self.doClose()
+                        finally:
+                            return
+
                     try:
                         self._errored = True
                         self.doClose()
                     finally:
+                        from . import windowutils
+                        windowutils.HOME.closeWRecompileTpls()
                         return
-
-                try:
-                    self._errored = True
-                    self.doClose()
-                finally:
-                    from . import windowutils
-                    windowutils.HOME.closeWRecompileTpls()
-                    return
-            raise
+                raise
         self._onInit()
 
     def goHomeAction(self, action):
@@ -802,7 +806,11 @@ class ManagedControlList(object):
             self.control.selectItem(pos)
 
     def setSelectedItemByDataSource(self, data_source):
-        self.setSelectedItem(self.getListItemByDataSource(data_source))
+        mli = self.getListItemByDataSource(data_source)
+        if mli:
+            self.setSelectedItem(mli)
+            return True
+        return False
 
     def removeItem(self, index):
         old = self.items.pop(index)

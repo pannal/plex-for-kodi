@@ -272,15 +272,6 @@
             <texture>script.plex/white-square.png</texture>
             <colordiffuse>FFCC7B19</colordiffuse>
         </control>
-        <control type="image">
-            <visible>!Control.IsVisible(500)</visible>
-            <posx>0</posx>
-            <posy>{{ vscale(565) }}</posy>
-            <width>1920</width>
-            <height>{{ vscale(2) }}</height>
-            <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
-        </control>
     </control>
 
     <control type="grouplist" id="60">

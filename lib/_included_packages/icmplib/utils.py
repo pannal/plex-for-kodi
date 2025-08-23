@@ -74,7 +74,7 @@ def unique_identifier():
         return _current_id
 
 
-def resolve(name, family=None):
+def resolve(name, family=None, use_orig=False):
     '''
     Resolve a hostname or FQDN to an IP address. Depending on the name
     specified in parameters, several IP addresses may be returned.
@@ -105,7 +105,9 @@ def resolve(name, family=None):
         else:
             _family = socket.AF_INET
 
-        lookup = socket.getaddrinfo(
+        func = socket.getaddrinfo if use_orig else socket.getaddrinfo_orig
+
+        lookup = func(
             host=name,
             port=None,
             family=_family,

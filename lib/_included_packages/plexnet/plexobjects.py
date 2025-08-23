@@ -326,7 +326,7 @@ class PlexObject(Checks):
         self.server.query('%s/refresh' % self.key, method="put")
         self.clearCache()
 
-    def reload(self, _soft=False, **kwargs):
+    def reload(self, _soft=False, skip_cache=False, **kwargs):
         """ Reload the data for this object from PlexServer XML. """
         if _soft and self._reloaded:
             return self
@@ -334,7 +334,7 @@ class PlexObject(Checks):
         try:
             if self.get('ratingKey'):
                 data = self.server.query('/library/metadata/{0}'.format(self.ratingKey),
-                                         cachable=self.cachable,
+                                         cachable=self.cachable and not skip_cache,
                                          cache_ref=self.cacheRef,
                                          params=kwargs)
             else:

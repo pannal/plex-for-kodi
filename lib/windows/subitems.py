@@ -28,6 +28,8 @@ from .mixins.ratings import RatingsMixin
 from .mixins.playbackbtn import PlaybackBtnMixin
 from .mixins.watchlist import WatchlistUtilsMixin
 from .mixins.thememusic import ThemeMusicMixin
+from .mixins.roles import RolesMixin
+from .mixins.common import CommonMixin
 
 
 class RelatedPaginator(pagination.BaseRelatedPaginator):
@@ -36,7 +38,8 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
 
 
 class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, DeleteMediaMixin, RatingsMixin,
-                 PlaybackBtnMixin, WatchlistUtilsMixin, ThemeMusicMixin, playbacksettings.PlaybackSettingsMixin):
+                 RolesMixin, PlaybackBtnMixin, WatchlistUtilsMixin, ThemeMusicMixin, CommonMixin,
+                 playbacksettings.PlaybackSettingsMixin):
     xmlFile = 'script-plex-seasons.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -62,6 +65,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
     PROGRESS_IMAGE_ID = 250
 
+    MAIN_BUTTON_GROUP_ID = 300
     INFO_BUTTON_ID = 301
     PLAY_BUTTON_ID = 302
     SHUFFLE_BUTTON_ID = 303
@@ -210,7 +214,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
                 self.manuallySelectedSeason = True
 
             elif action == xbmcgui.ACTION_CONTEXT_MENU:
-                if controlID == self.SUB_ITEM_LIST_ID:
+                if controlID == self.SUB_ITEM_LIST_ID and not self.isExternal:
                     self.optionsButtonClicked(from_item=True)
                     return
                 elif not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.OPTIONS_GROUP_ID)):
@@ -222,6 +226,14 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
                         self.setFocusId(self.lastNonOptionsFocusID)
                         self.lastNonOptionsFocusID = None
                         return
+
+            elif controlID == self.SUB_ITEM_LIST_ID and self.isWatchedAction(action):
+                item = self.subItemListControl.getSelectedItem()
+                if not item.dataSource:
+                    return
+
+                self.toggleWatched(item.dataSource)
+                return
 
             elif action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_CONTEXT_MENU):
                 if not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(
@@ -241,6 +253,9 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             elif action == xbmcgui.ACTION_PREV_ITEM:
                 self.setFocusId(300)
                 self.prev()
+            elif self.isWatchedAction(action) and xbmc.getCondVisibility('ControlGroup({}).HasFocus(0)'.format(self.MAIN_BUTTON_GROUP_ID)):
+                self.toggleWatched(self.mediaItem)
+                return
 
             if action == xbmcgui.ACTION_MOVE_UP and (controlID == self.SUB_ITEM_LIST_ID or
                     self.INFO_BUTTON_ID <= controlID <= self.OPTIONS_BUTTON_ID):
@@ -272,7 +287,8 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             self.openItem(self.relatedListControl)
         elif controlID == self.ROLES_LIST_ID:
             if not self.fromWatchlist:
-                self.roleClicked()
+                if not self.roleClicked():
+                    return
         elif controlID == self.INFO_BUTTON_ID:
             self.infoButtonClicked()
         elif controlID == self.PLAY_BUTTON_ID:
@@ -302,6 +318,18 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             self.setProperty('on.extras', '')
         elif xbmc.getCondVisibility('ControlGroup(50).HasFocus(0) + !ControlGroup(300).HasFocus(0)'):
             self.setProperty('on.extras', '1')
+
+    def toggleWatched(self, item, state=None, **kw):
+        watched = super(ShowWindow, self).toggleWatched(item, state=state, **kw)
+        if watched is None:
+            return
+
+        if watched:
+            self.wl_auto_remove(self.mediaItem)
+            self.checkIsWatchlisted(self.mediaItem)
+        self.updateItems()
+        self.updateProperties()
+        util.MONITOR.watchStatusChanged()
 
     def getMediaItems(self):
         return False
@@ -526,17 +554,9 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         if choice['key'] == 'play_next':
             xbmc.executebuiltin('PlayerControl(Next)')
         elif choice['key'] == 'mark_watched':
-            item.markWatched()
-            self.wl_auto_remove(self.mediaItem)
-            self.checkIsWatchlisted(self.mediaItem)
-            self.updateItems()
-            self.updateProperties()
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(item, state=True)
         elif choice['key'] == 'mark_unwatched':
-            item.markUnwatched()
-            self.updateItems()
-            self.updateProperties()
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(item, state=False)
         elif choice['key'] == 'to_section':
             self.cameFrom = "library"
             section = plexlibrary.LibrarySection.fromFilter(self.mediaItem)
@@ -568,52 +588,16 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             except Exception as e:
                 util.DEBUG_LOG("Couldn't clear cache: {}", e)
 
-    def roleClicked(self):
-        mli = self.rolesListControl.getSelectedItem()
-        if not mli:
-            return
-
-        sectionRoles = busy.widthDialog(mli.dataSource.sectionRoles, '')
-
-        if not sectionRoles:
-            util.DEBUG_LOG('No sections found for actor')
-            return
-
-        if len(sectionRoles) > 1:
-            x, y = self.getRoleItemDDPosition()
-
-            options = [{'role': r, 'display': r.reasonTitle} for r in sectionRoles]
-            choice = dropdown.showDropdown(options, (x, y), pos_is_bottom=True)
-
-            if not choice:
-                return
-
-            role = choice['role']
-        else:
-            role = sectionRoles[0]
-
-        self.processCommand(opener.open(role))
-
-    def getRoleItemDDPosition(self):
+    def getRoleItemDDPosition(self, *args, **kwargs):
         y = 980
         if xbmc.getCondVisibility('Control.IsVisible(500)'):
             y += 380
         if xbmc.getCondVisibility('!String.IsEmpty(Window.Property(on.extras))'):
             y -= 200
         if xbmc.getCondVisibility('Integer.IsGreater(Window.Property(hub.focus),0) + Control.IsVisible(500)'):
-            y -= 500
+            y -= 650
 
-        tries = 0
-        focus = xbmc.getInfoLabel('Container(401).Position')
-        while tries < 2 and focus == '':
-            focus = xbmc.getInfoLabel('Container(401).Position')
-            xbmc.sleep(250)
-            tries += 1
-
-        focus = int(focus)
-
-        x = ((focus + 1) * 304) - 100
-        return x, y
+        return super(ShowWindow, self).getRoleItemDDPosition(y=y, container_id="401")
 
     def updateItems(self):
         self.fill(update=True)

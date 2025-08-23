@@ -31,6 +31,8 @@ from .mixins.playbackbtn import PlaybackBtnMixin
 from .mixins.thememusic import ThemeMusicMixin
 from .mixins.watchlist import WatchlistUtilsMixin
 from .mixins.ratings import RatingsMixin
+from .mixins.roles import RolesMixin
+from .mixins.common import CommonMixin
 
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1)
 
@@ -195,7 +197,8 @@ class RedirectToEpisode(Exception):
 VIDEO_PROGRESS = OrderedDict()
 
 class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, RatingsMixin, SpoilersMixin,
-                     PlaybackBtnMixin, ThemeMusicMixin, WatchlistUtilsMixin, playbacksettings.PlaybackSettingsMixin):
+                     RolesMixin, PlaybackBtnMixin, ThemeMusicMixin, WatchlistUtilsMixin, CommonMixin,
+                     playbacksettings.PlaybackSettingsMixin):
     xmlFile = 'script-plex-episodes.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -512,6 +515,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                             mli.setProperty('unwatched.count.large', '')
                             mli.dataSource.set('viewCount', mli.dataSource.get('viewCount', 0).asInt() + 1)
                             mli.dataSource.set('viewOffset', 0)
+                            mli.dataSource.markWatched()
                             self.setUserItemInfo(mli, fully_watched=True)
 
                         elif progress > 60000:
@@ -528,6 +532,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                             mli.dataSource.set('viewOffset', '')
                             self.setUserItemInfo(mli)
                             set_main_progress_to = 0
+
+                        mli.dataSource.clearCache()
 
                         if self.noRatings:
                             self.populateRatings(mli.dataSource, mli, hide_ratings=self.hideSpoilers(mli.dataSource))
@@ -631,12 +637,19 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             elif controlID == self.EPISODE_LIST_ID:
                 if self.checkForHeaderFocus(action):
                     return
+                elif self.isWatchedAction(action):
+                    mli = self.episodeListControl.getSelectedItem()
+                    if not mli or mli.getProperty("is.boundary"):
+                        return
+                    self.toggleWatched(mli)
+                    self.selectEpisode()
+                    return
                 elif action == xbmcgui.ACTION_CONTEXT_MENU:
                     self.optionsButtonClicked(from_item=True)
                     return
 
             elif controlID == self.RELATED_LIST_ID:
-                if self.relatedPaginator.boundaryHit:
+                if self.relatedPaginator and self.relatedPaginator.boundaryHit:
                     self.relatedPaginator.paginate()
                     return
                 elif action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT):
@@ -760,7 +773,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         elif controlID == self.ROLES_LIST_ID:
             if self.fromWatchlist:
                 return
-            self.roleClicked()
+            if not self.roleClicked():
+                return
         elif controlID == self.EXTRA_LIST_ID:
             self.openItem(self.extraListControl)
         elif controlID == self.RELATED_LIST_ID:
@@ -785,6 +799,23 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         elif xbmc.getCondVisibility('ControlGroup(50).HasFocus(0) + !ControlGroup(300).HasFocus(0) + !ControlGroup(1300).HasFocus(0)'):
             self.setProperty('on.extras', '1')
 
+    def toggleWatched(self, mli=None, item=None, state=None, **kw):
+        if not mli and not item:
+            return
+
+        item = item or mli.dataSource
+        watched = super(EpisodesWindow, self).toggleWatched(item, state=state, **VIDEO_RELOAD_KW)
+        if watched is None:
+            return
+
+        self.show_ = (self.episode or self.season).show().reload(includeExtras=1, includeExtrasCount=10,
+                                                                 includeOnDeck=1)
+        if watched:
+            self.wl_auto_remove(self.show_)
+            self.checkIsWatchlisted(self.show_)
+        self.updateItems(mli)
+        util.MONITOR.watchStatusChanged()
+
     def openItem(self, control=None, item=None, came_from=None):
         if not item:
             mli = control.getSelectedItem()
@@ -798,32 +829,9 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         if self.fromWatchlist:
             return
 
-        mli = self.rolesListControl.getSelectedItem()
-        if not mli:
-            return
+        return super(EpisodesWindow, self).roleClicked()
 
-        sectionRoles = busy.widthDialog(mli.dataSource.sectionRoles, '')
-
-        if not sectionRoles:
-            util.DEBUG_LOG('No sections found for actor')
-            return
-
-        if len(sectionRoles) > 1:
-            x, y = self.getRoleItemDDPosition()
-
-            options = [{'role': r, 'display': r.reasonTitle} for r in sectionRoles]
-            choice = dropdown.showDropdown(options, (x, y), pos_is_bottom=False)
-
-            if not choice:
-                return
-
-            role = choice['role']
-        else:
-            role = sectionRoles[0]
-
-        self.processCommand(opener.open(role))
-
-    def getRoleItemDDPosition(self):
+    def getRoleItemDDPosition(self, *args, **kwargs):
         y = 900
         if xbmc.getCondVisibility('Control.IsVisible(500)'):
             y += 380
@@ -836,17 +844,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         if xbmc.getCondVisibility('Integer.IsGreater(Window.Property(hub.focus),1) + Control.IsVisible(501)'):
             y -= 500
 
-        tries = 0
-        focus = xbmc.getInfoLabel('Container(402).Position')
-        while tries < 2 and focus == '':
-            focus = xbmc.getInfoLabel('Container(402).Position')
-            xbmc.sleep(250)
-            tries += 1
-
-        focus = int(focus)
-
-        x = ((focus + 1) * 304) - 100
-        return x, y
+        return super(EpisodesWindow, self).getRoleItemDDPosition(y=y, container_id="402")
 
     def getSeasons(self):
         if not self.seasons:
@@ -1125,29 +1123,13 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         if choice['key'] == 'play_next':
             xbmc.executebuiltin('PlayerControl(Next)')
         elif choice['key'] == 'mark_watched':
-            mli.dataSource.markWatched(**VIDEO_RELOAD_KW)
-            self.show_ = (self.episode or self.season).show().reload(includeExtras=1, includeExtrasCount=10,
-                                                                     includeOnDeck=1)
-            self.wl_auto_remove(self.show_)
-            self.updateItems(mli)
-            self.checkIsWatchlisted(self.show_)
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(mli, state=True)
         elif choice['key'] == 'mark_unwatched':
-            mli.dataSource.markUnwatched(**VIDEO_RELOAD_KW)
-            self.updateItems(mli)
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(mli, state=False)
         elif choice['key'] == 'mark_season_watched':
-            self.season.markWatched(**VIDEO_RELOAD_KW)
-            self.show_ = (self.episode or self.season).show().reload(includeExtras=1, includeExtrasCount=10,
-                                                                     includeOnDeck=1)
-            self.wl_auto_remove(self.show_)
-            self.updateItems()
-            self.checkIsWatchlisted(self.show_)
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(item=self.season, state=True)
         elif choice['key'] == 'mark_season_unwatched':
-            self.season.markUnwatched(**VIDEO_RELOAD_KW)
-            self.updateItems()
-            util.MONITOR.watchStatusChanged()
+            self.toggleWatched(item=self.season, state=False)
         elif choice['key'] == 'to_show':
             self.cameFrom = "show"
             self.processCommand(opener.open(

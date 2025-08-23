@@ -30,6 +30,8 @@ class OptionsDialog(kodigui.BaseDialog):
         self.buttonChoice = None
         self.select = kwargs.get('select', 0)
         self.delayButtons = kwargs.get('delay_buttons', False)
+        self.closeTimeout = kwargs.get('close_timeout', None)
+        self._close_timer = None
 
     def onFirstInit(self):
         self.setProperty('header', self.header)
@@ -53,6 +55,11 @@ class OptionsDialog(kodigui.BaseDialog):
         if self.delayButtons:
             Timer(self.delayButtons, self.setup_buttons).start()
 
+        if self.closeTimeout:
+            self._close_timer = Timer(self.closeTimeout, self.doClose)
+            self._close_timer.start()
+
+
     def setup_buttons(self):
         self.setProperty('enable_buttons', '1')
         if self.delayButtons:
@@ -70,6 +77,12 @@ class OptionsDialog(kodigui.BaseDialog):
 
         kodigui.BaseDialog.onAction(self, action)
 
+    def doClose(self):
+        if self._close_timer and self._close_timer.is_alive():
+            self._close_timer.cancel()
+
+        super(OptionsDialog, self).doClose()
+
     def onClick(self, controlID):
         if controlID in self.BUTTON_IDS:
             self.buttonChoice = self.BUTTON_IDS.index(controlID)
@@ -81,10 +94,11 @@ class BigOptionsDialog(OptionsDialog):
 
 
 def show(header, info, button0=None, button1=None, button2=None, action_callback=None, dialog_props=None, select=0,
-         delay_buttons=None, big=False):
+         delay_buttons=None, big=False, close_timeout=None):
     cls = big and BigOptionsDialog or OptionsDialog
     w = cls.open(header=header, info=info, button0=button0, button1=button1, button2=button2, select=select,
-                           action_callback=action_callback, dialog_props=dialog_props, delay_buttons=delay_buttons)
+                 action_callback=action_callback, dialog_props=dialog_props, delay_buttons=delay_buttons,
+                 close_timeout=close_timeout)
     choice = w.buttonChoice
     del w
     util.garbageCollect()

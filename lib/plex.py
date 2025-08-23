@@ -16,6 +16,7 @@ from plexnet import plexapp, myplex, util as plexnet_util, asyncadapter, http as
 from .playback_utils import PlaybackManager
 from . windows.settings import PlayedThresholdSetting
 from . import util
+from lib.plex_hosts import pdm
 from six.moves import range
 
 if six.PY2:
@@ -389,6 +390,8 @@ if util.addonSettings.useCertBundle != "system":
 plexnet_util.translatePath = util.translatePath
 plexnet_util.DEFAULT_SETTINGS = util.DEFAULT_SETTINGS
 plexnet_util.TEMP_PATH = asyncadapter.TEMP_PATH = util.translatePath("special://temp/")
+plexnet_util.SKIP_HOST_CHECK = pdm.getOrigHosts()
+plexnet_util.NO_HOST_CHECK = util.getSetting('handle_plexdirect') == "never"
 
 
 class CallbackEvent(plexapp.util.CompatEvent):
