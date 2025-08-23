@@ -15,7 +15,7 @@ HAS_ICMPLIB = False
 try:
     from icmplib import ping, resolve, ICMPLibError
 except:
-    pass
+    from urlparse import urlparse
 else:
     HAS_ICMPLIB = True
     from urllib.parse import urlparse
