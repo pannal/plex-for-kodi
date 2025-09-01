@@ -45,7 +45,7 @@ class BaseFunctions(object):
         path = cls.path
         if os.getenv("INSTALLATION_DIR_AVOID_WRITE"):
             path = util.PROFILE
-        window = cls(xmlFile=cls.xmlFile, path=path, theme=cls.theme, res=cls.res, **kwargs)
+        window = cls(cls.xmlFile, path, cls.theme, cls.res, **kwargs)
         window.modal()
         return window
 
@@ -55,7 +55,7 @@ class BaseFunctions(object):
         path = cls.path
         if os.getenv("INSTALLATION_DIR_AVOID_WRITE"):
             path = util.PROFILE
-        window = cls(xmlFile=cls.xmlFile, path=path, theme=cls.theme, res=cls.res, **kwargs)
+        window = cls(cls.xmlFile, path, cls.theme, cls.res, **kwargs)
 
         if show:
             window.show()
