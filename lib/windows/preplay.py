@@ -163,6 +163,10 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                 self.setFocusId(self.lastFocusID)
 
             if action == xbmcgui.ACTION_CONTEXT_MENU:
+                if controlID == self.PLAY_BUTTON_ID:
+                    self.playVideo(force_resume_menu=True)
+                    return
+
                 if not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.OPTIONS_GROUP_ID)):
                     self.lastNonOptionsFocusID = self.lastFocusID
                     self.setFocusId(self.OPTIONS_GROUP_ID)
@@ -483,7 +487,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         return True
 
-    def playVideo(self, from_auto_play=False):
+    def playVideo(self, from_auto_play=False, force_resume_menu=False):
         if self.playBtnClicked:
             return
 
@@ -493,7 +497,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         resume = False
         if self.video.viewOffset.asInt():
-            if not util.getSetting('assume_resume'):
+            if not util.getSetting('assume_resume') or force_resume_menu:
                 choice = dropdown.showDropdown(
                     options=[
                         {'key': 'resume', 'display': T(32429, 'Resume from {0}').format(util.timeDisplay(self.video.viewOffset.asInt()).lstrip('0').lstrip(':'))},

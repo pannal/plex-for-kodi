@@ -31,6 +31,9 @@ Master branch is based off of the official plex-for-kodi master branch.
 ### Manual
 * Checkout any branch of this GitHub repository, rename to `script.plexmod` and use as an addon (for it to work with "Install from zip", the contents of the zip should be the folder `script.plexmod`.
 
+### Installing to a read-only or write-protected location
+Set the environment variable `INSTALLATION_DIR_AVOID_WRITE` to any value before starting Kodi to prevent the addon from trying to write to its installation directory. Useful for package managers.
+
 ## Translation
 You can help! Join the translation effort at [POEditor](https://poeditor.com/join/project/ASOl50YAXg) (thanks for the free open source license, guys).
 

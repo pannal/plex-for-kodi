@@ -86,7 +86,7 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
         self.name = data.attrib.get('name')
         self.platform = data.attrib.get('platform')
         self.rawVersion = data.attrib.get('productVersion')
-        if self.rawVersion:
+        if self.rawVersion and "server" in data.attrib.get('provides', 'server'):
             self.versionNorm = util.normalizedVersion(self.rawVersion)
         self.transcodeSupport = data.attrib.get('transcodeSupport') == '1'
         self.dnsRebindingProtection = data.attrib.get('dnsRebindingProtection') == '1'

@@ -1305,8 +1305,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         with self.lock:
             self.setProperty('hub.focus', '')
             self.displayServerAndUser()
-            self.loadLibrarySettings()
-            self.loadHubSettings()
+            if plexapp.SERVERMANAGER.selectedServer:
+                self.loadLibrarySettings()
+                self.loadHubSettings()
             if not plexapp.SERVERMANAGER.selectedServer:
                 self.setFocusId(self.USER_BUTTON_ID)
                 return False
@@ -2677,7 +2678,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 item = ServerListItem(s.name, not s.owned and s.owner or '', data_source=s)
                 item.uuid = s.uuid
                 item.onUpdate()
-                item.setProperty('current', plexapp.SERVERMANAGER.selectedServer.uuid == s.uuid and '1' or '')
+                if plexapp.SERVERMANAGER.selectedServer:
+                    item.setProperty('current', plexapp.SERVERMANAGER.selectedServer.uuid == s.uuid and '1' or '')
                 items.append(item)
 
             if len(items) > 1:
@@ -2724,22 +2726,23 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         self.changingServer = True
 
-        # this is broken
-        with busy.BusySignalContext(plexapp.util.APP, "change:selectedServer") as bc:
-            self.setFocusId(self.SECTION_LIST_ID)
+        self.setFocusId(self.SECTION_LIST_ID)
 
-            # fixme: this might still trigger a dialog, re-triggering the previously opened windows
-            if not self._shuttingDown and not server.isReachable():
-                if server.pendingReachabilityRequests > 0:
-                    util.messageDialog(T(32339, 'Server is not accessible'), T(32340, 'Connection tests are in '
-                                                                                      'progress. Please wait.'))
-                else:
-                    util.messageDialog(
-                        T(32339, 'Server is not accessible'), T(32341, 'Server is not accessible. Please sign into '
-                                                                       'your server and check your connection.')
-                    )
-                bc.ignoreSignal = True
-                return
+        # fixme: this might still trigger a dialog, re-triggering the previously opened windows
+        if not self._shuttingDown and not server.isReachable():
+            if server.pendingReachabilityRequests > 0:
+                util.messageDialog(T(32339, 'Server is not accessible'), T(32340, 'Connection tests are in '
+                                                                                  'progress. Please wait.'))
+            else:
+                util.messageDialog(
+                    T(32339, 'Server is not accessible'), T(32341, 'Server is not accessible. Please sign into '
+                                                                   'your server and check your connection.')
+                )
+            self.changingServer = False
+            return
+
+
+        with busy.BusySignalContext(plexapp.util.APP, "change:selectedServer") as bc:
 
             changed = plexapp.SERVERMANAGER.setSelectedServer(server, force=True)
             if not changed:

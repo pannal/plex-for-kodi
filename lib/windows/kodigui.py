@@ -4,6 +4,7 @@ from __future__ import absolute_import
 import threading
 import time
 import traceback
+import os
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -41,13 +42,21 @@ class BaseFunctions(object):
 
     @classmethod
     def open(cls, **kwargs):
-        window = cls(cls.xmlFile, cls.path, cls.theme, cls.res, **kwargs)
+        path = cls.path
+        if os.getenv("INSTALLATION_DIR_AVOID_WRITE"):
+            path = util.PROFILE
+        window = cls(xmlFile=cls.xmlFile, path=path, theme=cls.theme, res=cls.res, **kwargs)
         window.modal()
         return window
 
     @classmethod
     def create(cls, show=True, **kwargs):
-        window = cls(cls.xmlFile, cls.path, cls.theme, cls.res, **kwargs)
+        # Use the user addon data directory in installations where the extension installation directory is not writable
+        path = cls.path
+        if os.getenv("INSTALLATION_DIR_AVOID_WRITE"):
+            path = util.PROFILE
+        window = cls(xmlFile=cls.xmlFile, path=path, theme=cls.theme, res=cls.res, **kwargs)
+
         if show:
             window.show()
             if xbmcgui.getCurrentWindowId() < 13000:
@@ -982,9 +991,6 @@ class _MWBackground(ControlledWindow):
 
 
 class MultiWindow(object):
-    __slots__ = ("_windows", "_next", "_properties", "_current", "_allClosed", "exitCommand", "_currentOnAction",
-                 "_closeSignalled")
-
     def __init__(self, windows=None, default_window=None, **kwargs):
         self._windows = windows
         self._next = default_window or self._windows[0]

@@ -228,6 +228,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
     PROGRESS_IMAGE_ID = 250
 
+    MAIN_BUTTON_GROUP_ID = 300
     PLAY_BUTTON_ID = 301
     PLAY_BUTTON_DISABLED_ID = 306
     SHUFFLE_BUTTON_ID = 302
@@ -654,6 +655,15 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                     return
                 elif action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT):
                     self.updateBackgroundFrom(self.relatedListControl.getSelectedItem().dataSource)
+
+            elif self.isWatchedAction(action) and xbmc.getCondVisibility('ControlGroup({}).HasFocus(0)'.format(self.MAIN_BUTTON_GROUP_ID)):
+                mli = self.episodeListControl.getSelectedItem()
+                if not mli or mli.getProperty("is.boundary"):
+                    return
+
+                self.toggleWatched(mli)
+                self.selectEpisode()
+                return
 
             if controlID == self.LIST_OPTIONS_BUTTON_ID and self.checkOptionsAction(action):
                 return

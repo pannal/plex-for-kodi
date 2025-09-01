@@ -28,7 +28,7 @@ class GDMDiscovery(object):
         from . import plexapp
         return util.INTERFACE.getPreference("gdm_discovery", True) and self.thread and self.thread.is_alive()
 
-    '''
+    r'''
     def discover(self):
         # Only allow discovery if enabled and not currently running
         self._close = False

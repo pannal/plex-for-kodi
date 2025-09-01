@@ -1,12 +1,14 @@
 # coding=utf-8
 import os
 import glob
+import shutil
 
 from pprint import pformat
 from kodi_six import xbmcvfs, xbmc
 from ibis.context import ContextDict
 from lib.logging import log as LOG, log_error as ERROR
 from .util import deep_update
+from ..util import PROFILE
 from lib.os_utils import fast_iglob
 from .filters import *
 
@@ -60,10 +62,29 @@ class TemplateEngine(object):
 
     def init(self, target_dir, template_dir, custom_template_dir):
         self.target_dir = target_dir
+
+
+        # Alternative to checking env var: automatically set if dir isn't
+        # writable with `if not os.access(path, os.W_OK):`
+        if os.getenv("INSTALLATION_DIR_AVOID_WRITE"):
+            # Use the user addon data directory in installations where the extension installation directory is not writable, for example when the addon is installed through the system package manager
+            # Redirect template write target_dir to writable addon_data
+            writable_base = os.path.join(PROFILE, "resources/skins/Main/1080i")
+            os.makedirs(writable_base, exist_ok=True)
+            # Link media dir into addon dir, so templates can access it via relative path
+            link_path = os.path.join(PROFILE, "resources/skins/Main/media")
+            media_src = os.path.join(os.path.dirname(target_dir), "media")
+            if not os.path.exists(link_path):
+                try:
+                    os.symlink(media_src, link_path, True)
+                except (OSError, NotImplementedError):
+                    # If symlink fails (eg on windows without admin access), copy instead
+                    shutil.copytree(media_src, link_path)
+            self.target_dir = writable_base
         self.template_dir = template_dir
         self.custom_template_dir = custom_template_dir
         self.get_available_templates()
-        paths = [custom_template_dir, template_dir]
+        paths = [custom_template_dir, self.template_dir]
 
         LOG("Looking for templates in: {}", paths)
         self.prepare_loader(paths)

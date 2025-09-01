@@ -146,9 +146,8 @@ class PlexServerManager(signalsmixin.SignalsMixin):
         for server in servers:
             self.mergeServer(server)
 
-        if self.searchContext and source in self.searchContext.waitingForResources:
-            #self.searchContext.waitingForResources = False
-            self.searchContext.waitingForResources.remove(source)
+        if self.searchContext and source == plexresource.ResourceConnection.SOURCE_MYPLEX:
+            self.searchContext.waitingForResources = False
 
         if not self.searchContext.waitingForResources:
             self.deviceRefreshComplete(source)
@@ -504,17 +503,10 @@ class PlexServerManager(signalsmixin.SignalsMixin):
         util.DEBUG_LOG("Preferred server for {0} is: {1}", ID, pServ)
         # Keep track of some information during our search
 
-        waitFor = []
-        if plexapp.ACCOUNT.isSignedIn:
-            waitFor.append(plexresource.ResourceConnection.SOURCE_MYPLEX)
-
-        if util.LOCAL_OVER_SECURE and self.getManualConnections():
-            waitFor.append(plexresource.ResourceConnection.SOURCE_MANUAL)
-
         self.searchContext = SearchContext({
             'bestServer': None,
             'preferredServer': pServ,
-            'waitingForResources': waitFor
+            'waitingForResources': plexapp.ACCOUNT.isSignedIn
         })
 
         util.LOG("Starting selected server search, hoping for {0}", self.searchContext.preferredServer)
