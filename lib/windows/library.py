@@ -448,7 +448,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             self.refill = True
 
     @busy.dialog()
-    def doClose(self):
+    def doClose(self, **kw):
         pnUtil.APP.off("watchlist:modified", self.setWatchlistDirty)
         self.tasks.kill()
         kodigui.MultiWindow.doClose(self)

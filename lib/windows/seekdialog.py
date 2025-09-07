@@ -1001,7 +1001,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.handler.queuingSpecific = queuing_specific
         self.killTimeKeeper()
 
-    def doClose(self, delete=False):
+    def doClose(self, delete=False, **kw):
         util.DEBUG_LOG("SeekDialog: Closing")
         if self.handler.playlist:
             self.handler.playlist.off('change', self.updateProperties)
@@ -2616,7 +2616,7 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
         self.updatePlayingItem()
         self.setFocusId(self.PLAYLIST_LIST_ID)
 
-    def doClose(self):
+    def doClose(self, **kw):
         if self.handler:
             self.handler.player.off('playlist.changed', self.playQueueCallback)
             self.handler.player.off('session.ended', self.sessionEnded)

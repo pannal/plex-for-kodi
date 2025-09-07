@@ -411,7 +411,7 @@ class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
         except RuntimeError:
             xbmc.log('kodigui.BaseDialog.setProperty: Missing window', xbmc.LOGDEBUG)
 
-    def doClose(self):
+    def doClose(self, **kw):
         plexapp.util.APP.off('close.dialogs', self.onCloseSignal)
         self._closing = True
         self.close()
@@ -1084,7 +1084,7 @@ class MultiWindow(object):
         plexapp.util.APP.on('close.windows', self.onCloseSignal)
         self.onFirstInit()
 
-    def doClose(self):
+    def doClose(self, **kw):
         plexapp.util.APP.off('close.windows', self.onCloseSignal)
         self._allClosed = True
         self._current.doClose()

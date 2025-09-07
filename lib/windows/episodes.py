@@ -279,7 +279,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.useBGM = False
         PlaybackBtnMixin.reset(self)
 
-    def doClose(self):
+    def doClose(self, **kw):
         self.closing = True
         self.episodesPaginator = None
         self.relatedPaginator = None

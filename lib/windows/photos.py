@@ -492,7 +492,7 @@ class PhotoWindow(kodigui.BaseWindow):
     def stop(self):
         self.doClose()
 
-    def doClose(self):
+    def doClose(self, **kw):
         self.pause()
         shutil.rmtree(self.tempFolder, ignore_errors=True)
 

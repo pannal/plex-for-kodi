@@ -95,7 +95,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.fromPlayback = False
         self.useBGM = False
 
-    def doClose(self):
+    def doClose(self, **kw):
         self.relatedPaginator = None
         kodigui.ControlledWindow.doClose(self)
 

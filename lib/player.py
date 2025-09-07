@@ -127,6 +127,14 @@ class BasePlayerHandler(object):
 
         return self._lastDuration
 
+    def onKodiExit(self, *args, **kwargs):
+        util.MONITOR.off("system.exit", self.onKodiExit)
+        util.DEBUG_LOG("{}: onKodiExit", self.__class__.__name__)
+        self.updateNowPlaying(state=self.player.STATE_STOPPED, overrideChecks=True)
+        self.ignoreTimelines = True
+        # kill previous timeline data
+        plexapp.util.APP.nowplayingmanager.reset()
+
     def updateNowPlaying(self, refreshQueue=False, t=None, state=None, overrideChecks=False):
         if self.ignoreTimelines:
             util.DEBUG_LOG("UpdateNowPlaying: ignoring timeline as requested")
@@ -139,6 +147,7 @@ class BasePlayerHandler(object):
         if not self.shouldSendTimeline(item):
             return
 
+        player_time_str = self.player.getTime() if self.player.playState != self.player.STATE_STOPPED else "N/A"
         util.DEBUG_LOG("UpdateNowPlaying: {0}, refreshQueue: {1} state: {2} (player: {5}) "
                        "overrideChecks: {3} time: {4} (player: {6})"
                        .format(item.ratingKey,
@@ -147,7 +156,7 @@ class BasePlayerHandler(object):
                                overrideChecks,
                                t,
                                self.player.playState,
-                               self.player.getTime() if self.player.isPlayingVideo() else "N/A"))
+                               player_time_str))
 
         state = state or self.player.playState
 
@@ -275,6 +284,7 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def setup(self, duration, meta, offset, bif_url, title='', title2='', seeking=NO_SEEK, chapters=None,
               is_mapped=False):
+        util.MONITOR.on("system.exit", self.onKodiExit)
         self.ended = False
         self.baseOffset = offset / 1000.0
         self.seeking = seeking
@@ -1006,6 +1016,9 @@ class AudioPlayerHandler(BasePlayerHandler):
         util.setGlobalProperty('track.ID', '')
         self.extractTrackInfo()
 
+    def setup(self, *args, **kwargs):
+        util.MONITOR.on("system.exit", self.onKodiExit)
+
     def extractTrackInfo(self):
         if not self.player.isPlayingAudio():
             return
@@ -1130,10 +1143,12 @@ class AudioPlayerHandler(BasePlayerHandler):
 
     @property
     def trueTime(self):
-        try:
-            return self.player.getTime()
-        except:
-            return self.player.currentTime
+        if self.player.playState != self.player.STATE_STOPPED:
+            try:
+                return self.player.getTime()
+            except:
+                return self.player.currentTime
+        return self.player.currentTime
 
     def stampCurrentTime(self):
         try:
@@ -1742,6 +1757,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.ignoreStopEvents = True
         self.sessionID = "AUD%s" % track.ratingKey
         self.handler = AudioPlayerHandler(self, session_id=self.sessionID)
+        self.handler.setup()
         self.playerObject = plexplayer.PlexAudioPlayer(track, session_id=self.sessionID)
         url, li = self.createTrackListItem(track, fanart)
         self.stopAndWait()
@@ -1758,6 +1774,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.ignoreStopEvents = True
         self.sessionID = "ALB%s" % album.ratingKey
         self.handler = AudioPlayerHandler(self, session_id=self.sessionID)
+        self.handler.setup()
         self.playerObject = plexplayer.PlexAudioPlayer(session_id=self.sessionID)
         plist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         plist.clear()
@@ -1779,6 +1796,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.ignoreStopEvents = True
         self.sessionID = "PLS%s" % getattr(playlist, "ratingKey", getattr(playlist, "id", random.randint(0, 1000)))
         self.handler = AudioPlayerHandler(self, session_id=self.sessionID)
+        self.handler.setup()
         self.playerObject = plexplayer.PlexAudioPlayer(session_id=self.sessionID)
         plist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         plist.clear()

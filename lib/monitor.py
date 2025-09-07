@@ -84,6 +84,15 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
         elif sender == "xbmc" and method == "System.OnWake":
             self.device_sleeping = False
             self.trigger('system.wakeup')
+        elif sender == "xbmc" and method == "System.OnQuit":
+            from .windows import windowutils
+            LOG("OnQuit: Stopping playback")
+            self.trigger('system.exit')
+            self.stopPlayback()
+            LOG("OnQuit: Closing Home")
+            windowutils.HOME.closeOption = "kodi_exit"
+            windowutils.HOME.doClose()
+            return
 
     def stopPlayback(self):
         LOG('Monitor: Stopping media playback')

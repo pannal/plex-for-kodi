@@ -70,7 +70,7 @@ class AlbumWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.updateProperties()
         self.fillTracks()
 
-    def doClose(self):
+    def doClose(self, **kw):
         player.PLAYER.off('started.audio', self.onPlayingTrackChanged)
         kodigui.ControlledWindow.doClose(self)
 

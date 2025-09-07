@@ -448,6 +448,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._initialMovingSectionPos = None
         self.block_section_change = False
         self.go_root = False
+        self.kodi_exiting = False
 
         from . import windowutils
         windowutils.HOME = self
