@@ -14,7 +14,7 @@ from . import http
 
 class ServerTimeline(util.AttributeDict):
     def reset(self):
-        self.expires = time.time() + 15
+        self.expires = time.time() + 10
 
     def isExpired(self):
         return time.time() > self.get('expires', 0)
@@ -156,6 +156,10 @@ class NowPlayingManager(object):
         params["url"] = timeline.itemData.url
         params["key"] = timeline.itemData.key
         params["containerKey"] = timeline.itemData.containerKey
+        params["playbackTime"] = timeline.itemData.playbackTime
+        if timeline.itemData.additional_params:
+            params.update(timeline.itemData.additional_params)
+
         if timeline.playQueue:
             params["playQueueItemID"] = timeline.playQueue.selectedId
 

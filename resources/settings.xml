@@ -165,7 +165,7 @@
                 </setting>
                 <setting id="coreelec_resume_seek_wait" type="integer" label="33649" help="33650">
                     <level>0</level>
-                    <default>500</default>
+                    <default>850</default>
                     <constraints>
                         <minimum>100</minimum>
                         <step>50</step>

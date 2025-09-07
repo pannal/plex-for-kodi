@@ -83,6 +83,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.isExternal = kwargs.get('external_item', False)
         self.directlyFromWatchlist = kwargs.get('directly_from_watchlist')
         self.is_watchlisted = kwargs.get('is_watchlisted', False)
+        self.startOver = kwargs.get('start_over')
         self.videos = None
         self.exitCommand = None
         self.trailer = None
@@ -95,7 +96,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.fromPlayback = False
         self.useBGM = False
 
-    def doClose(self):
+    def doClose(self, **kw):
         self.relatedPaginator = None
         kodigui.ControlledWindow.doClose(self)
 
@@ -496,7 +497,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             return
 
         resume = False
-        if self.video.viewOffset.asInt():
+        if self.video.viewOffset.asInt() and not self.startOver:
             if not util.getSetting('assume_resume') or force_resume_menu:
                 choice = dropdown.showDropdown(
                     options=[

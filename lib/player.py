@@ -6,6 +6,7 @@ import six
 import re
 import os
 import random
+import uuid
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
@@ -37,6 +38,7 @@ class BasePlayerHandler(object):
         self.queuingSpecific = False
         self.playQueue = None
         self.sessionID = session_id
+        self.playbackID = None
         self.isMapped = False
         self.currentlyPlaying = None
 
@@ -125,6 +127,14 @@ class BasePlayerHandler(object):
 
         return self._lastDuration
 
+    def onKodiExit(self, *args, **kwargs):
+        util.MONITOR.off("system.exit", self.onKodiExit)
+        util.DEBUG_LOG("{}: onKodiExit", self.__class__.__name__)
+        self.updateNowPlaying(state=self.player.STATE_STOPPED, overrideChecks=True)
+        self.ignoreTimelines = True
+        # kill previous timeline data
+        plexapp.util.APP.nowplayingmanager.reset()
+
     def updateNowPlaying(self, refreshQueue=False, t=None, state=None, overrideChecks=False):
         if self.ignoreTimelines:
             util.DEBUG_LOG("UpdateNowPlaying: ignoring timeline as requested")
@@ -137,6 +147,7 @@ class BasePlayerHandler(object):
         if not self.shouldSendTimeline(item):
             return
 
+        player_time_str = self.player.getTime() if self.player.playState != self.player.STATE_STOPPED else "N/A"
         util.DEBUG_LOG("UpdateNowPlaying: {0}, refreshQueue: {1} state: {2} (player: {5}) "
                        "overrideChecks: {3} time: {4} (player: {6})"
                        .format(item.ratingKey,
@@ -145,7 +156,7 @@ class BasePlayerHandler(object):
                                overrideChecks,
                                t,
                                self.player.playState,
-                               self.player.getTime() if self.player.isPlayingVideo() else "N/A"))
+                               player_time_str))
 
         state = state or self.player.playState
 
@@ -165,13 +176,26 @@ class BasePlayerHandler(object):
         if refreshQueue and self.playQueue:
             self.playQueue.refreshOnTimeline = True
 
+        playbackTime = 0
+        if getattr(self, "dialog", None) and self.dialog.playbackTime:
+            playbackTime = self.dialog.playbackTime
+
         data = plexnetUtil.AttributeDict({
             "key": str(item.key),
             "ratingKey": str(item.ratingKey),
             "guid": str(item.guid),
             "url": str(item.url),
             "duration": item.duration.asInt(),
-            "containerKey": str(item.container.address)
+            "playbackTime": str(playbackTime),
+            "additional_params": {
+                'hasMDE': 1,
+                'X-Plex-Client-Profile-Name': 'Generic',
+                'X-Plex-Client-Identifier': item.settings.getGlobal('clientIdentifier'),
+                'X-Plex-Session-Identifier': self.sessionID,
+                'X-Plex-Session-Id': self.sessionID,
+                'X-Plex-Playback-Id': self.playbackID
+                #"containerKey": str(item.container.address)
+            }
         })
 
         new_time_stored = plexapp.util.APP.nowplayingmanager.updatePlaybackState(
@@ -260,6 +284,7 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def setup(self, duration, meta, offset, bif_url, title='', title2='', seeking=NO_SEEK, chapters=None,
               is_mapped=False):
+        util.MONITOR.on("system.exit", self.onKodiExit)
         self.ended = False
         self.baseOffset = offset / 1000.0
         self.seeking = seeking
@@ -277,6 +302,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.prePlayWitnessed = False
         self._subtitleStreamOffset = None
         self.isMapped = is_mapped
+        self.playbackID = str(uuid.uuid4())
         self.getDialog(setup=True)
         self.dialog.setup(self.duration, meta, int(self.baseOffset * 1000), self.bifURL, self.title, self.title2,
                           chapters=self.chapters, keepMarkerDef=seeking == self.SEEK_IN_PROGRESS)
@@ -984,11 +1010,14 @@ class SeekPlayerHandler(BasePlayerHandler):
 
 
 class AudioPlayerHandler(BasePlayerHandler):
-    def __init__(self, player):
-        BasePlayerHandler.__init__(self, player)
+    def __init__(self, player, session_id=None):
+        BasePlayerHandler.__init__(self, player, session_id=session_id)
         self.timelineType = 'music'
         util.setGlobalProperty('track.ID', '')
         self.extractTrackInfo()
+
+    def setup(self, *args, **kwargs):
+        util.MONITOR.on("system.exit", self.onKodiExit)
 
     def extractTrackInfo(self):
         if not self.player.isPlayingAudio():
@@ -1019,7 +1048,7 @@ class AudioPlayerHandler(BasePlayerHandler):
             track = plexobjects.PlexObject.deSerialize(base64.urlsafe_b64decode(data.encode('utf-8')))
             track.softReload()
             self.media = track
-            pobj = plexplayer.PlexAudioPlayer(track)
+            pobj = plexplayer.PlexAudioPlayer(track, session_id=self.sessionID)
             self.player.playerObject = pobj
             self.updatePlayQueueTrack(track)
             util.setGlobalProperty('track.ID', track.ratingKey)  # This is used in the skins to match a listitem
@@ -1114,10 +1143,12 @@ class AudioPlayerHandler(BasePlayerHandler):
 
     @property
     def trueTime(self):
-        try:
-            return self.player.getTime()
-        except:
-            return self.player.currentTime
+        if self.player.playState != self.player.STATE_STOPPED:
+            try:
+                return self.player.getTime()
+            except:
+                return self.player.currentTime
+        return self.player.currentTime
 
     def stampCurrentTime(self):
         try:
@@ -1477,6 +1508,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         return cleaned_path
 
     def _playVideo(self, offset=0, seeking=0, force_update=False, playerObject=None, session_id=None):
+        self.sessionID = session_id or self.sessionID
         self.trigger('new.video', video=self.video)
         self.trigger(
             'change.background',
@@ -1484,7 +1516,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         )
         try:
             if not playerObject:
-                self.playerObject = plexplayer.PlexPlayer(self.video, offset, forceUpdate=force_update)
+                self.playerObject = plexplayer.PlexPlayer(self.video, offset, forceUpdate=force_update, session_id=self.sessionID)
                 self.playerObject.build()
             self.playerObject = self.playerObject.getServerDecision()
         except plexplayer.DecisionFailure as e:
@@ -1508,7 +1540,6 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             util.MONITOR.waitForAbort(util.addonSettings.consecutiveVideoPbWait)
 
         self.ignoreStopEvents = False
-        self.sessionID = session_id or self.sessionID
 
         # fixme: this handler might be accessing a new playerObject, not the one it's expecting to access,
         #        especially when .next() is used
@@ -1557,7 +1588,9 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
 
             url = util.addURLParams(url, {
                 'X-Plex-Client-Profile-Name': 'Generic',
-                'X-Plex-Client-Identifier': plexapp.util.INTERFACE.getGlobal('clientIdentifier')
+                'X-Plex-Client-Identifier': self.video.settings.getGlobal('clientIdentifier'),
+                'X-Plex-Session-Identifier': self.sessionID,
+                'X-Plex-Session-Id': self.sessionID
             })
         li = xbmcgui.ListItem(self.video.title, path=url)
         vtype = self.video.type if self.video.type in ('movie', 'episode', 'musicvideo') else 'video'
@@ -1722,14 +1755,15 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.stopAndWait()
 
         self.ignoreStopEvents = True
-        self.handler = AudioPlayerHandler(self)
-        self.playerObject = plexplayer.PlexAudioPlayer(track)
+        self.sessionID = "AUD%s" % track.ratingKey
+        self.handler = AudioPlayerHandler(self, session_id=self.sessionID)
+        self.handler.setup()
+        self.playerObject = plexplayer.PlexAudioPlayer(track, session_id=self.sessionID)
         url, li = self.createTrackListItem(track, fanart)
         self.stopAndWait()
         self.ignoreStopEvents = False
 
         # maybe fixme: once started, self.sessionID will never be None for Audio
-        self.sessionID = "AUD%s" % track.ratingKey
         self.trigger('starting.audio')
         self.play(url, li, **kwargs)
 
@@ -1738,8 +1772,10 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.stopAndWait()
 
         self.ignoreStopEvents = True
-        self.handler = AudioPlayerHandler(self)
-        self.playerObject = plexplayer.PlexAudioPlayer()
+        self.sessionID = "ALB%s" % album.ratingKey
+        self.handler = AudioPlayerHandler(self, session_id=self.sessionID)
+        self.handler.setup()
+        self.playerObject = plexplayer.PlexAudioPlayer(session_id=self.sessionID)
         plist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         plist.clear()
         index = 1
@@ -1750,7 +1786,6 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         xbmc.executebuiltin('PlayerControl(RandomOff)')
         self.stopAndWait()
         self.ignoreStopEvents = False
-        self.sessionID = "ALB%s" % album.ratingKey
         self.trigger('starting.audio')
         self.play(plist, startpos=startpos, **kwargs)
 
@@ -1759,8 +1794,10 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             self.stopAndWait()
 
         self.ignoreStopEvents = True
-        self.handler = AudioPlayerHandler(self)
-        self.playerObject = plexplayer.PlexAudioPlayer()
+        self.sessionID = "PLS%s" % getattr(playlist, "ratingKey", getattr(playlist, "id", random.randint(0, 1000)))
+        self.handler = AudioPlayerHandler(self, session_id=self.sessionID)
+        self.handler.setup()
+        self.playerObject = plexplayer.PlexAudioPlayer(session_id=self.sessionID)
         plist = xbmc.PlayList(xbmc.PLAYLIST_MUSIC)
         plist.clear()
         index = 1
@@ -1779,7 +1816,6 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
                 xbmc.executebuiltin('PlayerControl(RandomOff)')
         self.stopAndWait()
         self.ignoreStopEvents = False
-        self.sessionID = "PLS%s" % getattr(playlist, "ratingKey", getattr(playlist, "id", random.randint(0, 1000)))
         self.trigger('starting.audio')
         self.play(plist, startpos=startpos, **kwargs)
 

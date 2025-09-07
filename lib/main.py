@@ -251,7 +251,7 @@ def _main():
                                 uid = closeOption['fast_switch']
                                 util.DEBUG_LOG('Main: Fast-Switching users...: {}', uid)
                                 util.setSetting('previous_user', plexapp.ACCOUNT.ID)
-                                with busy.BusySignalContext(plexapp.util.APP, "account:response"):
+                                with busy.BusySignalContext(plexapp.util.APP, "account:response", delay=False, interval=0.05):
                                     if plexapp.ACCOUNT.switchHomeUser(uid) and plexapp.ACCOUNT.switchUser:
                                         util.DEBUG_LOG('Waiting for user change...')
 
@@ -264,14 +264,23 @@ def _main():
                             restart = True
                             return
                     finally:
-                        if closeOption in ("quit", "exit", "restart"):
-                            util.DEBUG_LOG("Main: Starting hard exit timer of {} seconds...", util.addonSettings.maxShutdownWait)
-                            exit_timer.start()
+                        try:
+                            kodiExiting = closeOption == "kodi_exit" or windowutils.HOME.closeOption == "kodi_exit"
+                        except:
+                            kodiExiting = False
+
+                        if closeOption in ("quit", "exit", "restart") and not kodiExiting:
+                            if not exit_timer.is_alive():
+                                util.DEBUG_LOG("Main: Starting hard exit timer of {} seconds...", util.addonSettings.maxShutdownWait)
+                                exit_timer.start()
                             exit_timer_started = True
                         windowutils.shutdownHome()
                         BACKGROUND.activate()
                         background.setShutdown()
                         gc.collect(2)
+
+                        if kodiExiting:
+                            return
 
             else:
                 break

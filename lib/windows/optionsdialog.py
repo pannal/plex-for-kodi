@@ -77,7 +77,7 @@ class OptionsDialog(kodigui.BaseDialog):
 
         kodigui.BaseDialog.onAction(self, action)
 
-    def doClose(self):
+    def doClose(self, **kw):
         if self._close_timer and self._close_timer.is_alive():
             self._close_timer.cancel()
 

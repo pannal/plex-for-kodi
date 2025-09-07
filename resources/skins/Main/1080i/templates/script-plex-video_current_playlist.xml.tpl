@@ -22,9 +22,7 @@
             <posy>0</posy>
             <width>1170</width>
             <height>{{ vscale(800) }}</height>
-            <onup>200</onup>
             <onright>152</onright>
-            <onleft>300</onleft>
             <scrolltime>200</scrolltime>
             <orientation>vertical</orientation>
             <preloaditems>4</preloaditems>
@@ -78,6 +76,7 @@
                                 <aligny>center</aligny>
                                 <textcolor>FFFFFFFF</textcolor>
                                 <label>[B]$INFO[ListItem.Label][/B]</label>
+                                <scroll>true</scroll>
                             </control>
                             <control type="label">
                                 <posx>0</posx>
@@ -89,6 +88,7 @@
                                 <aligny>center</aligny>
                                 <textcolor>B8FFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label2]</label>
+                                <scroll>true</scroll>
                             </control>
                         </control>
                     </control>
@@ -116,6 +116,7 @@
                                 <aligny>center</aligny>
                                 <textcolor>FFFFFFFF</textcolor>
                                 <label>[B]$INFO[ListItem.Label][/B]</label>
+                                <scroll>true</scroll>
                             </control>
                             <control type="label">
                                 <posx>0</posx>
@@ -127,6 +128,7 @@
                                 <aligny>center</aligny>
                                 <textcolor>B8FFFFFF</textcolor>
                                 <label>$INFO[ListItem.Label2]</label>
+                                <scroll>true</scroll>
                             </control>
                         </control>
                     </control>
@@ -204,6 +206,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>FFFFFFFF</textcolor>
                                     <label>[B]$INFO[ListItem.Label][/B]</label>
+                                    <scroll>true</scroll>
                                 </control>
                                 <control type="label">
                                     <posx>0</posx>
@@ -215,6 +218,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>B8FFFFFF</textcolor>
                                     <label>$INFO[ListItem.Label2]</label>
+                                    <scroll>true</scroll>
                                 </control>
                             </control>
                         </control>
@@ -242,6 +246,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>FFFFFFFF</textcolor>
                                     <label>[B]$INFO[ListItem.Label][/B]</label>
+                                    <scroll>true</scroll>
                                 </control>
                                 <control type="label">
                                     <posx>0</posx>
@@ -253,6 +258,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>B8FFFFFF</textcolor>
                                     <label>$INFO[ListItem.Label2]</label>
+                                    <scroll>true</scroll>
                                 </control>
                             </control>
                         </control>
@@ -359,6 +365,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>DF000000</textcolor>
                                     <label>[B]$INFO[ListItem.Label][/B]</label>
+                                    <scroll>true</scroll>
                                 </control>
                                 <control type="label">
                                     <posx>0</posx>
@@ -370,6 +377,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>98000000</textcolor>
                                     <label>$INFO[ListItem.Label2]</label>
+                                    <scroll>true</scroll>
                                 </control>
                             </control>
                         </control>
@@ -397,6 +405,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>DF000000</textcolor>
                                     <label>[B]$INFO[ListItem.Label][/B]</label>
+                                    <scroll>true</scroll>
                                 </control>
                                 <control type="label">
                                     <posx>0</posx>
@@ -408,6 +417,7 @@
                                     <aligny>center</aligny>
                                     <textcolor>98000000</textcolor>
                                     <label>$INFO[ListItem.Label2]</label>
+                                    <scroll>true</scroll>
                                 </control>
                             </control>
                         </control>
@@ -434,7 +444,6 @@
             <top>33</top>
             <width>10</width>
             <height>{{ vscale(734) }}</height>
-            <onleft>101</onleft>
             <visible>true</visible>
             <texturesliderbackground colordiffuse="40000000" border="5">script.plex/white-square-rounded.png</texturesliderbackground>
             <texturesliderbar colordiffuse="77FFFFFF" border="5">script.plex/white-square-rounded.png</texturesliderbar>
@@ -444,7 +453,6 @@
             <pulseonselect>false</pulseonselect>
             <orientation>vertical</orientation>
             <showonepage>false</showonepage>
-            <onleft>151</onleft>
         </control>
     </control>
 </control>

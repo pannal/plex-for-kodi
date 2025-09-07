@@ -154,7 +154,7 @@ class PlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin, signalsmix
         elif controlID == self.SEARCH_BUTTON_ID:
             self.searchButtonClicked()
 
-    def doClose(self):
+    def doClose(self, **kw):
         player.PLAYER.off('new.video', self.onNewVideo)
         player.PLAYER.off('video.progress', self.onVideoProgress)
         self.off('playlist.filled', self.onPlaylistFilled)

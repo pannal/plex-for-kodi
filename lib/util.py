@@ -37,6 +37,7 @@ from .kodi_util import (ADDON, xbmc, xbmcvfs, xbmcaddon, xbmcgui, translatePath,
 from .properties import setGlobalProperty, setGlobalBoolProperty, waitForGPEmpty, waitForConsumption, getGlobalProperty
 # noinspection PyUnresolvedReferences
 from .addonsettings import addonSettings, AddonSettings
+from .advancedsettings import adv
 from .settings_util import getSetting, getUserSetting, setSetting, USER_SETTINGS, JSON_SETTINGS, DEFAULT_SETTINGS
 from .monitor import MONITOR
 
@@ -49,7 +50,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 54
+THEME_VERSION = 56
 
 xbmc.log('script.plexmod: Kodi {0}.{1} (build {2})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER),
          xbmc.LOGINFO)
@@ -702,7 +703,7 @@ def getPlatformFlavor():
 
 
 platformFlavor = getPlatformFlavor()
-altSeekRecommended = platformFlavor != 'default'
+altSeekRecommended = platformFlavor in ("CoreELEC", "LG WebOS") and (KODI_VERSION_MAJOR >= 21 and not adv.has_audio_fix)
 
 
 def getRunningAddons():

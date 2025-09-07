@@ -160,6 +160,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.baseOffset = 0
         self._duration = 0
         self.offset = 0
+        self.playbackTime = 0
         self.selectedOffset = 0
         self.bigSeekOffset = 0
         self.bigSeekChanged = False  # attention, with chapters this can become an integer for the True state
@@ -500,6 +501,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.setProperty('theme', 'modern')
 
         self.killTimeKeeper()
+
+        self.playbackTime = 0
 
         if not self.getProperty('nav.playlist'):
             self.subtitleButtonLeft += self.NAVBAR_BTN_SIZE
@@ -998,7 +1001,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.handler.queuingSpecific = queuing_specific
         self.killTimeKeeper()
 
-    def doClose(self, delete=False):
+    def doClose(self, delete=False, **kw):
         util.DEBUG_LOG("SeekDialog: Closing")
         if self.handler.playlist:
             self.handler.playlist.off('change', self.updateProperties)
@@ -1009,6 +1012,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 if delete:
                     del self.playlistDialog
                     self.playlistDialog = None
+                    self.playlistDialogVisible = False
                     util.garbageCollect()
 
             self.killTimeKeeper()
@@ -1034,8 +1038,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.setProperty('ppi.Status', 'Loading ...')
 
         def getVideoSession(currentVideo):
-            return currentVideo.server.findVideoSession(currentVideo.settings.getGlobal("clientIdentifier"),
-                                                        currentVideo.ratingKey)
+            return currentVideo.server.findVideoSession(self.handler.sessionID, currentVideo.ratingKey)
 
         if util.KODI_BUILD_NUMBER < 2090821:
             try:
@@ -1099,6 +1102,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 util.ERROR()
 
         except NotFound:
+            util.DEBUG_LOG("PPI: Couldn't find session: {}", self.handler.sessionID)
             self.setProperty('ppi.Status', 'Info not available (session not found)')
 
         except:
@@ -1757,9 +1761,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                             preparedMarkers.append((marker.startTimeOffset, label, True))
 
                 # add staggered virtual markers
-                preparedMarkers.append((int(self.duration * 0.25), "25 %", False))
-                preparedMarkers.append((int(self.duration * 0.50), "50 %", False))
-                preparedMarkers.append((int(self.duration * 0.75), "75 %", False))
+                #preparedMarkers.append((int(self.duration * 0.25), "25 %", False))
+                #preparedMarkers.append((int(self.duration * 0.50), "50 %", False))
+                #preparedMarkers.append((int(self.duration * 0.75), "75 %", False))
 
                 credCnt = 1
                 for offset, label, credits in sorted(preparedMarkers):
@@ -2233,6 +2237,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         # the external player is open and report that to the PMS
         if tick and (xbmc.getCondVisibility('Player.HasVideo + Player.Playing') or force_tick):
             self.timeKeeperTime += 1000
+            self.playbackTime += 1000
 
         if force_tick:
             return
@@ -2480,6 +2485,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 self.pausedAt = None
                 return
 
+            if self.player.playState == self.player.STATE_PLAYING:
+                self.idleTime = None
+
             # invisibly sync low-drift timer to current playback every X seconds, as Player.getTime() can be wildly off
             if self.ldTimer and not self.osdVisible() and self.timeKeeper and self.timeKeeper.ticks >= 60:
                 self.syncTimeKeeper()
@@ -2538,10 +2546,11 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.playlistDialogVisible = True
         self.playlistDialog.doModal()
         self.resetTimeout()
-        self.playlistDialog.doClose()
+        if self.playlistDialog:
+            self.playlistDialog.doClose()
+            self.setFocusId(self.PLAYLIST_BUTTON_ID)
         self.playlistDialog = None
         self.playlistDialogVisible = False
-        self.setFocusId(self.PLAYLIST_BUTTON_ID)
 
     def osdVisible(self):
         return xbmc.getCondVisibility('Control.IsVisible(801)')
@@ -2587,6 +2596,7 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
     LI_SQUARE_THUMB_DIM = (100, 100)
 
     PLAYLIST_LIST_ID = 101
+    PLAYLIST_SCROLLBAR_ID = 152
 
     def __init__(self, *args, **kwargs):
         kodigui.BaseDialog.__init__(self, *args, **kwargs)
@@ -2606,7 +2616,7 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
         self.updatePlayingItem()
         self.setFocusId(self.PLAYLIST_LIST_ID)
 
-    def doClose(self):
+    def doClose(self, **kw):
         if self.handler:
             self.handler.player.off('playlist.changed', self.playQueueCallback)
             self.handler.player.off('session.ended', self.sessionEnded)
@@ -2617,6 +2627,16 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
     def onClick(self, controlID):
         if controlID == self.PLAYLIST_LIST_ID:
             self.playlistListClicked()
+
+    def onAction(self, action):
+        controlID = self.getFocusId()
+        if action == xbmcgui.ACTION_MOVE_LEFT:
+            if controlID == self.PLAYLIST_LIST_ID:
+                self.doClose()
+                return
+            elif controlID == self.PLAYLIST_SCROLLBAR_ID:
+                self.setFocusId(self.PLAYLIST_LIST_ID)
+        super(PlaylistDialog, self).onAction(action)
 
     def playlistListClicked(self):
         mli = self.playlistListControl.getSelectedItem()

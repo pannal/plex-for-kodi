@@ -448,6 +448,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._initialMovingSectionPos = None
         self.block_section_change = False
         self.go_root = False
+        self.kodi_exiting = False
 
         from . import windowutils
         windowutils.HOME = self
@@ -593,7 +594,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         newHosts = set(pdHosts) - set(knownHosts)
         if newHosts:
-            pdm.newHosts(newHosts, source=source)
+            force_mapping = None
+            # even for docker hosts we might want to force the mapping if it's the active connection and it didn't
+            # resolve
+            if server.activeConnection and not server.activeConnection.pdHostnameResolved:
+                force_mapping = server.activeConnection.address
+                util.DEBUG_LOG("Forcing mapping for active connection via: {}", server.activeConnection.address)
+            pdm.newHosts(newHosts, source=source, force_mapping=force_mapping)
         diffLen = len(pdm.diff)
 
         # there are situations where the myPlexManager's resources are ready earlier than
@@ -847,14 +854,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             util.DEBUG_LOG("Home: Ticking, section stale, calling showHubs(update=True)")
             self.showHubs(self.lastSection, update=True)
 
-    def doClose(self):
+    def doClose(self, force=True):
         util.DEBUG_LOG("Home: doClose called, triggering close.windows")
         plexapp.util.APP.trigger('close.windows')
         #if self.sectionChangeThread and self.sectionChangeThread.isAlive():
         #    self.sectionChangeThread.join(timeout=2.0)
 
-        util.DEBUG_LOG("Home: doClose called, calling super")
-        super(HomeWindow, self).doClose()
+        super(HomeWindow, self).doClose(force=force)
 
     def stopRetryingRequests(self):
         util.DEBUG_LOG("Stopping request retries")
@@ -1676,7 +1682,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if util.getSetting('home_inprogress_resume') and mli.dataSource.in_progress:
                     # this is an in progress item that would be auto resumed; add specific entry to visit media instead
                     options.insert(0, dropdown.SEPARATOR)
-                    options.insert(0, {'key': 'to_item', 'display': T(33019, "Visit media item")})
+                    options.insert(0, {'key': 'start_over', 'display': T(32317, 'Play from beginning')})
+                    options.insert(1, {'key': 'to_item', 'display': T(33019, "Visit media item")})
                     select_base = 0
 
 
@@ -1764,6 +1771,16 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             except util.NoDataException:
                 util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
                 return
+
+        elif choice["key"] == "start_over":
+            try:
+                command = opener.open(mli.dataSource, auto_play=True, start_over=True, dialog_props=self.carriedProps)
+                if command == "NODATA":
+                    raise util.NoDataException
+            except util.NoDataException:
+                util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+                return
+            return
 
         elif choice["key"] == "cache_reset":
             try:

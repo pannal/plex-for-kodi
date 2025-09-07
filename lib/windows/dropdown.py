@@ -129,7 +129,7 @@ class DropdownDialog(kodigui.BaseDialog):
     def playbackSessionEnded(self, **kwargs):
         self.doClose()
 
-    def doClose(self):
+    def doClose(self, **kw):
         if self.closeOnPlaybackEnded:
             from lib import player
             player.PLAYER.off('session.ended', self.playbackSessionEnded)

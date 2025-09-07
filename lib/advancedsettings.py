@@ -1,15 +1,21 @@
 # coding=utf-8
-
+import re
 from kodi_six import xbmcvfs
 
-from lib.util import LOG, ERROR
+from lib.logging import log as LOG, log_error as ERROR
+
+HAS_AUDIO_FIX_RE = re.compile(r'<superviseaudiodelay>.*true.*</superviseaudiodelay>',
+                              re.MULTILINE | re.DOTALL | re.IGNORECASE)
 
 
 class AdvancedSettings(object):
     _data = None
+    has_audio_fix = False
 
     def __init__(self):
         self.load()
+        if self._data:
+            self.has_audio_fix = bool(HAS_AUDIO_FIX_RE.search(self._data))
 
     def __bool__(self):
         return bool(self._data)

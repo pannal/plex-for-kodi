@@ -117,7 +117,7 @@
                                 </control>
                             </control>
                             <control type="label">
-                                <scroll>false</scroll>
+                                <scroll>true</scroll>
                                 <posx>0</posx>
                                 <posy>{{ vscale(269) }}</posy>
                                 <width>462</width>
@@ -128,7 +128,7 @@
                                 <label>$INFO[Window.Property(prev.title)]</label>
                             </control>
                             <control type="label">
-                                <scroll>false</scroll>
+                                <scroll>true</scroll>
                                 <posx>0</posx>
                                 <posy>{{ vscale(301) }}</posy>
                                 <width>462</width>
@@ -228,7 +228,7 @@
                                     </control>
                                 </control>
                                 <control type="label">
-                                    <scroll>false</scroll>
+                                    <scroll>true</scroll>
                                     <posx>0</posx>
                                     <posy>{{ vscale(313) }}</posy>
                                     <width>537</width>
@@ -239,7 +239,7 @@
                                     <label>$INFO[Window.Property(next.title)]</label>
                                 </control>
                                 <control type="label">
-                                    <scroll>false</scroll>
+                                    <scroll>true</scroll>
                                     <posx>0</posx>
                                     <posy>{{ vscale(345) }}</posy>
                                     <width>537</width>
@@ -269,7 +269,7 @@
             <control type="group">
                 <visible>!String.IsEmpty(Window.Property(has.next))</visible>
                 <control type="label">
-                    <scroll>false</scroll>
+                    <scroll>true</scroll>
                     <posx>1177</posx>
                     <posy>{{ vscale(131) }}</posy>
                     <width>683</width>
@@ -293,7 +293,7 @@
                     <label>$INFO[Window.Property(info.date)]$INFO[Window.Property(info.duration), &#8226; ]</label>
                 </control>
                 <control type="textbox">
-                    <scroll>false</scroll>
+                    <autoscroll delay="2000" time="2000" repeat="10000"></autoscroll>
                     <posx>1177</posx>
                     <posy>{{ vscale(240) }}</posy>
                     <width>683</width>
@@ -308,7 +308,7 @@
             <control type="group">
                 <visible>String.IsEmpty(Window.Property(has.next))</visible>
                 <control type="label">
-                    <scroll>false</scroll>
+                    <scroll>true</scroll>
                     <posx>580</posx>
                     <posy>{{ vscale(131) }}</posy>
                     <width>1280</width>
@@ -332,7 +332,7 @@
                     <label>$INFO[Window.Property(prev.info.date)]$INFO[Window.Property(prev.info.duration), &#8226; ]</label>
                 </control>
                 <control type="textbox">
-                    <scroll>false</scroll>
+                    <autoscroll delay="2000" time="2000" repeat="10000"></autoscroll>
                     <posx>580</posx>
                     <posy>{{ vscale(240) }}</posy>
                     <width>1280</width>

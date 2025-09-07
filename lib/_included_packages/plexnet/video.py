@@ -203,10 +203,10 @@ class Video(media.MediaItem, AudioCodecMixin):
         self.mediaChoice = mediachoice.MediaChoice(media, partIndex=partIndex)
 
     @forceMediaChoice
-    def selectStream(self, stream, _async=True, from_session=False, sync_to_server=True):
+    def selectStream(self, stream, _async=True, from_session=False, session_id=None, sync_to_server=True):
         if sync_to_server:
             self.mediaChoice.part.setSelectedStream(stream.streamType.asInt(), stream.id, _async, from_session=from_session,
-                                                    video=self)
+                                                    session_id=session_id, video=self)
         # Update any affected streams
         if stream.streamType.asInt() == plexstream.PlexStream.TYPE_AUDIO:
             for audioStream in self.audioStreams:

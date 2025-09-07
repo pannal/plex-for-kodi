@@ -138,7 +138,7 @@ class PlexConnection(object):
         if hostname.endswith("plex.direct") and hostname not in util.SKIP_HOST_CHECK:
             try:
                 ips = util.resolve(hostname, use_orig=True)
-                self.pdHostnameResolved = True
+                self.pdHostnameResolved = ips[0] != "0.0.0.0"
                 util.DEBUG_LOG("Natively resolved hostname: {} to {}", hostname, ips)
             except Exception as e:
                 util.DEBUG_LOG("Couldn't resolve hostname: {}, {}", hostname, e)

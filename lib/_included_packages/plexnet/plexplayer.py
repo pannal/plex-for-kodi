@@ -37,10 +37,11 @@ class BasePlayer(object):
 class PlexPlayer(BasePlayer):
     DECISION_ENDPOINT = "/video/:/transcode/universal/decision"
 
-    def __init__(self, item, seekValue=0, forceUpdate=False):
+    def __init__(self, item, seekValue=0, forceUpdate=False, session_id=None):
         self.decision = None
         self.seekValue = seekValue
         self.metadata = None
+        self.sessionID = session_id
         self.init(item, forceUpdate)
 
     def init(self, item, forceUpdate=False):
@@ -687,7 +688,7 @@ class PlexPlayer(BasePlayer):
 
             builder.addParam("offset", str(startOffset))
 
-        builder.addParam("session", self.item.settings.getGlobal("clientIdentifier"))
+        builder.addParam("session", self.sessionID)
         builder.addParam("directStream", directStream and "1" or "0")
         #builder.addParam("directStreamAudio", directStream and "1" or "0")
         builder.addParam("directPlay", "0")
@@ -697,6 +698,10 @@ class PlexPlayer(BasePlayer):
         maxVideoResolution = "allow_4k" in features and "3840x2160" or "1920x1080"
         builder.addParam("videoResolution", str(maxVideoResolution))
         builder.addParam("maxVideoBitrate", self.item.settings.getGlobal("transcodeVideoBitrates")[qualityIndex])
+
+        builder.addParam("X-Plex-Session-Id", self.sessionID)
+        builder.addParam("X-Plex-Session-Identifier", self.sessionID)
+        builder.addParam('X-Plex-Client-Identifier', self.item.settings.getGlobal('clientIdentifier'))
 
         builder.extras.append(
             "add-limitation(scope=videoCodec&scopeName=*&context=streaming&protocol=http&"
@@ -737,9 +742,10 @@ class PlexPlayer(BasePlayer):
 
 
 class PlexAudioPlayer(BasePlayer):
-    def __init__(self, item=None):
+    def __init__(self, item=None, session_id=None):
         self.item = item
         self.choice = None
+        self.sessionID = session_id
         self.containerFormats = {
             'aac': "es.aac-adts"
         }
@@ -775,7 +781,7 @@ class PlexAudioPlayer(BasePlayer):
         builder = http.HttpRequest(transcodeServer.buildUrl(obj.transcodeEndpoint, True))
         builder.addParam("protocol", "http")
         builder.addParam("path", item.getAbsolutePath("key"))
-        builder.addParam("session", item.getGlobal("clientIdentifier"))
+        builder.addParam("session", self.sessionID and self.sessionID or item.getGlobal("clientIdentifier"))
         builder.addParam("directPlay", "0")
         builder.addParam("directStream", "0")
 
