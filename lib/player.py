@@ -177,7 +177,7 @@ class BasePlayerHandler(object):
             self.playQueue.refreshOnTimeline = True
 
         playbackTime = 0
-        if hasattr(self, "dialog") and self.dialog.playbackTime:
+        if getattr(self, "dialog", None) and self.dialog.playbackTime:
             playbackTime = self.dialog.playbackTime
 
         data = plexnetUtil.AttributeDict({
