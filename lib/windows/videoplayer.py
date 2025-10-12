@@ -571,7 +571,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
     def setInfo(self):
         hide_spoilers = False
         if self.next and self.next.type == "episode":
-            hide_spoilers = self.hideSpoilers(self.next, use_cache=False)
+            hide_spoilers = self.hideSpoilers(self.next, fully_watched=False, watched=False, use_cache=False)
         if self.next:
             self.setProperty(
                 'post.play.background',
