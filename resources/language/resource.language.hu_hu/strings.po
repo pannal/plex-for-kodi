@@ -115,7 +115,7 @@ msgstr "Automatikus bejelentkezés"
 #: 
 msgctxt "#32039"
 msgid "Post Play Auto Play"
-msgstr "Post Play Auto Play"
+msgstr "„Lejátszás után” automatikus lejátszás"
 
 #: 
 msgctxt "#32040"
@@ -165,7 +165,7 @@ msgstr "Audió"
 #: 
 msgctxt "#32049"
 msgid "Advanced"
-msgstr "Fejlett beállítások"
+msgstr "Haladó beállítások"
 
 #: 
 msgctxt "#32050"
@@ -190,7 +190,7 @@ msgstr "Videó"
 #: 
 msgctxt "#32054"
 msgid "Addon Version"
-msgstr "Kiegészítő verziója"
+msgstr "Kiegészítő verzió"
 
 #: 
 msgctxt "#32055"
@@ -230,7 +230,7 @@ msgstr "Kezelje a DTS-t úgy, mint az AC3-t"
 #: 
 msgctxt "#32100"
 msgid "Skip user selection and pin entry on startup."
-msgstr "Felhasználó kiválasztás és a PIN kód megadás átugrása indításkor."
+msgstr "Felhasználó kiválasztása és a PIN-kód megadás átugrása indításkor."
 
 #: 
 msgctxt "#32102"
@@ -280,7 +280,7 @@ msgstr "Jelenet"
 #: 
 msgctxt "#32207"
 msgid "Live Music Video"
-msgstr "Élő zenei videó"
+msgstr "Élő-zenei videó"
 
 #: 
 msgctxt "#32208"
@@ -310,7 +310,7 @@ msgstr "Egyéb"
 #: 
 msgctxt "#32300"
 msgid "Go to Album"
-msgstr "Ugrás az Albumra"
+msgstr "Ugrás az albumra"
 
 #: 
 msgctxt "#32301"
@@ -330,7 +330,7 @@ msgstr "Extrák"
 #: 
 msgctxt "#32306"
 msgid "Related Shows"
-msgstr "Kapcsolódó műsorok"
+msgstr "Kapcsolódó TV-műsorok"
 
 #: 
 msgctxt "#32307"
@@ -405,7 +405,7 @@ msgstr "Törlés"
 #: 
 msgctxt "#32323"
 msgid "Go To Show"
-msgstr "Ugrás a műsorra"
+msgstr "Ugrás a TV-műsorra"
 
 #: 
 msgctxt "#32324"
@@ -540,7 +540,7 @@ msgstr "fényképek"
 #: 
 msgctxt "#32350"
 msgid "Shows"
-msgstr "Sorozatok"
+msgstr "TV-műsorok"
 
 #: 
 msgctxt "#32351"
@@ -615,12 +615,12 @@ msgstr "Első sugárzás dátuma"
 #: 
 msgctxt "#32367"
 msgid "By Unplayed"
-msgstr "Nem megtekintettek szerint"
+msgstr "Nem nézettek szerint"
 
 #: 
 msgctxt "#32368"
 msgid "Unplayed"
-msgstr "Nem megtekintettek"
+msgstr "Nem nézett"
 
 #: 
 msgctxt "#32369"
@@ -635,7 +635,7 @@ msgstr "Lejátszás dátuma"
 #: 
 msgctxt "#32371"
 msgid "By Play Count"
-msgstr "Lájátszások száma szerint"
+msgstr "Lejátszások száma szerint"
 
 #: 
 msgctxt "#32372"
@@ -690,7 +690,7 @@ msgstr "Csatorna"
 #: 
 msgctxt "#32382"
 msgid "Collection"
-msgstr "Nyűjtemény"
+msgstr "Gyűjtemény"
 
 #: 
 msgctxt "#32383"
@@ -725,7 +725,7 @@ msgstr "Fényképezőgép gyártmánya"
 #: 
 msgctxt "#32389"
 msgid "Camera Model"
-msgstr "Fényképezőgép Modell"
+msgstr "Fényképezőgép típusa"
 
 #: 
 msgctxt "#32390"
@@ -735,7 +735,7 @@ msgstr "Rekesz"
 #: 
 msgctxt "#32391"
 msgid "Shutter Speed"
-msgstr "Zár sebesség"
+msgstr "Zár-sebesség"
 
 #: 
 msgctxt "#32392"
@@ -745,7 +745,7 @@ msgstr "Lencsék"
 #: 
 msgctxt "#32393"
 msgid "TV Shows"
-msgstr "Sorozatok"
+msgstr "TV-műsorok"
 
 #: 
 msgctxt "#32394"
@@ -810,7 +810,7 @@ msgstr "Feliratok letöltése"
 #: 
 msgctxt "#32406"
 msgid "Subtitle Delay"
-msgstr "Felirat késleltetés"
+msgstr "Felirat késleltetése"
 
 #: 
 msgctxt "#32407"
@@ -1030,7 +1030,7 @@ msgstr "Nem lehet csatlakozni a plex.tv-hez[CR]Ellenőrizze az internetkapcsolat
 #: 
 msgctxt "#32450"
 msgid "Choose Version"
-msgstr "Verzió választása"
+msgstr "Verzió kiválasztása"
 
 #: 
 msgctxt "#32451"
@@ -1060,12 +1060,12 @@ msgstr "Kérem változtassa meg, vagy távolítsa el a jelenlegi szűrőt"
 #: 
 msgctxt "#32456"
 msgid "Show"
-msgstr "Sorozatt"
+msgstr "TV-műsor"
 
 #: 
 msgctxt "#32457"
 msgid "By Show"
-msgstr "Sorozat szerint"
+msgstr "TV-műsor szerint"
 
 #: 
 msgctxt "#32458"
@@ -1120,7 +1120,7 @@ msgstr "Felhasználói felület"
 #: 
 msgctxt "#32468"
 msgid "Show dynamic background art"
-msgstr "Dinamikus-háttérkép megjelenítése"
+msgstr "Dinamikus háttér megjelenítése"
 
 #: 
 msgctxt "#32469"
@@ -1340,7 +1340,7 @@ msgstr "Chrome ügyfélprofil használata az egyéni helyett. Megoldhatja a 3D l
 #: 
 msgctxt "#32031"
 msgid "Burn-in Subtitles"
-msgstr "Beégett feliratok"
+msgstr "Beégetett feliratok"
 
 #: 
 msgctxt "#32061"
@@ -1389,12 +1389,12 @@ msgctxt "#32527"
 msgid "Automatically skip credits if available. Doesn't override enabled binge mode.\n"
 "Can be disabled/enabled per TV show."
 msgstr "Stáblista automatikus kihagyása, ha elérhető. Nem írja felül a bekapcsolt folyamatos nézési módot.\n"
-"Tévéműsoronként ki/bekapcsolható."
+"TV-műsoronként ki/bekapcsolható."
 
 #: 
 msgctxt "#33501"
 msgid "Video played threshold"
-msgstr "Lejátszott videó küszöbérték"
+msgstr "Nézett videó küszöbérték"
 
 #: 
 msgctxt "#33502"
@@ -1419,7 +1419,7 @@ msgstr "Főcím kihagyása gomb korai megjelenítése"
 #: 
 msgctxt "#33507"
 msgid "Enabled"
-msgstr "Engedélyzeve"
+msgstr "Engedélyezve"
 
 #: 
 msgctxt "#33508"
@@ -1484,7 +1484,7 @@ msgstr "Stáblista"
 #: 
 msgctxt "#33610"
 msgid "Main"
-msgstr "Fő"
+msgstr "Főoldal"
 
 #: 
 msgctxt "#33611"
@@ -1902,7 +1902,7 @@ msgstr "Hasonló előadók"
 #: 
 msgctxt "#32961"
 msgid "Show hub bifurcation lines"
-msgstr "Csomópont elágazási vonalak megjelenítése"
+msgstr "Csomópont-bifurkációs vonalak megjelenítése"
 
 #: 
 msgctxt "#32962"
@@ -1937,7 +1937,7 @@ msgstr "Kodi színkezelés"
 #: 
 msgctxt "#32968"
 msgid "Kodi Resolution Settings"
-msgstr "Kodi felbontási beállítások"
+msgstr "Kodi felbontás beállítások"
 
 #: 
 msgctxt "#32969"
@@ -1962,14 +1962,14 @@ msgstr "Könyvtári nézetben darabonként kérje le ezt a médiaelem-mennyiség
 #: 
 msgctxt "#32973"
 msgid "Episodes: Skip Post Play screen"
-msgstr "Epizódok: Lejátszás utáni átugrás képernyő"
+msgstr "Epizódok: „Lejátszás után” képernyő átugrása"
 
 #: 
 msgctxt "#32974"
 msgid "When finishing an episode, don't show Post Play but go to the next one immediately.\n"
 "Can be disabled/enabled per TV show. Doesn't override enabled binge mode. Overrides the Post Play setting."
-msgstr "Ha befejez egy epizódot, ne jelenjen meg a Lejátszás után, hanem azonnal lépjen a következő epizódra.\n"
-"Tévéműsoronként ki/bekapcsolható. Nem írja felül a bekapcsolt folyamatos nézési módot. Felülírja a Lejátszás után beállítást."
+msgstr "Ha befejez egy epizódot, ne jelenjen meg a „Lejátszás után”, hanem azonnal lépjen a következő epizódra.\n"
+"TV-műsoronként ki/bekapcsolható. Nem írja felül a bekapcsolt folyamatos nézési módot. Felülírja a „Lejátszás után” beállítást."
 
 #: 
 msgctxt "#32975"
@@ -2144,7 +2144,7 @@ msgstr "Epizód {}"
 #: 
 msgctxt "#32310"
 msgid "S{}"
-msgstr "S{}"
+msgstr "É{}"
 
 #: 
 msgctxt "#32311"
@@ -2179,7 +2179,7 @@ msgstr "Művelet kiválasztása"
 #: 
 msgctxt "#33026"
 msgid "Map path: {}"
-msgstr "Térképi útvonal: {}"
+msgstr "Térkép útvonal: {}"
 
 #: 
 msgctxt "#33027"
@@ -2224,7 +2224,7 @@ msgstr "Töröljem {}: {}?"
 #: 
 msgctxt "#33036"
 msgid "Delete episode S{0:02d}E{1:02d} from {2}?"
-msgstr "Töröljem az epizódot az S{0:02d}E{1:02d} a(z) {2}?"
+msgstr "Töröljem az epizódot az É{0:02d}E{1:02d} a(z) {2}?"
 
 #: 
 msgctxt "#33037"
@@ -2264,7 +2264,7 @@ msgstr "TV-műsorok csomópont: {}"
 #: 
 msgctxt "#33042"
 msgid "Episode Date Added"
-msgstr "Epizód dátum hozzáadva"
+msgstr "Epizód dátuma hozzáadva"
 
 #: 
 msgctxt "#33001"
@@ -2373,7 +2373,7 @@ msgstr "Háttér elrejtése a modern mutatókban"
 #: 
 msgctxt "#33044"
 msgid "Allow round-robining in hubs. Attention: Loads a lot of items. Depending on the hub size, this can lead to crashes. Current limit: {}; can be adjusted in addon settings."
-msgstr "A körkörös keresztezés engedélyezése a csomópontokban. Figyelem! Sok elemet tölt be. A csomópont méretétől függően ez összeomlásokhoz vezethet. Jelenlegi határérték: {}; az addon beállításaiban módosítható."
+msgstr "A körkörös-keresztezés engedélyezése a csomópontokban. Figyelem! Sok elemet tölt be. A csomópont méretétől függően ez összeomlásokhoz vezethet. Jelenlegi határérték: {}; az addon beállításaiban módosítható."
 
 #: 
 msgctxt "#33046"
@@ -2383,7 +2383,7 @@ msgstr "A fel/le gomb megnyomásával, miközben az OSD nincs megjelenítve, a f
 #: 
 msgctxt "#33047"
 msgid "Hubs round-robin item limit"
-msgstr "Csomópontok körkörös tételkorlátozás"
+msgstr "Csomópontok körkörös-keresztezés tételkorlátozás"
 
 #: 
 msgctxt "#33048"
@@ -2465,7 +2465,7 @@ msgstr "Végrehajtva"
 #: 
 msgctxt "#33066"
 msgid "Cache template files"
-msgstr "Gyorsítótás sablonfájlok"
+msgstr "Gyorsítótár sablonfájlok"
 
 #: 
 msgctxt "#33067"
@@ -2625,7 +2625,7 @@ msgstr "Visszaléptetés azután"
 #: 
 msgctxt "#33094"
 msgid "Only seek back after having paused at least a certain amount of seconds"
-msgstr "Csak akkor léptet vissza, ha legalább egy bizonyos számú másodpercnyi szünetet tartottál"
+msgstr "Csak akkor léptet vissza, ha legalább egy bizonyos számú másodpercnyi szünetet tartott"
 
 #: 
 msgctxt "#33095"
@@ -2645,22 +2645,22 @@ msgstr "Csak akkor engedélyezze a visszaléptetést, ha közvetlen lejátszásr
 #: 
 msgctxt "#33098"
 msgid "Tickrate (Hz)"
-msgstr "Ketyegés mértéke (Hz)"
+msgstr "Kattintás mértéke (Hz)"
 
 #: 
 msgctxt "#33099"
 msgid "Controls how often certain ticks are performed on GUI windows and the SeekDialog/VideoPlayer and how fast certain events are handled. Can be expensive when bigger than 1 Hz (once per second), can cause quirks when lower than 1 Hz (less than once per second). Depends on the hardware. Default: 1 Hz, Max: 10 Hz (every 100 ms), Sane highest and old default: 10 Hz (every 100 ms)"
-msgstr "Szabályozza, hogy bizonyos ketyegések milyen gyakran történjenek a GUI és a SeekDialog/VideoPlayer ablakokon, és milyen gyorsan kezeljen bizonyos eseményeket. Gond lehet, ha nagyobb, mint 1 Hz (másodpercenként egyszer), furcsaságokat okozhat, ha kisebb, mint 1 Hz (kevesebb, mint másodpercenként egyszer). A hardvertől függ. Alapértelmezett: 1 Hz, Max: 10 Hz (100 ms-ként), legmagasabb és régi alapértelmezett: 10 Hz (100 ms-ként)."
+msgstr "Szabályozza, hogy bizonyos kattintások milyen gyakran történjenek a GUI és a SeekDialog/VideoPlayer ablakokon, és milyen gyorsan kezeljen bizonyos eseményeket. Gond lehet, ha nagyobb, mint 1 Hz (másodpercenként egyszer), furcsaságokat okozhat, ha kisebb, mint 1 Hz (kevesebb, mint másodpercenként egyszer). A hardvertől függ. Alapértelmezett: 1 Hz, Max: 10 Hz (100 ms-ként), legmagasabb és régi alapértelmezett: 10 Hz (100 ms-ként)."
 
 #: 
 msgctxt "#33636"
 msgid "Plex server read timeout"
-msgstr "Plex szerver olvasási időkorlát"
+msgstr "Plex-szerver olvasási időkorlát"
 
 #: 
 msgctxt "#33637"
 msgid "Sets the maximum amount of time to read from a Plex Server in seconds. Default: 10"
-msgstr "Beállítja a Plex szerverről történő olvasás maximális időtartamát másodpercben. Alapértelmezett: 10"
+msgstr "Beállítja a Plex-szerverről történő olvasás maximális időtartamát másodpercben. Alapértelmezett: 10"
 
 #: 
 msgctxt "#33638"
@@ -2720,7 +2720,7 @@ msgstr "Indítás késleltetése"
 #: 
 msgctxt "#33652"
 msgid "Never show Post Play"
-msgstr "Soha ne mutasd lejátszás után"
+msgstr "Soha ne mutassa a „Lejátszás után”-t"
 
 #: 
 msgctxt "#33506"
@@ -2737,7 +2737,7 @@ msgid "Automatically skips episode intros, credits and tries to skip episode rec
 "Overrides any setting below."
 msgstr "Automatikusan kihagyja az epizódok főcímeit, a stáblistát és megpróbálja kihagyni az epizódok összefoglalóit. Nem hagyja ki az évad első epizódjának főcímét, és nem hagyja ki a sorozat utolsó stáblistáját.\n"
 "\n"
-"Tévéműsoronként ki/bekapcsolható.\n"
+"TV-műsoronként ki/bekapcsolható.\n"
 "Felülírja az alábbi beállításokat."
 
 #: 
@@ -2763,7 +2763,7 @@ msgstr "Plex.tv: tv-ről történő olvasás maximális időtartamának beállí
 #: 
 msgctxt "#33653"
 msgid "Background image resolution scaling %"
-msgstr "Háttérkép felbontás méretezése %"
+msgstr "Háttérkép felbontásának méretezése %"
 
 #: 
 msgctxt "#33654"
@@ -2868,7 +2868,7 @@ msgstr "2 Mbps"
 #: 
 msgctxt "#32009"
 msgid "1.5 Mbps"
-msgstr "1.5 Mbps"
+msgstr "1,5 Mbps"
 
 #: 
 msgctxt "#33669"
@@ -2973,7 +2973,7 @@ msgstr "A frissítés {} magának a frissítőnek a módosítása. A szolgáltat
 #: 
 msgctxt "#33685"
 msgid "Clamp video bitrate"
-msgstr "Videó bitráta rögzítése"
+msgstr "Videó bitrátájának rögzítése"
 
 #: 
 msgctxt "#33686"
@@ -3008,17 +3008,17 @@ msgstr "Elmosódás mértéke a le nem játszott/folyamatban lévő epizódokná
 #: 
 msgctxt "#33010"
 msgid "Unplayed"
-msgstr "Nem lejátszott"
+msgstr "Nem nézett"
 
 #: 
 msgctxt "#33012"
 msgid "No unplayed episode titles"
-msgstr "Nincsenek lejátszatlan epizódok"
+msgstr "Nincsenek nem nézett epizódok"
 
 #: 
 msgctxt "#33022"
 msgid "Played indicators"
-msgstr "Lejátszott mutatók"
+msgstr "Nézett mutatók"
 
 #: 
 msgctxt "#33023"
@@ -3099,7 +3099,7 @@ msgstr "Feliratok letöltése: {}"
 #: 
 msgctxt "#33701"
 msgid "Fallback to Kodi"
-msgstr "Vissazcsatolás a Kodiba"
+msgstr "Visszacsatolás a Kodiba"
 
 #: 
 msgctxt "#33702"
@@ -3184,7 +3184,7 @@ msgstr "Hibakeresések"
 #: 
 msgctxt "#33718"
 msgid "Played"
-msgstr "Lejátszott"
+msgstr "Nézett"
 
 #: 
 msgctxt "#33719"
@@ -3268,7 +3268,7 @@ msgstr "Törölje a gyorsítótárat az elemhez"
 #: 
 msgctxt "#33729"
 msgid "Expire cached Plex data after (hours)"
-msgstr "A gyorsítótárazott Plex adatok lejárata (órák) után"
+msgstr "A gyorsítótárazott Plex-adatok lejárata (órák) után"
 
 #: 
 msgctxt "#33730"
@@ -3336,7 +3336,7 @@ msgstr "Hány elemet töltsön be a Kodi lejátszási listájába, mielőtt a Pl
 #: 
 msgctxt "#33740"
 msgid "Home: Episodes season thumbnails"
-msgstr "Kezdőoldal: Evadok epizódjainak miniatűrjei"
+msgstr "Kezdőoldal: Évadok epizódjainak miniatűrjei"
 
 #: 
 msgctxt "#33741"
