@@ -1,3 +1,139 @@
+[-1.0.0-]
+CoreELEC
+- Fix issues with delayed audio playback via the alternate seek method
+- (Re-) Implemented sophisticated alternate seek method for problematic devices (brought its own quirks)
+- Gradually improved alternate seek to a stable state with community feedback
+- When switching audio track don’t trigger progress events
+
+Watchlist
+- Implement first version of the watchlist feature
+- Auto-remove watched items (movies, shows) from the watchlist (adjustable via setting)
+- Allow adding any media item to the watchlist from any media view
+- (blindly) remove item from watchlist if manually marked watched via Home or Library context menus
+- Allow visiting and playing back items on any available server with the item available, without having to manually switch servers
+- Allow selection between multiple versions, if the case, instead of only one/the first per server (ordered by bitrate)
+
+Subtitles
+- Add support for subtitle Auto-Sync (based on audio analysis, PlexServer-side)
+- Allow live-toggling of subtitle Auto-Sync in the player (overrides global setting temporarily, or per-TV-show setting)
+- Fix embedded subtitle selection when path mapping enabled
+- Add subtitle language denylist (disable subtitles for native languages)
+- Live-download subtitles via Plex (or Kodi, or both; pre-play and during playback)
+- Parse, use and store Plex account subtitle preferences
+
+Episodes
+- Fix episode progress handling
+- Try using PlexServer settings for episode completion handling
+- Improve background music handling
+- Fix play from beginning not working for context menu of episode list items
+
+Libraries
+- Massive potential speedup (5-10x) for huge libraries
+- Adhere to the library collections setting of Plex
+- Use library title in title header instead of library type
+- listview-16x9: Reimplement item type filter
+- General fixes
+
+Collections
+- Fix collections repeating themselves after CHUNKSIZE hit (240 by default); Improve performance tenfold for big collections; Implement chunking in Collection.all()
+
+Playlist
+- Fix playlist subsequent chunking (was broken) (thanks @BrendanMyers88)
+- Select the currently relevant item once it’s been created properly
+- Massively improve resource usage on big video playlists when returning from playback by only refreshing affected items
+- Correctly show and scale video progress
+
+UI
+- Mark any item as played/unplayed on Home (even in-progress ones), Libraries
+- Allow removing individual items from Continue Watching/On Deck (same as in official clients)
+- Implement fast server and user switch in Home (via long-press/context menu)
+- Visual changes to adhere more to the 2024 style (player, dropdowns, dialogs)
+- Add the ability to hide episode and movie spoilers defined by multiple user settings (titles, blur images, summaries, ratings)
+- Add the ability to always resume in progress media (also directly from home if wanted); can be overriden using long-press/context menu
+- Settings: Allow navigation using MOVE_RIGHT/LEFT; fixes
+- Unify dropdown behaviour: always allow round-robin on any dropdown; default close behaviour is pressing left or BACK/PREVIOUS_MENU
+- Core/Poster dimensions: Use 268x402 (0.66 ratio) for poster base resolution instead of 268x397 (0.675 ratio); unifies vertical scaling for posters and collection art
+- Unify bound Home key (should now work everywhere)
+- Home/Core: Don’t retain background image when switching home users
+- Home/Hubs: Use season thumbnail for episodes if possible (adjustable via setting)
+- Home: Add context menu option to start playback from beginning for in progress items when resume in progress items on home is enabled
+- Home: Make moving sections more resilient (esp. when moving fast/holding left/right)
+- Home: Add “Minimize” and “Exit” options to user menu (touch based devices can’t easily hit the exit menu by using BACK)
+- Episodes: Use season art as background if available
+- Episodes: Show correct cast per episode, not from parent show
+- Movies/Shows/Episodes: Add Directors (up to two) to the beginning of the cast list; support searching for director’s movies (currently not possible with shows/episodes)
+- Episodes/Shows/Movies: Make “go to section” action actually visit the section instead of the home hub
+- Remove most obsolete dividers in sub views
+- Movies/Episodes: Properly vertically align audio/video/subtitle labels within textures
+- Movies: Show duration for extras
+- Postplay: Scroll titles (instead of cutting them off + ellipsis); scroll multiline summaries
+- Item/AudioSettings: Don’t trim secondary title, scroll it
+
+Videoplayer
+- Modernize the usage of the Plex Media Decision Engine
+- Use bitrate instead of resolution when asking the Plex Server for a decision (better transcode behaviour, especially with HEVC)
+- Any transcode quality selection is now bitrate based, as the resolution can (and should) vary
+- Add the ability to not spoil anything during playback
+- Add fast resume/pause behaviour (use OK/ENTER to quickly resume when paused or pause when playing, instead of showing the OSD)
+- When showing stream info, pressing RIGHT will show playerprocessinfo, pressing LEFT will show playerdebug
+- Don’t skip to next episode after final credits marker was skipped if binge mode or skip postplay for TV isn’t active
+- Never show postplay for movie extras, regardless of any postplay setting
+- Allow for immediate skipping of a counting down marker (before you had to wait 1 second for that to work) (needs the respective AddonSetting enabled as well)
+- PlayerVideoCurrentPlaylist: Scroll titles if they’re too long; allow vertical round-robining at the top boundary; allow closing the playlist by pressing LEFT
+- Use uuid4() as session ID; keep session ID when switching streams; report session ID when sending timeline requests
+- Remove artificial percentage-based virtual chapters (intro/outro are still generated if necessary)
+- When stopping playback after idle, don’t start playback of next episode/playlist item
+- Fix rare occasion where immediately going to next item in playlist/season would keep the “skip prev” button disabled, when the playlist/season was started at episode 1
+- Ensure correct audio track was set after a handler was reused (skip to next video was pressed in player)
+- SeekDialog/CurrentPlaylist: Mark previous episodes/items as watched in current playlist during a multi-item playback session
+- SeekDialog/CurrentPlaylist: Show progress indicators for items in playlist; “live” snapshot of current video progress when opened as well
+
+Core:
+- Add Autoupdater (for beta releases)
+- VideoPlayer/Timeline event improvements
+- Ship certificate bundle and allow manual certificates
+- Improve background resolution by allowing a manual scale value
+- Fix Collections
+- Fix Playlists
+- Improve VideoPlaylists
+- Fix Postplay issues
+- Fix MusicPlayer
+- Migrate to InfoTags for Kodi >= 20, removes deprecation warning for setInfo
+- Fix HTTPConnection was never async. Unify Asynchronicity between HTTPConnection and HTTPSConnection via AsyncConnectionMixin
+- Add requests cache for Plex data (can also be persisted), to speed up re-visiting resource-heavy views
+- Fix core networking issues
+- Basic support for external players. Does not support seeking or resuming inside external players but tries to keep the playback and resume states (for resuming an item with an external player you’ll have to seek there yourself); only supports path mapping if the external player can access the same path PM4K sees
+- Core/Transcode/Audio: Allow audio transcode targets ‘mp3’, ‘ac3’, ‘aac’, ‘opus’, ‘vorbis’, ‘eac3’, ‘flac’, ‘alac’ (new: eac3, vorbis, flac, alac)
+- Improve audio stream type detection
+- Improve correct audio stream selection during certain events fixing Kodi quirks
+- Add setting to loop theme music (default: on)
+- Harden VideoPlayer
+- Implement cleaner shutdown functionality
+- Support custom theme.mp3 theme music for TV shows and movies (additional extensions: 'ac3', 'aac', 'opus', 'vorbis', 'eac3', 'flac', 'alac')
+- Watchlist/Core/ThemeMusic: While traversing items of multiple types (movies and shows), properly stop or start theme music if necessary
+- Support Plex markers as watched indicators
+- Check plex.direct dns rebind issues more thoroughly and don’t completely rely on the protection flags from the Plex server registry (often false); can lead to a slightly longer bootup time
+- Fix plex.direct host mapping not being triggered in certain situations (local docker IP mapped to VM for example)
+- Don’t consider a resolved plex.direct domain with IP 0.0.0.0 as “successfully resolved”
+- Force plex.direct connectivity check if the current connection has hostname issues (should fix certain setups with manual connections/LAN connections without allowing insecure local connections, falling back to plex.direct)
+- Home/Movies/Shows/Episodes/Libraries: Implement generic watched toggle; toggle watched via keyboard mapping “w” (buttonCode: 61527)
+- Home: Don’t fail hard when no currently selected server is available
+- Home: After selecting an unavailable server from the dropdown, shutdown wasn’t possible
+- Write templates to user directory instead of plugin directory when env var INSTALLATION_DIR_AVOID_WRITE is set (useful when plugin directory isn’t writable)
+- AddonSettings: Use 850ms as new default for the Alternate seek fix (was: 500ms)
+- Bring back screensaver.
+- Optionally allow direct play for resolutions above 4K
+
+Translations
+- Update translations for Spanish (100%), French (75%), Chinese (90%), Hungarian (100%), Italian (63%)
+
+Addons:
+- Provide the Plextuary skin with optimizations for CoreELEC and CoreELEC CPM
+- Plextuary: Allow customization of Exit menu
+- Add "McFontFace" Kodi font management plugin
+- Add "PM4K Log Uploader" plugin
+
+
 [-0.7.9-rev3-]
 - Player: Only send timeline events if playstate has changed or we haven't sent one for 15 seconds; fixes #137
 - AddonSettings: Fix default cert bundle setting
