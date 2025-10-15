@@ -118,22 +118,22 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
 
         return self.SAFE_LANGUAGE_NAMES.get(code) or self.language or "Unknown"
 
-    def getSubtitlePath(self):
+    def getSubtitlePath(self, auto_sync=None):
         query = "?encoding=utf-8"
 
         if self.codec == "smi":
             query += "&format=srt"
 
-        if self.should_auto_sync and util.INTERFACE.getPreference('auto_sync', True):
+        if self.should_auto_sync and auto_sync in (True, None):
             query += "&autoAdjustSubtitle=1"
 
         return self.key + query
 
-    def getSubtitleServerPath(self):
+    def getSubtitleServerPath(self, auto_sync=None):
         if not self.key:
             return None
 
-        return self.getServer().buildUrl(self.getSubtitlePath(), True)
+        return self.getServer().buildUrl(self.getSubtitlePath(auto_sync=auto_sync), True)
 
     @property
     def embedded(self):

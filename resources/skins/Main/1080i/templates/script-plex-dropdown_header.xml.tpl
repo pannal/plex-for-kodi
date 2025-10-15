@@ -102,28 +102,28 @@
                 <visible>String.IsEmpty(ListItem.Property(with.indicator)) + String.IsEqual(ListItem.Property(align),center)</visible>
                 <posx>0</posx>
                 <posy>0</posy>
-                <width>600</width>
+                <width>580</width>
                 <height>{{ vscale(66) }}</height>
                 <font>font12</font>
                 <align>center</align>
                 <aligny>center</aligny>
                 <textcolor>FFFFFFFF</textcolor>
                 <scroll>true</scroll>
-                <scrollspeed>60</scrollspeed>
+                <scrollspeed>20</scrollspeed>
                 <label>$INFO[ListItem.Label]</label>
             </control>
             <control type="label">
                 <visible>String.IsEmpty(ListItem.Property(with.indicator)) + String.IsEqual(ListItem.Property(align),left)</visible>
                 <posx>20</posx>
                 <posy>0</posy>
-                <width>600</width>
+                <width>580</width>
                 <height>{{ vscale(66) }}</height>
                 <font>font12</font>
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>FFFFFFFF</textcolor>
                 <scroll>true</scroll>
-                <scrollspeed>60</scrollspeed>
+                <scrollspeed>20</scrollspeed>
                 <label>$INFO[ListItem.Label]</label>
             </control>
             <control type="group">
@@ -138,7 +138,7 @@
                     <aligny>center</aligny>
                     <textcolor>FFFFFFFF</textcolor>
                     <scroll>true</scroll>
-                    <scrollspeed>60</scrollspeed>
+                    <scrollspeed>20</scrollspeed>
                     <label>$INFO[ListItem.Label]</label>
                 </control>
                 <control type="image">
@@ -196,28 +196,28 @@
                 <visible>String.IsEmpty(ListItem.Property(with.indicator)) + String.IsEqual(ListItem.Property(align),center)</visible>
                 <posx>0</posx>
                 <posy>0</posy>
-                <width>600</width>
+                <width>580</width>
                 <height>{{ vscale(66) }}</height>
                 <font>font12</font>
                 <align>center</align>
                 <aligny>center</aligny>
                 <textcolor>FF000000</textcolor>
                 <scroll>true</scroll>
-                <scrollspeed>60</scrollspeed>
+                <scrollspeed>20</scrollspeed>
                 <label>$INFO[ListItem.Label]</label>
             </control>
             <control type="label">
                 <visible>String.IsEmpty(ListItem.Property(with.indicator)) + String.IsEqual(ListItem.Property(align),left)</visible>
                 <posx>20</posx>
                 <posy>0</posy>
-                <width>600</width>
+                <width>580</width>
                 <height>{{ vscale(66) }}</height>
                 <font>font12</font>
                 <align>left</align>
                 <aligny>center</aligny>
                 <textcolor>FF000000</textcolor>
                 <scroll>true</scroll>
-                <scrollspeed>60</scrollspeed>
+                <scrollspeed>20</scrollspeed>
                 <label>$INFO[ListItem.Label]</label>
             </control>
             <control type="group">
@@ -232,7 +232,7 @@
                     <aligny>center</aligny>
                     <textcolor>FF000000</textcolor>
                     <scroll>true</scroll>
-                    <scrollspeed>60</scrollspeed>
+                    <scrollspeed>20</scrollspeed>
                     <label>$INFO[ListItem.Label]</label>
                 </control>
                 <control type="image">

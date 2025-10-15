@@ -505,6 +505,7 @@ class PlayQueue(signalsmixin.SignalsMixin):
             return None
 
         self.selectedId = item.playQueueItemID.asInt()
+        self.trigger("current.changed")
         return item
 
     __next__ = next
@@ -518,6 +519,7 @@ class PlayQueue(signalsmixin.SignalsMixin):
             return None
 
         self.selectedId = item.playQueueItemID.asInt()
+        self.trigger("current.changed")
         return item
 
     def getPrev(self):
@@ -546,10 +548,12 @@ class PlayQueue(signalsmixin.SignalsMixin):
 
         item = list(self.items())[pos]
         self.selectedId = item.playQueueItemID.asInt()
+        self.trigger("current.changed")
         return item
 
     def setCurrentItem(self, item):
         self.selectedId = item.playQueueItemID.asInt()
+        self.trigger("current.changed")
 
     def __eq__(self, other):
         if not other:

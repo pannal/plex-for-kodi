@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="0.8.0-beta4.1a"
+       version="1.0.0"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="2.26.0"/>
@@ -15,6 +15,7 @@
     <extension point="xbmc.python.pluginsource" library="plugin.py">
         <provides>executable</provides>
     </extension>
+    <extension point="xbmc.ui.screensaver" library="screensaver.py"/>
     <extension point="xbmc.service" library="service.py" />
     <extension point="xbmc.addon.metadata">
         <summary lang="en_GB">PlexMod for Kodi</summary>
@@ -33,7 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- For changelog see changelog.txt
+- See changelog or forum
         </news>
         <assets>
             <icon>icon2.png</icon>

@@ -33,12 +33,12 @@ class PlaybackSettingsMixin(object):
             # invalidate any other setting if bingemode enabled
             if choice["key"] == "binge_mode" and ic:
                 for m in opts.items:
-                    if m.dataSource["key"] != "binge_mode":
+                    if m.dataSource["key"] not in ("binge_mode", "auto_sync"):
                         callback(opts, m, force_off=True)
                 del m
 
             # disable bingeMode if any other setting is enabled
-            elif choice["key"] != "binge_mode" and newSettings["binge_mode"]:
+            elif choice["key"] not in ("binge_mode", "auto_sync") and newSettings["binge_mode"]:
                 m = opts.getListItem(0)
                 callback(opts, m, force_off=True)
                 del m

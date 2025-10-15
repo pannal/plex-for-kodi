@@ -251,7 +251,7 @@ def _main():
                                 uid = closeOption['fast_switch']
                                 util.DEBUG_LOG('Main: Fast-Switching users...: {}', uid)
                                 util.setSetting('previous_user', plexapp.ACCOUNT.ID)
-                                with busy.BusySignalContext(plexapp.util.APP, "account:response", delay=False, interval=0.05):
+                                with busy.BusySignalContext(plexapp.util.APP, "account:response"):
                                     if plexapp.ACCOUNT.switchHomeUser(uid) and plexapp.ACCOUNT.switchUser:
                                         util.DEBUG_LOG('Waiting for user change...')
 

@@ -1,4 +1,6 @@
 # coding=utf-8
+import traceback
+
 from lib import backgroundthread, util
 from lib.i18n import T
 from lib.windows import kodigui
@@ -43,7 +45,8 @@ class AvailabilityCheckTask(WatchlistCheckBaseTask):
                         rk = child.get("ratingKey")
                         if rk:
                             metadata = {"rating_key": rk, "resolution": None, "bitrate": None, "season_count": None,
-                                        "available": None, "server_uuid": str(self.server_uuid), "type": self.media_type}
+                                        "available": None, "server_uuid": str(self.server_uuid), "type": self.media_type,
+                                        "library_title": child.get("librarySectionTitle")}
 
                             # find resolution for movies
                             if self.media_type == "movie":
@@ -117,6 +120,7 @@ def removeFromWatchlistBlind(guid):
     if not util.getUserSetting("use_watchlist", True):
         return
 
+    util.DEBUG_LOG("Watchlist: Trying to blindly remove {}", guid)
     try:
         if not guid or not guid.startswith("plex://"):
             return
@@ -124,7 +128,10 @@ def removeFromWatchlistBlind(guid):
         server = pnUtil.SERVERMANAGER.getDiscoverServer()
         server.query("/actions/removeFromWatchlist", ratingKey=GUIDToRatingKey(guid), method="put")
     except:
-        pass
+        exc = traceback.format_exc()
+        util.DEBUG_LOG("Watchlist: Failed to blindly remove {}: {}", guid, exc)
+    else:
+        util.DEBUG_LOG("Watchlist: Removed {}", guid)
 
 
 class WatchlistUtilsMixin(object):
@@ -174,7 +181,7 @@ class WatchlistUtilsMixin(object):
                 server, meta = tup
                 verbose = self.wl_item_verbose(meta)
                 options.append({'key': idx,
-                                'display': '{}, {}'.format(server, verbose)
+                                'display': '{0}/{2}, {1} '.format(server, verbose, meta["library_title"])
                               })
 
             choice = dropdown.showDropdown(

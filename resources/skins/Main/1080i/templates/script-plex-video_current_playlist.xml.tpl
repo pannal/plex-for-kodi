@@ -102,6 +102,27 @@
                             <texture>$INFO[ListItem.Thumb]</texture>
                             <aspectratio>scale</aspectratio>
                         </control>
+                        <control type="group">
+                            <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                            <posx>63</posx>
+                            <posy>{{ vscale(79) }}</posy>
+                            <control type="image">
+                                <posx>0</posx>
+                                <posy>0</posy>
+                                <width>132</width>
+                                <height>{{ vscale(6) }}</height>
+                                <texture>script.plex/white-square.png</texture>
+                                <colordiffuse>C0000000</colordiffuse>
+                            </control>
+                            <control type="image">
+                                <posx>0</posx>
+                                <posy>1</posy>
+                                <width>132</width>
+                                <height>{{ vscale(4) }}</height>
+                                <texture>$INFO[ListItem.Property(progress)]</texture>
+                                <colordiffuse>FFCC7B19</colordiffuse>
+                            </control>
+                        </control>
                         {% include "includes/watched_indicator.xml.tpl" with xoff=132+63 & yoff=11 & uw_posy=11 & uw_size=24 & scale="tiny" %}
                         <control type="group">
                             <posx>226</posx>
@@ -390,6 +411,27 @@
                                 <height>{{ vscale(100) }}</height>
                                 <texture>$INFO[ListItem.Thumb]</texture>
                                 <aspectratio>scale</aspectratio>
+                            </control>
+                            <control type="group">
+                                <visible>!String.IsEmpty(ListItem.Property(progress))</visible>
+                                <posx>103</posx>
+                                <posy>{{ vscale(94) }}</posy>
+                                <control type="image">
+                                    <posx>0</posx>
+                                    <posy>0</posy>
+                                    <width>178</width>
+                                    <height>{{ vscale(6) }}</height>
+                                    <texture>script.plex/white-square.png</texture>
+                                    <colordiffuse>C0000000</colordiffuse>
+                                </control>
+                                <control type="image">
+                                    <posx>0</posx>
+                                    <posy>1</posy>
+                                    <width>178</width>
+                                    <height>{{ vscale(4) }}</height>
+                                    <texture>$INFO[ListItem.Property(progress)]</texture>
+                                    <colordiffuse>FFCC7B19</colordiffuse>
+                                </control>
                             </control>
                             {% include "includes/watched_indicator.xml.tpl" with xoff=178+103 %}
                             <control type="group">

@@ -53,7 +53,7 @@ def resetBaseHeaders():
 
 
 # Core Settings
-PROJECT = 'PlexNet'                                 # name provided to plex server
+PROJECT = 'PM4K'                                 # name provided to plex server
 VERSION = '0.0.0a1'                                 # version of this api
 TIMEOUT = 5                                        # request timeout
 TIMEOUT_CONNECT = 5                                 # connect timeout
@@ -255,10 +255,10 @@ def joinArgs(args, includeQuestion=True):
 
 def getPlexHeaders():
     return {"X-Plex-Platform": INTERFACE.getGlobal("platform"),
-            "X-Plex-Version": INTERFACE.getGlobal("appVersionStr"),
+            "X-Plex-Version": ADDON.getAddonInfo('version'),
             "X-Plex-Client-Identifier": INTERFACE.getGlobal("clientIdentifier"),
             "X-Plex-Platform-Version": INTERFACE.getGlobal("platformVersion", "unknown"),
-            "X-Plex-Product": INTERFACE.getGlobal("product"),
+            "X-Plex-Product": "PM4K",
             "X-Plex-Provides": not INTERFACE.getPreference("remotecontrol", False) and 'player' or '',
             "X-Plex-Device": INTERFACE.getGlobal("device"),
             "X-Plex-Model": INTERFACE.getGlobal("model"),

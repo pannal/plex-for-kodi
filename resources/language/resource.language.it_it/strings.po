@@ -18,46 +18,6 @@ msgid "Original"
 msgstr "Originale"
 
 #: 
-msgctxt "#32002"
-msgid "20 Mbps"
-msgstr "20 Mbps"
-
-#: 
-msgctxt "#32003"
-msgid "12 Mbps"
-msgstr "12 Mbps"
-
-#: 
-msgctxt "#32004"
-msgid "10 Mbps"
-msgstr "10 Mbps"
-
-#: 
-msgctxt "#32005"
-msgid "8 Mbps"
-msgstr "8 Mbps"
-
-#: 
-msgctxt "#32006"
-msgid "4 Mbps"
-msgstr "4 Mbps"
-
-#: 
-msgctxt "#32007"
-msgid "3 Mbps"
-msgstr "3 Mbps"
-
-#: 
-msgctxt "#32008"
-msgid "2 Mbps"
-msgstr "2 Mbps"
-
-#: 
-msgctxt "#32009"
-msgid "1.5 Mbps"
-msgstr "1.5 Mbps"
-
-#: 
 msgctxt "#32010"
 msgid "720 kbps"
 msgstr "720 kbps"
@@ -108,16 +68,6 @@ msgid "Debug Logging"
 msgstr "Log di Debug"
 
 #: 
-msgctxt "#32025"
-msgid "Allow Direct Play"
-msgstr "Permetti Play Diretto"
-
-#: 
-msgctxt "#32026"
-msgid "Allow Direct Stream"
-msgstr "Permetti Stream Diretto"
-
-#: 
 msgctxt "#32027"
 msgid "Force"
 msgstr "Forza"
@@ -156,16 +106,6 @@ msgstr "Sulla stessa rete"
 msgctxt "#32035"
 msgid "Always"
 msgstr "Sempre"
-
-#: 
-msgctxt "#32036"
-msgid "Allow 4K"
-msgstr "Permetti 4K"
-
-#: 
-msgctxt "#32037"
-msgid "Allow HEVC (h265)"
-msgstr "Permetti HEVC (h265)"
 
 #: 
 msgctxt "#32038"
@@ -291,11 +231,6 @@ msgstr "Tratta DTS come AC3"
 msgctxt "#32100"
 msgid "Skip user selection and pin entry on startup."
 msgstr "All'avvio salta l'immissione del PIN e la selezione utente."
-
-#: 
-msgctxt "#32101"
-msgid "If enabled, when playback ends and there is a 'Next Up' item available, it will be automatically be played after a 15 second delay."
-msgstr "Se abilitato, quando la riproduzione finisce e un 'Titolo Successivo' è disponibile, sarà automaticamente riprodotto dopo un ritardo di 15 secondi."
 
 #: 
 msgctxt "#32102"
@@ -636,16 +571,6 @@ msgstr "Per data di già visto"
 msgctxt "#32356"
 msgid "Date Viewed"
 msgstr "Data di già visto"
-
-#: 
-msgctxt "#32357"
-msgid "By Name"
-msgstr "Per nome"
-
-#: 
-msgctxt "#32358"
-msgid "Name"
-msgstr "Nome"
 
 #: 
 msgctxt "#32359"
@@ -1348,11 +1273,6 @@ msgid "Ends at"
 msgstr "Termina alle"
 
 #: 
-msgctxt "#32601"
-msgid "Allow AV1"
-msgstr "Abilita AV1"
-
-#: 
 msgctxt "#32602"
 msgid "Enable this if your hardware can handle AV1. Disable it to force transcoding."
 msgstr "Attiva questa opzione se il tuo hardware supporta AV1. Disattivala per forzare la transcodifica."
@@ -1497,13 +1417,6 @@ msgid "Show intro skip button early"
 msgstr "Mostra il pulsante di salto intro in anticipo"
 
 #: 
-msgctxt "#33506"
-msgid "Show the intro skip button from the start of a video with an intro marker. The auto-skipping setting applies. Doesn't override enabled binge mode.\n"
-"Can be disabled/enabled per TV show."
-msgstr "Mostra il pulsante di salto intro dall'inizio di un video con un indicatore di intro. L'impostazione di auto-salto si applica. Non annulla la modalità maratona abilitata. \n"
-"Può essere disattivato/attivato per ogni serie TV."
-
-#: 
 msgctxt "#33507"
 msgid "Enabled"
 msgstr "Attivato"
@@ -1512,11 +1425,6 @@ msgstr "Attivato"
 msgctxt "#33508"
 msgid "Disabled"
 msgstr "Disattivato"
-
-#: 
-msgctxt "#33509"
-msgid "Early intro skip threshold (default: < 120s/2m)"
-msgstr "Soglia di salto anticipato delle Intro (predefinito: < 120s/2m)"
 
 #: 
 msgctxt "#33510"
@@ -1617,27 +1525,6 @@ msgstr "Userdata/Profile Path"
 msgctxt "#33618"
 msgid "TV binge-viewing mode"
 msgstr "Modalità maratona TV"
-
-#: 
-msgctxt "#33619"
-msgid "Automatically skips episode intros, credits and tries to skip episode recaps. Doesn't skip the intro of the first episode of a season and doesn't skip the final credits of a show.\n"
-"\n"
-"Can be disabled/enabled per TV show.\n"
-"Overrides any setting below."
-msgstr "Modalità maratona TV: Salta automaticamente le intro degli episodi, i crediti e cerca di saltare i riassunti degli episodi. Non salta l'introduzione del primo episodio di una stagione e non salta i crediti finali di uno spettacolo. \n"
-"\n"
-"\n"
-"Può essere disattivata/attivata per singoli spettacoli TV. Sovrascrive qualsiasi impostazione seguente."
-
-#: 
-msgctxt "#33620"
-msgid "Plex requests timeout (seconds)"
-msgstr "Timeout delle richieste Plex (secondi)"
-
-#: 
-msgctxt "#33621"
-msgid "Set the (async and connection) timeout value of the Python requests library in seconds. Default: 5"
-msgstr "Imposta il valore di timeout (asincrono e di connessione) della libreria delle richieste Python in secondi. Predefinito: 5"
 
 #: 
 msgctxt "#33622"
@@ -1904,26 +1791,6 @@ msgid "Audio/Subtitles"
 msgstr "Audio/Sottotitoli"
 
 #: 
-msgctxt "#32932"
-msgid "Show subtitle quick-actions button"
-msgstr "Mostra il pulsante delle azioni rapide dei sottotitoli"
-
-#: 
-msgctxt "#32933"
-msgid "Show FFWD/RWD buttons"
-msgstr "Mostra i pulsanti FFWD/RWD"
-
-#: 
-msgctxt "#32934"
-msgid "Show repeat button"
-msgstr "Mostra il pulsante Ripeti"
-
-#: 
-msgctxt "#32935"
-msgid "Show shuffle button"
-msgstr "Mostra il pulsante Casuale"
-
-#: 
 msgctxt "#32936"
 msgid "Show playlist button"
 msgstr "Mostra il pulsante Playlist"
@@ -1932,16 +1799,6 @@ msgstr "Mostra il pulsante Playlist"
 msgctxt "#32937"
 msgid "Show prev/next button"
 msgstr "Mostra il pulsante prev/next"
-
-#: 
-msgctxt "#32939"
-msgid "Only applies to video player UI"
-msgstr "Si applica solo all'interfaccia del Player"
-
-#: 
-msgctxt "#32940"
-msgid "Player UI"
-msgstr "Interfaccia del Player"
 
 #: 
 msgctxt "#32941"
@@ -2125,11 +1982,6 @@ msgid "Adaptive"
 msgstr "Adattivo"
 
 #: 
-msgctxt "#32977"
-msgid "Allow VC1"
-msgstr "Abilita VC1"
-
-#: 
 msgctxt "#32978"
 msgid "Enable this if your hardware can handle VC1. Disable it to force transcoding."
 msgstr "Attiva questa opzione se l'hardware supporta VC1. Disattivala per forzare la trascodifica."
@@ -2153,18 +2005,6 @@ msgstr "Numero di Background worker"
 msgctxt "#32982"
 msgid "Depending on how many cores your CPU has and how much it can handle, increasing this might improve certain situations. If you experience crashes or other annormalities, leave this at its default (3). Needs an addon restart."
 msgstr "A seconda di quanti core ha la tua CPU e di quanto può gestire, aumentare questo valore potrebbe migliorare certe situazioni. Se riscontri crash o altre anomalie, lascia questo valore a default(3). Richiede un riavvio dell'addon."
-
-#: 
-msgctxt "#32983"
-msgid "Player Theme"
-msgstr "Tema del Player"
-
-#: 
-msgctxt "#32984"
-msgid "Sets the player theme. Currently only customizes the playback control buttons. ATTENTION: [I]Might[/I] need an addon restart.\n"
-"In order to customize this, copy one of the xml's in script.plexmod/resources/skins/Main/1080i/templates to addon_data/script.plexmod/templates/seek_dialog_buttons_custom.xml and adjust it to your liking, then select \"Custom\" as your theme."
-msgstr "Imposta il tema del lettore. Attualmente personalizza solo i pulsanti di controllo della riproduzione. ATTENZIONE: [I]Potrebbe[/I] essere necessario riavviare l'addon. \n"
-"Per personalizzarlo, copia uno degli xml in script.plexmod/resources/skins/Main/1080i/templates in addon_data/script.plexmod/templates/seek_dialog_buttons_custom.xml e modificalo secondo le tue preferenze, quindi seleziona \"Personalizzato\" come tema."
 
 #: 
 msgctxt "#32985"
@@ -2247,11 +2087,6 @@ msgid "Enable path mapping"
 msgstr "Abilita path mapping"
 
 #: 
-msgctxt "#33001"
-msgid "Honor path_mapping.json in the addon_data/script.plexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
-msgstr "Rispetta path_mapping.json nella cartella addon_data/script.plexmod quando riproduci direttamente i media. Questo può essere utilizzato per lo streaming utilizzando altre tecniche come SMB/NFS/ecc. invece dell'handler HTTP predefinito. È incluso un'esempio di path_mapping.json nella cartella principale dell'addon come path_mapping.example.json."
-
-#: 
 msgctxt "#33002"
 msgid "Verify mapped files exist"
 msgstr "Verifica che i file mappati esistano"
@@ -2277,34 +2112,9 @@ msgid "No TV spoilers"
 msgstr "No TV spoilers"
 
 #: 
-msgctxt "#33007"
-msgid "When visiting an episode/season view, blur unwatched/unwatched+in-progress episode thumbnails, previews and redact summaries. When the Addon Setting \"Use episode thumbnails in continue hub\" is enabled, blur them as well."
-msgstr "Quando si accede alla vista episodio/stagione, sfoca le miniature degli episodi non visti/o + in corso, anteprime e redige i riepiloghi. Quando l'impostazione dell'Addon \"Usa le miniature degli episodi nel riquadro continua a guardare\" è abilitata, sfoca anche loro."
-
-#: 
 msgctxt "#33008"
 msgid "[Spoilers removed]"
 msgstr "[Spoileri rimossi]"
-
-#: 
-msgctxt "#33009"
-msgid "Blur amount for unwatched/in-progress episodes"
-msgstr "Livello di sfocatura per gli episodi non visti/in corso"
-
-#: 
-msgctxt "#33010"
-msgid "Unwatched"
-msgstr "Non visti"
-
-#: 
-msgctxt "#33011"
-msgid "Unwatched/in progress"
-msgstr "Non visti/in corso"
-
-#: 
-msgctxt "#33012"
-msgid "No unwatched episode titles"
-msgstr "Nessun titolo di episodi non visti"
 
 #: 
 msgctxt "#33013"
@@ -2320,16 +2130,6 @@ msgstr "Ignora gli host docker di plex.direct"
 msgctxt "#33015"
 msgid "When checking for plex.direct host mapping, ignore local Docker IPv4 addresses (172.16.0.0/12)."
 msgstr "Nel controllo della mappatura dell'host plex.direct, ignorare gli indirizzi IPv4 locali di Docker (172.16.0.0/12)."
-
-#: 
-msgctxt "#33016"
-msgid "Allow TV spoilers for specific genres"
-msgstr "Consenti spoiler TV per generi specifici"
-
-#: 
-msgctxt "#33017"
-msgid "Overrides the above for: {}"
-msgstr "Sovrascrive quanto sopra per: {}"
 
 #: 
 msgctxt "#32303"
@@ -2374,26 +2174,6 @@ msgstr ""
 #: 
 msgctxt "#33021"
 msgid "Choose action"
-msgstr ""
-
-#: 
-msgctxt "#33022"
-msgid "Use modern inverted watched states"
-msgstr ""
-
-#: 
-msgctxt "#33023"
-msgid "Instead of marking unwatched items, mark watched items with a checkmark (modern clients; default: off)"
-msgstr ""
-
-#: 
-msgctxt "#33024"
-msgid "Hide black backdrop in inverted watched states"
-msgstr ""
-
-#: 
-msgctxt "#33025"
-msgid "When the above is enabled, hide the black backdrop of the watched state."
 msgstr ""
 
 #: 
@@ -2452,11 +2232,6 @@ msgid "Maximum intro offset to consider"
 msgstr ""
 
 #: 
-msgctxt "#33038"
-msgid "When encountering an intro marker with a start time offset greater than this, ignore it (default: 600s/10m)"
-msgstr ""
-
-#: 
 msgctxt "#33039"
 msgid "Move"
 msgstr ""
@@ -2502,23 +2277,8 @@ msgid "Hubs round-robin"
 msgstr ""
 
 #: 
-msgctxt "#33044"
-msgid "Allow round-robining in hubs"
-msgstr ""
-
-#: 
 msgctxt "#33045"
 msgid "Behave like official Plex clients"
-msgstr ""
-
-#: 
-msgctxt "#33046"
-msgid "Show OSD when pressing up/down without OSD instead of showing chapters."
-msgstr ""
-
-#: 
-msgctxt "#33046"
-msgid "When pressing up/down while the OSD isn't shown, show OSD instead of skipping chapters."
 msgstr ""
 
 #: 
@@ -2589,11 +2349,6 @@ msgid "Sets the theme. Currently only customizes all control buttons. ATTENTION:
 msgstr ""
 
 #: 
-msgctxt "#33007"
-msgid "Select in which cases to blur TV episode thumbnails, previews, redact summaries, hide episode titles and whether to blur chapter images. When the Addon Setting \"Use episode thumbnails in continue hub\" is enabled, blur them as well."
-msgstr ""
-
-#: 
 msgctxt "#33011"
 msgid "In progress"
 msgstr ""
@@ -2606,19 +2361,6 @@ msgstr ""
 #: 
 msgctxt "#33017"
 msgid "Overrides the above for specific genres. Default: Reality, Game Show, Documentary, Sport"
-msgstr ""
-
-#: 
-msgctxt "#33022"
-msgid "Watched indicators"
-msgstr ""
-
-#: 
-msgctxt "#33023"
-msgid "Classic: Show orange triangle for unwatched items\n"
-"Modern: Show green checkmark for watched items\n"
-"Modern (2024): Show white checkmark for watched items\n"
-"(default: Modern (2024))"
 msgstr ""
 
 #: 
@@ -2652,28 +2394,13 @@ msgid "Max retries"
 msgstr ""
 
 #: 
-msgctxt "#33050"
-msgid "The maximum number of retries each connection should attempt. The default (1) helps with hibernation/wakeup issues. Set higher for bad connections, setting this to 0 was the old default before 0.7.9"
-msgstr ""
-
-#: 
 msgctxt "#33051"
 msgid "Use CA certificate bundle"
 msgstr ""
 
 #: 
-msgctxt "#33052"
-msgid "Which CA certificate bundle to use for request HTTPS verification. Default is \"system\", which uses the system-provided certificate bundle. \"plex.direct\" uses an extremely small bundle provided with the addon, which only applies to plex.direct connections (any other connections will use the system bundle) and might slightly improve performance. \"custom\" allows for a certificate bundle in userdata/addon_data/script.plexmod/custom_bundle.crt"
-msgstr ""
-
-#: 
 msgctxt "#33053"
 msgid "System"
-msgstr ""
-
-#: 
-msgctxt "#33054"
-msgid "plex.direct (addon-supplied)"
 msgstr ""
 
 #: 
@@ -2778,11 +2505,6 @@ msgid "Waiting {} second(s)"
 msgstr ""
 
 #: 
-msgctxt "#33075"
-msgid "Do something after waking up. Waiting for a time until resuming normal execution helps with networks coming back up after sleep events. Default: 1 second (5 seconds, CoreELEC)"
-msgstr ""
-
-#: 
 msgctxt "#33076"
 msgid "Modern (2024)"
 msgstr ""
@@ -2835,11 +2557,6 @@ msgstr ""
 #: 
 msgctxt "#33086"
 msgid "Press the key you want to map to go to home within {} seconds"
-msgstr ""
-
-#: 
-msgctxt "#33087"
-msgid "Bind a key to immediately go to the Home view. Cancel using BACK/PREVIOUS_MENU. Clear bound key using the STOP button on the setting."
 msgstr ""
 
 #: 
@@ -2948,18 +2665,8 @@ msgid "Plex.tv connect timeout"
 msgstr ""
 
 #: 
-msgctxt "#33639"
-msgid "Plex.tv: Sets the maximum amount of time to connect to Plex.tv in seconds. Default: 5"
-msgstr ""
-
-#: 
 msgctxt "#33640"
 msgid "Plex.tv read timeout"
-msgstr ""
-
-#: 
-msgctxt "#33641"
-msgid "Plex.tv: Sets the maximum amount of time to read from Plex.tv in seconds. Default: 20"
 msgstr ""
 
 #: 
@@ -2975,16 +2682,6 @@ msgstr ""
 #: 
 msgctxt "#33644"
 msgid "Tracks"
-msgstr ""
-
-#: 
-msgctxt "#33645"
-msgid "Ignore plex.direct DNS handling for remote hosts"
-msgstr ""
-
-#: 
-msgctxt "#33646"
-msgid "Only handle plex.direct hosts when the server's attributes dnsRebindingProtection=1 and publicAddressMatches=1. Might not work in certain situations. Disable if you have connection issues."
 msgstr ""
 
 #: 
@@ -3008,12 +2705,764 @@ msgid "Only handle plex.direct hosts when the server's attributes publicAddressM
 msgstr ""
 
 #: 
+msgctxt "#32101"
+msgid "If enabled, when playback ends and there is a 'Next Up' item available, it will be automatically be played after a {} second delay."
+msgstr ""
+
+#: 
+msgctxt "#33651"
+msgid "Startup delay"
+msgstr ""
+
+#: 
+msgctxt "#33652"
+msgid "Never show Post Play"
+msgstr ""
+
+#: 
+msgctxt "#33506"
+msgid "Show the intro skip button from the start of a video with an intro marker. The auto-skipping setting applies. Doesn't override enabled binge mode.\n"
+"Can be disabled/enabled per TV show."
+msgstr "Mostra il pulsante di salto intro dall'inizio di un video con un indicatore di intro. L'impostazione di auto-salto si applica. Non annulla la modalità maratona abilitata. \n"
+"Può essere disattivato/attivato per ogni serie TV."
+
+#: 
+msgctxt "#33619"
+msgid "Automatically skips episode intros, credits and tries to skip episode recaps. Doesn't skip the intro of the first episode of a season and doesn't skip the final credits of a show.\n"
+"\n"
+"Can be disabled/enabled per TV show.\n"
+"Overrides any setting below."
+msgstr "Modalità maratona TV: Salta automaticamente le intro degli episodi, i crediti e cerca di saltare i riassunti degli episodi. Non salta l'introduzione del primo episodio di una stagione e non salta i crediti finali di uno spettacolo. \n"
+"\n"
+"\n"
+"Può essere disattivata/attivata per singoli spettacoli TV. Sovrascrive qualsiasi impostazione seguente."
+
+#: 
+msgctxt "#33052"
+msgid "Which CA certificate bundle to use for request HTTPS verification. \"system\" uses the system-provided certificate bundle. \"ACME\" uses an extremely small bundle provided with the addon, which includes root certificates for Letsencrypt (plex.direct) and ZeroSSL. \"custom\" allows for a ca-certificate bundle in userdata/addon_data/script.plexmod/custom_bundle.crt"
+msgstr ""
+
+#: 
+msgctxt "#33054"
+msgid "ACME (addon-supplied)"
+msgstr ""
+
+#: 
+msgctxt "#33639"
+msgid "Plex.tv: Sets the maximum amount of time to connect to Plex.tv in seconds. Default: 1"
+msgstr ""
+
+#: 
+msgctxt "#33641"
+msgid "Plex.tv: Sets the maximum amount of time to read from Plex.tv in seconds. Default: 2"
+msgstr ""
+
+#: 
+msgctxt "#33653"
+msgid "Background image resolution scaling %"
+msgstr ""
+
+#: 
+msgctxt "#33654"
+msgid "In percent, based on 1080p. Scales the resolution of all backgrounds for better image quality. May impact PMS/PM4K performance, will increase the cache usage accordingly. Can lead to crashes if your hardware is low on RAM. Needs addon restart. Use 400% for 4K. ATTENTION: In order for this to work you need to add <fanartres>2160</fanartres> and <imageres>2160</imageres> to your advancedsettings.xml."
+msgstr ""
+
+#: 
+msgctxt "#33655"
+msgid "Auto-Sync Subtitles"
+msgstr ""
+
+#: 
+msgctxt "#33656"
+msgid "Only for External SRT subtitles. The PMS setting for voice activity detection has to be enabled for this to work."
+msgstr ""
+
+#: in player quick settings UI, needs to be short
+msgctxt "#33657"
+msgid "Enable Auto-Sync"
+msgstr ""
+
+#: in player quick settings UI, needs to be short
+msgctxt "#33658"
+msgid "Disable Auto-Sync"
+msgstr ""
+
+#: 
+msgctxt "#33659"
+msgid "Hide hub: {}"
+msgstr ""
+
+#: 
+msgctxt "#33660"
+msgid "Disable HDR"
+msgstr ""
+
+#: 
+msgctxt "#33661"
+msgid "If you don't want your client to handle HDR (or HDR-fallback), enable this to force transcoding. Doesn't apply to DV Profile 5."
+msgstr ""
+
+#: 
+msgctxt "#33662"
+msgid "Remove from Continue Watching"
+msgstr ""
+
+#: 
+msgctxt "#33663"
+msgid "Home: Confirm item actions"
+msgstr ""
+
+#: 
+msgctxt "#33664"
+msgid "When acting on items in the Home view, such as mark played, hide from continue watching etc., show a confirmation dialog."
+msgstr ""
+
+#: 
+msgctxt "#33665"
+msgid "Disable audio codecs"
+msgstr ""
+
+#: 
+msgctxt "#33666"
+msgid "Audio codecs you can't play back. Disables Direct Play for such media items, enables Direct Stream if possible, transcodes audio stream to compatible format."
+msgstr ""
+
+#: 
+msgctxt "#32002"
+msgid "20 Mbps"
+msgstr "20 Mbps"
+
+#: 
+msgctxt "#32003"
+msgid "12 Mbps"
+msgstr "12 Mbps"
+
+#: 
+msgctxt "#32004"
+msgid "10 Mbps"
+msgstr "10 Mbps"
+
+#: 
+msgctxt "#32005"
+msgid "8 Mbps"
+msgstr "8 Mbps"
+
+#: 
+msgctxt "#32006"
+msgid "4 Mbps"
+msgstr "4 Mbps"
+
+#: 
+msgctxt "#32007"
+msgid "3 Mbps"
+msgstr "3 Mbps"
+
+#: 
+msgctxt "#32008"
+msgid "2 Mbps"
+msgstr "2 Mbps"
+
+#: 
+msgctxt "#32009"
+msgid "1.5 Mbps"
+msgstr "1.5 Mbps"
+
+#: 
+msgctxt "#33669"
+msgid "Really sign out?"
+msgstr ""
+
+#: 
+msgctxt "#33670"
+msgid "Update available"
+msgstr ""
+
+#: 
+msgctxt "#33672"
+msgid "Check for updates"
+msgstr ""
+
+#: 
+msgctxt "#33673"
+msgid "Automatically check for updates periodically. If installed from a Kodi repository and the Update Source setting is set to Repository, Kodi itself will handle the updating of this addon. Needs a Kodi restart when changed."
+msgstr ""
+
+#: 
+msgctxt "#33674"
+msgid "Check for updates on start"
+msgstr ""
+
+#: 
+msgctxt "#33675"
+msgid "Automatically check for updates on startup. Doesn't do much when Update source is Repository. Needs a Kodi restart when changed."
+msgstr ""
+
+#: 
+msgctxt "#33676"
+msgid "Update source"
+msgstr ""
+
+#: 
+msgctxt "#33677"
+msgid "Specifies the update mode. Will immediately check for a new version when changed and closing settings.\n"
+"Default: Repository\n"
+"\n"
+"Beta: Bleeding edge (possibly unstable)\n"
+"Stable: Stable branch (faster than Repository)\n"
+"Repository: Kodi repository (official (slow) or Don't Panic)"
+msgstr ""
+
+#: 
+msgctxt "#33678"
+msgid "Beta"
+msgstr ""
+
+#: Update mode as in (beta, stable, repository)
+msgctxt "#33679"
+msgid "Stable"
+msgstr ""
+
+#: 
+msgctxt "#33680"
+msgid "Repository"
+msgstr ""
+
+#: 
+msgctxt "#33683"
+msgid "Exit, download and install"
+msgstr ""
+
+#: 
+msgctxt "#33684"
+msgid "Later"
+msgstr ""
+
+#: 
+msgctxt "#32015"
+msgid "6 Mbps"
+msgstr ""
+
+#: 
+msgctxt "#32016"
+msgid "16 Mbps"
+msgstr ""
+
+#: 
+msgctxt "#32017"
+msgid "26 Mbps"
+msgstr ""
+
+#: 
+msgctxt "#33681"
+msgid "Service updated"
+msgstr ""
+
+#: 
+msgctxt "#33682"
+msgid "The update {} has had changes to the updater itself. In order for the updated updater service to work, a Kodi restart is necessary. The addon will work normally, though. Do you still want to run the addon?"
+msgstr ""
+
+#: 
+msgctxt "#33685"
+msgid "Clamp video bitrate"
+msgstr ""
+
+#: 
+msgctxt "#33686"
+msgid "Only show transcode bitrate targets lower than the current video's bitrate."
+msgstr ""
+
+#: 
+msgctxt "#33687"
+msgid "Translation updated"
+msgstr ""
+
+#: 
+msgctxt "#33688"
+msgid "The currently in-use translation has been updated. In order to load the new translation, a Kodi restart is necessary. The addon will still run properly, but you might see badly or untranslated strings. Do you still want to run the addon?"
+msgstr ""
+
+#: 
+msgctxt "#33509"
+msgid "Early intro skip threshold (default: < 120s/2m)"
+msgstr ""
+
+#: 
+msgctxt "#33007"
+msgid "Select in which cases to blur TV episode thumbnails, previews, redact summaries, hide episode titles etc."
+msgstr ""
+
+#: 
+msgctxt "#33009"
+msgid "Blur amount for unplayed/in-progress episodes"
+msgstr ""
+
+#: 
+msgctxt "#33010"
+msgid "Unplayed"
+msgstr ""
+
+#: 
+msgctxt "#33012"
+msgid "No unplayed episode titles"
+msgstr ""
+
+#: 
+msgctxt "#33022"
+msgid "Played indicators"
+msgstr ""
+
+#: 
+msgctxt "#33023"
+msgid "Classic: Show orange triangle for unplayed items\n"
+"Modern: Show green checkmark for played items\n"
+"Modern (2024): Show white checkmark for played items\n"
+"(default: Modern (2024))"
+msgstr ""
+
+#: 
+msgctxt "#33025"
+msgid "When the above is enabled, hide the black backdrop of the played state."
+msgstr ""
+
+#: 
+msgctxt "#33689"
+msgid "Service running"
+msgstr ""
+
+#: 
+msgctxt "#33690"
+msgid "Last update check"
+msgstr ""
+
+#: 
+msgctxt "#33691"
+msgid "Native languages"
+msgstr ""
+
+#: 
+msgctxt "#33692"
+msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages."
+msgstr ""
+
+#: 
+msgctxt "#33693"
+msgid "Download subtitles using"
+msgstr ""
+
+#: 
+msgctxt "#33694"
+msgid "Ask"
+msgstr ""
+
+#: 
+msgctxt "#33695"
+msgid "Where do you want to download subtitles from? Note: Currently this only applies to the subtitle quick actions in the player. The subtitle download in stream settings always uses Plex as a source."
+msgstr ""
+
+#: 
+msgctxt "#33696"
+msgid "No subtitles found."
+msgstr ""
+
+#: things in curly brackets are variables, don't translate them!
+msgctxt "#33697"
+msgid "{provider_title}, Score: {subtitle_score}{subtitle_info}"
+msgstr ""
+
+#: hearing impaired subtitle flag
+msgctxt "#33698"
+msgid "HI"
+msgstr ""
+
+#: forced subtitle flag
+msgctxt "#33699"
+msgid "forced"
+msgstr ""
+
+#: 
+msgctxt "#33700"
+msgid "Download subtitles: {}"
+msgstr ""
+
+#: 
+msgctxt "#33701"
+msgid "Fallback to Kodi"
+msgstr ""
+
+#: 
+msgctxt "#33702"
+msgid "When no subtitles are found via the Plex subtitle search, fall back to Kodi subtitle search. Note: Currently this only applies to the subtitle quick actions in the player. The subtitle download in stream settings always uses Plex as a source."
+msgstr ""
+
+#: 
+msgctxt "#33703"
+msgid "Download subtitles"
+msgstr ""
+
+#: 
+msgctxt "#33704"
+msgid "Using which service?"
+msgstr ""
+
+#: 
+msgctxt "#33705"
+msgid "Hide ratings"
+msgstr ""
+
+#: 
+msgctxt "#33706"
+msgid "Blur images"
+msgstr ""
+
+#: 
+msgctxt "#33707"
+msgid "Blur images on home (in progress)"
+msgstr ""
+
+#: 
+msgctxt "#33708"
+msgid "Hide summaries"
+msgstr ""
+
+#: 
+msgctxt "#33709"
+msgid "Show ratings for"
+msgstr ""
+
+#: 
+msgctxt "#33710"
+msgid "Show reviews for"
+msgstr ""
+
+#: 
+msgctxt "#33711"
+msgid "Always resume media"
+msgstr ""
+
+#: 
+msgctxt "#33712"
+msgid "When playback of an in-progress media is requested, resume it by default instead of asking whether to resume or start from the beginning."
+msgstr ""
+
+#: 
+msgctxt "#33713"
+msgid "Home: Resume in-progress items"
+msgstr ""
+
+#: 
+msgctxt "#33714"
+msgid "Resume in-progress items directly instead of visiting the media."
+msgstr ""
+
+#: 
+msgctxt "#33715"
+msgid "OSD hide-delay"
+msgstr ""
+
+#: 
+msgctxt "#33716"
+msgid "How long to wait until hiding the OSD. Only works with Plextuary skin or others with configurable OSD timeout. Default: 4s (+/- 1s)"
+msgstr ""
+
+#: 
+msgctxt "#33717"
+msgid "Debug requests"
+msgstr ""
+
+#: 
+msgctxt "#33718"
+msgid "Played"
+msgstr ""
+
+#: 
+msgctxt "#33719"
+msgid "Refresh metadata"
+msgstr ""
+
+#: 
+msgctxt "#33038"
+msgid "When encountering an intro marker with a start time offset greater than this, ignore it (default: 1400s/23m)"
+msgstr ""
+
+#: 
 msgctxt "#33649"
-msgid "CoreELEC: Resume-fix wait for seek"
+msgid "\"Use alternate seek\" wait for seek"
 msgstr ""
 
 #: 
 msgctxt "#33650"
-msgid "This adjusts the delay between seek-tries on CoreELEC, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. 100ms should be stable as well. Default: 350ms"
+msgid "This adjusts the delay between seek-tries on problematic platforms when \"Use alternate seek\" is enabled, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. Default: 500ms"
+msgstr ""
+
+#: 
+msgctxt "#33667"
+msgid "Use alternate seek"
+msgstr ""
+
+#: 
+msgctxt "#33668"
+msgid "ATTENTION: Only enable this if you have reproducible audio issues after seeking/resuming.\n"
+"\n"
+"Use an alternative seek method in videos, which can help in problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by default for CoreELEC and LG WebOS)"
+msgstr ""
+
+#: 
+msgctxt "#33720"
+msgid "Clear all caches"
+msgstr ""
+
+#: 
+msgctxt "#33721"
+msgid "Clear library cache (not items)"
+msgstr ""
+
+#: 
+msgctxt "#33722"
+msgid "Libraries"
+msgstr ""
+
+#: 
+msgctxt "#33723"
+msgid "Media Items"
+msgstr ""
+
+#: 
+msgctxt "#33724"
+msgid "Cache Plex data for"
+msgstr ""
+
+#: 
+msgctxt "#33725"
+msgid "Persist cached Plex data"
+msgstr ""
+
+#: 
+msgctxt "#33726"
+msgid "Instead of clearing the cache when exiting the addon, persist it instead. Warning: You'll most likely encounter missing items in libraries or outdated data. Use the corresponding menu functionalities to clear the cache for specific items or libraries."
+msgstr ""
+
+#: 
+msgctxt "#33727"
+msgid "Store Plex server responses for items and library views in a local SQLite database. Doesn't cache anything else (Home/Hubs are always up to date). Massively speeds up consecutive visits to items and libraries. Certain important events, such as watch state changes, automatically delete the item cache and its corresponding library cache. (Default: Off)"
+msgstr ""
+
+#: 
+msgctxt "#33728"
+msgid "Clear cache for item"
+msgstr ""
+
+#: 
+msgctxt "#33729"
+msgid "Expire cached Plex data after (hours)"
+msgstr ""
+
+#: 
+msgctxt "#33730"
+msgid "Randomly"
+msgstr ""
+
+#: 
+msgctxt "#33731"
+msgid "By Bitrate"
+msgstr ""
+
+#: 
+msgctxt "#33732"
+msgid "Bitrate"
+msgstr ""
+
+#: 
+msgctxt "#33733"
+msgid "Transcode target codec"
+msgstr ""
+
+#: 
+msgctxt "#33734"
+msgid "Sets the target codec when transcoding/direct streaming. Overridden when \"Transcode audio to AC3\" is set."
+msgstr ""
+
+#: 
+msgctxt "#33735"
+msgid "Always auto-start"
+msgstr ""
+
+#: 
+msgctxt "#33736"
+msgid "By default PM4K won't auto-start when the current window isn't a Home-derived window (e.g.: Settings). Enable this if you always want to auto-start PM4K regardless of the current window. Can also improve start-up time."
+msgstr ""
+
+#: 
+msgctxt "#33737"
+msgid "Loop theme music"
+msgstr ""
+
+#: 
+msgctxt "#33671"
+msgid "Current: {current_version}\n"
+"New: {new_version}\n"
+"\n"
+"Changelog:\n"
+"{changelog}"
+msgstr ""
+
+#: 
+msgctxt "#33738"
+msgid "Max playlist size"
+msgstr ""
+
+#: 
+msgctxt "#33739"
+msgid "How many items to load into a Kodi playlist before chunking them remotely using Plex PlayQueues (default: 500); Reduce on memory issues/crashes."
+msgstr ""
+
+#: 
+msgctxt "#33740"
+msgid "Home: Episodes season thumbnails"
+msgstr ""
+
+#: 
+msgctxt "#33741"
+msgid "Use season thumbnails/posters when displaying episodes in hubs instead of the TV show's."
+msgstr ""
+
+#: 
+msgctxt "#34000"
+msgid "Watchlist"
+msgstr ""
+
+#: 
+msgctxt "#34001"
+msgid "Released"
+msgstr ""
+
+#: 
+msgctxt "#34002"
+msgid "Movies & Shows"
+msgstr ""
+
+#: e.g.: 8 seasons
+msgctxt "#34003"
+msgid "{} seasons"
+msgstr ""
+
+#: 
+msgctxt "#34004"
+msgid "Choose server"
+msgstr ""
+
+#: 
+msgctxt "#34005"
+msgid "Availability"
+msgstr ""
+
+#: e.g.: 1 season
+msgctxt "#34006"
+msgid "{} season"
+msgstr ""
+
+#: 
+msgctxt "#34007"
+msgid "Use Watchlist"
+msgstr ""
+
+#: 
+msgctxt "#34008"
+msgid "Activates the current user's Plex watchlist as a section item. Adds watchlist functionality to certain media screens. Per-user setting. Default: On"
+msgstr ""
+
+#: 
+msgctxt "#34009"
+msgid "Watchlist auto-remove"
+msgstr ""
+
+#: 
+msgctxt "#34010"
+msgid "Automatically remove fully watched items from watchlist. Default: On"
+msgstr ""
+
+#: 
+msgctxt "#34011"
+msgid "Remove from watchlist"
+msgstr ""
+
+#: 
+msgctxt "#34012"
+msgid "Fast pause/resume"
+msgstr ""
+
+#: 
+msgctxt "#34013"
+msgid "when paused"
+msgstr ""
+
+#: 
+msgctxt "#34014"
+msgid "when playing"
+msgstr ""
+
+#: 
+msgctxt "#34015"
+msgid "User-specific. Use OK/ENTER button to pause instead of showing the OSD (which can then only be accessed using DOWN), or resume when paused. Only works with 'Behave like official Plex clients' enabled."
+msgstr ""
+
+#: 
+msgctxt "#34016"
+msgid "Max shutdown wait"
+msgstr ""
+
+#: 
+msgctxt "#34017"
+msgid "The plugin will try to hard exit once this time limit is reached (default: 5 seconds)"
+msgstr ""
+
+#: 
+msgctxt "#34018"
+msgid "Related Media"
+msgstr ""
+
+#: watchlist discover hub title prefix
+msgctxt "#34019"
+msgid "Discover: {}"
+msgstr ""
+
+#: 
+msgctxt "#34020"
+msgid "Loading external hubs"
+msgstr ""
+
+#: 
+msgctxt "#34021"
+msgid "Please wait ..."
+msgstr ""
+
+#: 
+msgctxt "#34022"
+msgid "Video play completion behaviour"
+msgstr ""
+
+#: 
+msgctxt "#34023"
+msgid "Decide whether to use end credits markers to determine the 'watched' state of video items. When markers are not available the selected threshold percentage will be used."
+msgstr ""
+
+#: 
+msgctxt "#34024"
+msgid "at selected threshold percentage"
+msgstr ""
+
+#: 
+msgctxt "#34025"
+msgid "at final credits marker position"
+msgstr ""
+
+#: 
+msgctxt "#34026"
+msgid "at first credits marker position"
+msgstr ""
+
+#: 
+msgctxt "#34027"
+msgid "earliest between threshold percent and first credits marker"
 msgstr ""
 

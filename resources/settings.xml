@@ -28,6 +28,11 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="unlock_res" type="boolean" label="34030">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
                 <setting id="poster_resolution_scale_perc" type="integer" label="32956" help="32957">
                     <level>0</level>
                     <default>100</default>
@@ -167,9 +172,21 @@
                     <level>0</level>
                     <default>850</default>
                     <constraints>
-                        <minimum>100</minimum>
+                        <minimum>500</minimum>
                         <step>50</step>
-                        <maximum>1000</maximum>
+                        <maximum>2500</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+                <setting id="altseek_valid_seek_window" type="integer" label="34028" help="34029">
+                    <level>0</level>
+                    <default>2000</default>
+                    <constraints>
+                        <minimum>500</minimum>
+                        <step>100</step>
+                        <maximum>15000</maximum>
                     </constraints>
                     <control type="slider" format="integer">
                         <popup>false</popup>

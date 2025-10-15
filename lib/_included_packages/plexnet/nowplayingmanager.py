@@ -89,7 +89,7 @@ class NowPlayingManager(object):
             self.timelines[timelineType] = TimelineData(timelineType)
 
     def updatePlaybackState(self, timelineType, itemData, state, t, playQueue=None, duration=0, force=False,
-                            force_time=False, server=None):
+                            continuing=False, force_time=False, server=None):
         timeline = self.timelines[timelineType]
         old_item_data = None
         if timeline.itemData:
@@ -121,10 +121,10 @@ class NowPlayingManager(object):
         timeline.state = state
         timeline.duration = duration
 
-        self.sendTimelineToServer(timelineType, timeline, t, force=force, server=server)
+        self.sendTimelineToServer(timelineType, timeline, t, force=force, continuing=continuing, server=server)
         return time_updated
 
-    def sendTimelineToServer(self, timelineType, timeline, t, force=False, server=None):
+    def sendTimelineToServer(self, timelineType, timeline, t, force=False, continuing=False, server=None):
         server = server or util.APP.serverManager.selectedServer
         if not server:
             return
@@ -157,6 +157,7 @@ class NowPlayingManager(object):
         params["key"] = timeline.itemData.key
         params["containerKey"] = timeline.itemData.containerKey
         params["playbackTime"] = timeline.itemData.playbackTime
+        params["continuing"] = continuing and "1" or "0"
         if timeline.itemData.additional_params:
             params.update(timeline.itemData.additional_params)
 

@@ -44,7 +44,11 @@ class SeasonsMixin(object):
         return watchedPerc > 0 and math.ceil(watchedPerc) or 0
 
     def fillSeasons(self, show, update=False, seasonsFilter=None, selectSeason=None, do_focus=True):
-        seasons = show.seasons()
+        try:
+            seasons = show.seasons()
+        except:
+            raise util.NoDataException
+
         if not seasons or (seasonsFilter and not seasonsFilter(seasons)):
             return False
 

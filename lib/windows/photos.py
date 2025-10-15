@@ -25,6 +25,8 @@ class PhotoWindow(kodigui.BaseWindow):
     width = 1920
     height = 1080
 
+    supportsAutoPlay = True
+
     OVERLAY_BUTTON_ID = 250
     OSD_GROUP_ID = 200
 
@@ -91,7 +93,7 @@ class PhotoWindow(kodigui.BaseWindow):
         if self.autoPlay:
             self.play()
 
-    def doAutoPlay(self):
+    def doAutoPlay(self, blind=False):
         self.autoPlay = True
         return True
 

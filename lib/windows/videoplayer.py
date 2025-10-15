@@ -352,6 +352,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
         video.clearCache()
 
     def play(self, resume=False, handler=None):
+        util.DEBUG_LOG("VideoPlayerWindow: play() called")
         self.hidePostPlay()
 
         player.PLAYER.dontRequeueBGM = True
@@ -379,16 +380,25 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
 
         # wait for BGM to end if it's playing or queued
         if self.handleBGM:
-            while not player.PLAYER.bgmPlaying and player.PLAYER.bgmStarting:
+            util.DEBUG_LOG("Checking BGM")
+            ct = 0
+            while not player.PLAYER.bgmPlaying and player.PLAYER.bgmStarting and ct < 20:
                 util.DEBUG_LOG("Waiting for BGM to start as it has been queued")
                 util.MONITOR.waitForAbort(0.1)
+                ct += 1
 
             if player.PLAYER.bgmPlaying:
                 util.DEBUG_LOG("Stopping BGM before starting playback")
                 player.PLAYER.stopAndWait()
 
-            while player.PLAYER.bgmPlaying or player.PLAYER.isPlayingAudio():
+            if player.PLAYER.isPlayingAudio():
+                player.PLAYER.stopAndWait()
+
+            ct = 0
+            while (player.PLAYER.bgmPlaying or player.PLAYER.isPlayingAudio()) and ct < 20:
                 util.MONITOR.waitForAbort(0.1)
+                ct += 1
+            util.DEBUG_LOG("BGM check done")
 
         self.setBackground()
 
@@ -542,7 +552,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
         try:
             self.hubs = self.prev.postPlay()
         except:
-            util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
             self.doClose()
             return
 
@@ -561,7 +571,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
     def setInfo(self):
         hide_spoilers = False
         if self.next and self.next.type == "episode":
-            hide_spoilers = self.hideSpoilers(self.next, use_cache=False)
+            hide_spoilers = self.hideSpoilers(self.next, fully_watched=False, watched=False, use_cache=False)
         if self.next:
             self.setProperty(
                 'post.play.background',
@@ -726,7 +736,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
 
 def play(video=None, play_queue=None, resume=False, bgm=False, **kwargs):
     try:
-        w = VideoPlayerWindow.open(video=video, play_queue=play_queue, resume=resume, bgm=bgm)
+        w = VideoPlayerWindow.open(video=video, play_queue=play_queue, resume=resume, bgm=bgm, aggressive=True)
     except util.NoDataException:
         raise
     finally:

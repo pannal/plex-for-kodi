@@ -237,7 +237,8 @@ def showAudioDialog(video, non_playback=False, session_id=None):
         if s.isSelected():
             idx = i
         options.append((s, (s.getTitle(metadata.apiTranslate), s.title)))
-    choice = showOptionsDialog(T(32395, 'Audio'), options, non_playback=non_playback, selected_idx=idx)
+    choice = showOptionsDialog(T(32395, 'Audio'), options, non_playback=non_playback, selected_idx=idx,
+                               trim=False)
     if choice is None:
         return
 

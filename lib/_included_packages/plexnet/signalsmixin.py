@@ -11,6 +11,8 @@ class SignalsMixin(object):
             self._signals[signalName] = signalslot.Signal(threadsafe=True)
 
         signal = self._signals[signalName]
+        if self.has_signal(signalName, callback):
+            return
 
         signal.connect(callback)
 

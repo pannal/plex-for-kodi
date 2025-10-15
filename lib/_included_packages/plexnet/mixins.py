@@ -46,7 +46,7 @@ class AudioCodecMixin(object):
             definitely_ertmers = (streamBase and streamBase.bitrate.asInt() >= 768) or EAC3JOC_STR in title
             possible_ertmers = False
             if not definitely_ertmers:
-                possible_ertmers = EAC3JOC_STR in fn or streamBase.bitrate.asInt() >= 640
+                possible_ertmers = EAC3JOC_STR in fn
 
             if definitely_ertmers or possible_ertmers:
                 codec = "DD+ {}".format(EAC3JOC_STR.capitalize() + (possible_ertmers and "?" or ""))

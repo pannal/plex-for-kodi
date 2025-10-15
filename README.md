@@ -19,7 +19,7 @@ Master branch is based off of the official plex-for-kodi master branch.
 ## Installation
 
 ### Via repository (recommended)
-* Add `https://pm4k.eu` to your Kodi installation as a file source
+* Add `https://pm4k.eu` to your Kodi installation as a file source (Hit Add source in File Manager, click on the selected "`<None>`" in the list, enter `https://pm4k.eu`, OK, down, enter a name, hit OK)
 * Go to Settings->Addons, choose "Install from zip file", choose the file source you added and install the repository
 * Install Plex via Settings->Addons->Install from repository->Don't Panic->Video add-ons->Plex
 * Optional, recommended: Install Plextuary via Settings->Addons->Install from repository->Don't Panic->Look and Feel->Skin->Plextuary

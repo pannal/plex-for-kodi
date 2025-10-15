@@ -115,6 +115,10 @@ class Video(media.MediaItem, AudioCodecMixin):
     def audioStreams(self):
         return []
 
+    @property
+    def playbackSettings(self):
+        return util.INTERFACE.playbackManager(self)
+
     def selectedVideoStream(self, fallback=False):
         if self.videoStreams:
             for stream in self.videoStreams:
@@ -149,6 +153,8 @@ class Video(media.MediaItem, AudioCodecMixin):
             for stream in self.subtitleStreams:
                 if stream.isSelected():
                     if force_from_plex:
+                        if stream != force_from_plex:
+                            continue
                         util.DEBUG_LOG("Subtitle stream requested to be the Plex decision, returning: {}", stream)
                         return stream
 
@@ -367,7 +373,8 @@ class Video(media.MediaItem, AudioCodecMixin):
             'mediaIndex': params.get('mediaIndex', 0),
             'directStream': '1',
             'directPlay': '0',
-            'X-Plex-Platform': params.get('platform', ''),
+            'X-Plex-Platform': params.get('platform', util.X_PLEX_PLATFORM),
+            'X-Plex-Platform-Version': params.get('platformVersion', util.X_PLEX_PLATFORM_VERSION),
             # 'X-Plex-Platform': params.get('platform', util.INTERFACE.getGlobal('platform')),
             'maxVideoBitrate': max(mvb, 64) if mvb else None,
             'videoResolution': '{0}x{1}'.format(*vr) if vr else None
@@ -756,10 +763,6 @@ class Show(CachableItemsMixin, Video, media.RelatedMixin, SectionOnDeckMixin):
     @property
     def isFullyWatched(self):
         return self.isWatched
-
-    @property
-    def playbackSettings(self):
-        return util.INTERFACE.playbackManager(self)
 
     def seasons(self):
         path = self.key

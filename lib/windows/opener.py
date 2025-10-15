@@ -70,15 +70,16 @@ def handleOpen(winclass, **kwargs):
         # if so, we won't actually open the window, just instantiate it, as to not add it to the kodi window history
         autoPlay = kwargs.pop("auto_play", False)
         autoPlayOpen = kwargs.pop("auto_play_open", False)
-        if autoPlay and hasattr(winclass, "doAutoPlay"):
+        if autoPlay and winclass.supportsAutoPlay:
             # create but don't open window
             w = winclass.create(show=False, **kwargs)
-            if autoPlayOpen and w.doAutoPlay():
+            if autoPlayOpen and w.doAutoPlay(blind=not autoPlayOpen):
                 # open window after autoPlay to be able to return to it after playback
                 w.modal()
             else:
                 # just autoPlay and don't open the window
                 w.doAutoPlay()
+                w.onBlindClose()
         else:
             w = winclass.open(**kwargs)
         return w.exitCommand or ''
@@ -86,6 +87,8 @@ def handleOpen(winclass, **kwargs):
         pass
     except util.NoDataException:
         raise
+    except:
+        util.ERROR()
     finally:
         del w
         util.garbageCollect()

@@ -148,12 +148,12 @@ class MediaPartStream(plexstream.PlexStream):
     TYPE = None
     STREAMTYPE = None
 
-    def __init__(self, data, initpath=None, server=None, part=None):
-        plexobjects.PlexObject.__init__(self, data, initpath, server)
+    def __init__(self, data, initpath=None, server=None, part=None, **kwargs):
+        plexobjects.PlexObject.__init__(self, data, initpath, server, **kwargs)
         self.part = part
 
     @staticmethod
-    def parse(data, initpath=None, server=None, part=None):
+    def parse(data, initpath=None, server=None, part=None, **kwargs):
         STREAMCLS = {
             1: VideoStream,
             2: AudioStream,
@@ -161,7 +161,7 @@ class MediaPartStream(plexstream.PlexStream):
         }
         stype = int(data.attrib.get('streamType'))
         cls = STREAMCLS.get(stype, MediaPartStream)
-        return cls(data, initpath=initpath, server=server, part=part)
+        return cls(data, initpath=initpath, server=server, part=part, **kwargs)
 
     @staticmethod
     def rebuild(s):
@@ -187,10 +187,21 @@ class SubtitleStream(MediaPartStream):
 
     def __init__(self, data, initpath=None, server=None, part=None):
         super(MediaPartStream, self).__init__(data, initpath=initpath, server=server, part=part)
-        self._should_auto_sync = self.canAutoSync.asBool() and util.INTERFACE.getPreference('auto_sync', True)
+        self.force_auto_sync = None
+        self.init_auto_sync(part=part)
+
+    def init_auto_sync(self, part=None, video=None):
+        if not (part or video):
+            return
+        self._should_auto_sync = self.canAutoSync.asBool() and util.INTERFACE.playbackManager(
+            part.media).auto_sync if part and part.media else video.playbackSettings.auto_sync if video else util.INTERFACE.getPreference('auto_sync', user=True)
 
     @property
     def should_auto_sync(self):
+        return self.force_auto_sync if self.force_auto_sync is not None else self._should_auto_sync
+
+    @property
+    def should_auto_sync_unforced(self):
         return self._should_auto_sync
 
     @should_auto_sync.setter

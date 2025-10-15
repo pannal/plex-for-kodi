@@ -195,6 +195,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self._ignoreTick = False
         self._abortBufferWait = False
         self._playerDebugActive = False
+        self._item_states = {}
         self.no_spoilers = util.getSetting('no_episode_spoilers4')
         self.no_time_no_osd_spoilers = util.getSetting('no_osd_time_spoilers')
         self.clientLikePlex = util.getSetting('player_official')
@@ -246,7 +247,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         self.player.video.server.on("np:timelineResponse", self.timelineResponseCallback)
 
-        if util.kodiSkipSteps and util.addonSettings.kodiSkipStepping:
+        if util.kodiSkipSteps and util.addonSettings.kodiSkipStepping and not self.handler.useAlternateSeek:
             self.skipSteps = {"negative": [], "positive": []}
             for step in util.kodiSkipSteps:
                 key = "negative" if step < 0 else "positive"
@@ -311,9 +312,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
     def trueOffset(self):
         if self.isDirectPlay:
-            return self.DPPlayerOffset + self.offset
+            return self.DPPlayerOffset + (self.offset if self.offset is not None else 0)
         else:
-            return self.baseOffset + self.offset
+            return self.baseOffset + (self.offset if self.offset is not None else 0)
 
     @property
     def markers(self):
@@ -419,6 +420,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         if self.handler.playlist:
             self.handler.playlist.on('change', self.updateProperties)
+            self.handler.playlist.on('current.changed', self.updateProperties)
+            self.player.on('video.progress', self.storePlaylistProgress)
 
         self.seekbarControl = self.getControl(self.SEEK_IMAGE_ID)
         self.positionControl = self.getControl(self.POSITION_IMAGE_ID)
@@ -984,6 +987,10 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         elif controlID == self.SKIP_FORWARD_BUTTON_ID:
             self.skipForward(immediate=not self.useAutoSeek)
 
+    def storePlaylistProgress(self, data, **kw):
+        gprk, prk, rk, state = data
+        self._item_states[rk] = state
+
     def stop(self):
         self._ignoreTick = True
         self.doClose()
@@ -1005,6 +1012,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         util.DEBUG_LOG("SeekDialog: Closing")
         if self.handler.playlist:
             self.handler.playlist.off('change', self.updateProperties)
+            self.handler.playlist.off('current.changed', self.updateProperties)
+            self.player.off('video.progress', self.storePlaylistProgress)
 
         try:
             if self.playlistDialog:
@@ -1366,6 +1375,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
             if subsEnabled:
                 if sss and sss.canAutoSync.asBool():
+                    if sss.force_auto_sync is None:
+                        auto_sync = self.player.video.playbackSettings.auto_sync
+                        sss.should_auto_sync = auto_sync
                     options.append(
                         {
                             'key': 'auto_sync',
@@ -1484,9 +1496,20 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             enabled = self.toggleSubtitles()
             self.lastSubtitleNavAction = "forward"
         elif choice['key'] == 'auto_sync':
-            sss.should_auto_sync = not sss.should_auto_sync
+            should_auto_sync = not sss.should_auto_sync_unforced
+
+            # force auto sync for session
+            if sss.force_auto_sync is not None:
+                sss.force_auto_sync = not sss.force_auto_sync
+            else:
+                sss.force_auto_sync = should_auto_sync
+            sss.should_auto_sync = should_auto_sync
+            util.DEBUG_LOG("Setting subtitle auto-sync for session to: {}".format(sss.should_auto_sync))
+
             # self.player.video isn't the same as the mediachoice representation
-            self.player.playerObject.choice.subtitleStream.should_auto_sync = sss.should_auto_sync
+            if self.player.playerObject.choice.subtitleStream:
+                self.player.playerObject.choice.subtitleStream.should_auto_sync = sss.should_auto_sync
+                self.player.playerObject.choice.subtitleStream.force_auto_sync = sss.force_auto_sync
             if self.player.playState == self.player.STATE_PLAYING:
                 self.hideOSD()
             if self.isDirectPlay:
@@ -1548,7 +1571,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 waited += 1
 
             if waited < 40:
-                self.doSeek(max(self.trueOffset() - 100, 100))
+                seekBack = 1500 if self.useAlternateSeek else 100
+                self.doSeek(max(self.trueOffset() - seekBack, seekBack))
                 return
             util.LOG("Tried switching embedded subtitle stream to the correct one, but we've waited too long for "
                       "seekOnStart.")
@@ -1585,7 +1609,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         if not xbmc.getCondVisibility('Player.Paused'):
                             self.videoPausedForAudioStreamChange = True
                             self.handler.player.control('pause')
-                        self.doSeek(offset=((self.handler.player.getTime() * 1000) - 1000))
+                        self.doSeek(offset=max(self.handler.player.getTime() * 1000 - 1500, 1500))
                     return True
 
             util.LOG("Media settings have changed and are not directly applicable, restarting video: {}", changed)
@@ -1878,7 +1902,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         self._seeking = True
         self._seekingWithoutOSD = without_osd
-        self.selectedOffset += offset
+        sign = offset > 0 and 1 or -1
+        self.selectedOffset += max(abs(offset), self.useAlternateSeek and util.addonSettings.altseekValidSeekWindow or 0) * sign
         # Don't skip past 5 seconds from end
         if self.selectedOffset > self.duration - 5000:
             # offset = +100, at = 80000, duration = 80007, realoffset = 2
@@ -2107,10 +2132,12 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
     def seekBehind(self):
         to = self.trueOffset()
+        # make sure we're at least seeking behind 1500ms when we're using alternate seek
+        amount = max(self.resumeSeekBehind, 1500) if self.useAlternateSeek else self.resumeSeekBehind
         if ((not self.resumeSeekBehindOnlyDP or self.isDirectPlay)
-                and self.resumeSeekBehind and to > self.resumeSeekBehind):
-            util.DEBUG_LOG("SeekDialog: Seeking back from {} to {}", to, to - self.resumeSeekBehind)
-            self.doSeek(to - self.resumeSeekBehind)
+                and self.resumeSeekBehind and to > amount):
+            util.DEBUG_LOG("SeekDialog: Seeking back from {} to {}", to, to - amount)
+            self.doSeek(to - amount)
 
     def onPlayBackResumed(self):
         util.DEBUG_LOG("SeekDialog: OnPlaybackResumed")
@@ -2227,6 +2254,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             if self.stopPlaybackOnIdle:
                 if self.idleTime and time.time() - self.idleTime >= self.stopPlaybackOnIdle:
                     util.LOG("Player has been idle for {}s, stopping.", int(time.time() - self.idleTime))
+                    self.handler.stoppedManually = True
+                    self.sendTimeline(state=self.player.STATE_STOPPED)
                     self.handler.player.stopAndWait()
                     return
 
@@ -2494,7 +2523,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
             cancelTick = False
             # don't auto skip while we're initializing and waiting for the handler to seek on start
-            if offset is None and not self.handler.seekOnStart:
+            if offset is None and not self.handler.seekOnStart and not self.handler.waitingForSOS:
                 cancelTick = self.displayMarkers()
 
             if cancelTick:
@@ -2523,11 +2552,13 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
             if offset or (self.autoSeekTimeout and time.time() >= self.autoSeekTimeout and
                           self.offset != self.selectedOffset):
-                self.resetAutoSeekTimer(None)
                 #off = offset is not None and offset or None
                 #self.doSeek(off)
-                self.doSeek()
-                return True
+                if not self.useAlternateSeek or (((self.selectedOffset and abs(self.selectedOffset - self.offset) >= util.addonSettings.altseekValidSeekWindow) or not self.selectedOffset) and not self.handler.waitingForSOS):
+                    util.DEBUG_LOG("SeekDialog: Tick: Seek: {}, {}, {}", self.offset, self.selectedOffset, util.addonSettings.altseekValidSeekWindow)
+                    self.resetAutoSeekTimer(None)
+                    self.doSeek()
+                    return True
 
             if self.isDirectPlay or not self.ldTimer:
                 self.updateCurrent(update_position_control=not self._seeking and not self._applyingSeek)
@@ -2542,7 +2573,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.setProperty('playlist.visible', '1' if value else '')
 
     def showPlaylistDialog(self):
-        self.playlistDialog = PlaylistDialog.create(show=False, handler=self.handler)
+        self.playlistDialog = PlaylistDialog.create(show=False, handler=self.handler, item_states=self._item_states)
         self.playlistDialogVisible = True
         self.playlistDialog.doModal()
         self.resetTimeout()
@@ -2602,6 +2633,7 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
         kodigui.BaseDialog.__init__(self, *args, **kwargs)
         SpoilersMixin.__init__(self, *args, **kwargs)
         self.handler = kwargs.get('handler')
+        self.item_states = kwargs.get('item_states', {})
         self.playlist = self.handler.playlist
 
     def onFirstInit(self):
@@ -2725,9 +2757,16 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
         items = []
         idx = 1
         for pi in self.playlist.items():
+            # mark watched items in playlist during current playback session
+            if self.item_states.get(pi.ratingKey, None) is True:
+                pi.set('viewCount',pi.get('viewCount', 0).asInt() + 1)
+                pi.set('viewOffset', 0)
+
             mli = self.createListItem(pi)
             if mli:
                 mli.setProperty('track.number', str(idx))
+                mli.setProperty('progress', util.getProgressImage(mli.dataSource,
+                                                      view_offset=self.handler.getProgressForItem(str(pi.ratingKey), None)))
                 items.append(mli)
                 idx += 1
 

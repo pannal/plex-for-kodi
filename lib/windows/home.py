@@ -87,7 +87,7 @@ class SectionHubsTask(backgroundthread.Task):
             hubs.invalid = True
             self.callback(self.section, hubs)
         except:
-            util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
             util.DEBUG_LOG('Generic exception when fetching section: {0}', repr(self.section.title))
             hubs = HubsList().init()
             hubs.invalid = True
@@ -117,7 +117,7 @@ class UpdateHubTask(backgroundthread.Task):
         except plexnet.exceptions.BadRequest:
             util.DEBUG_LOG('404 on hub: {0}', repr(self.hub.hubIdentifier))
         except util.NoDataException:
-            util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
         except:
             util.DEBUG_LOG('Something went wrong when updating hub: {0}', repr(self.hub.hubIdentifier))
 
@@ -160,7 +160,7 @@ class ExtendHubTask(backgroundthread.Task):
             if self.canceledCallback:
                 self.canceledCallback(self.hub)
         except util.NoDataException:
-            util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
         except:
             util.DEBUG_LOG('Something went wrong when extending hub: {0}', repr(self.hub.hubIdentifier))
             util.ERROR()
@@ -306,6 +306,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     SEARCH_BUTTON_ID = 203
     SERVER_LIST_ID = 260
     REFRESH_SL_ID = 262
+
+    USER_MENU_BG_ID = 801
+    USER_MENU_GROUP_ID = 901
 
     PLAYER_STATUS_BUTTON_ID = 204
 
@@ -574,17 +577,26 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         hosts = []
         for server in servers:
-            # only check stored or myplex servers
-            if server.sourceType not in (None, plexresource.ResourceConnection.SOURCE_MYPLEX):
-                continue
-            # if we're set to honor dnsRebindingProtection=1 and the server has this flag at 0 or
-            # if we're set to honor publicAddressMatches=1 and the server has this flag at 0, and we haven't seen the
-            # server locally, skip plex.direct handling
-            if (((util.addonSettings.honorPlextvDnsrebind and not server.dnsRebindingProtection) or
-                    (util.addonSettings.honorPlextvPam and not server.sameNetwork and not server.anyLANConnection))
-                    and not server.anyPDHostNotResolvable):
-                util.DEBUG_LOG("Ignoring DNS handling for plex.direct connections of: {}", server)
-                continue
+            force_check = False
+            # we might have an active connection that's marked as local but a combination of settings doesn't allow us
+            # to connect insecurely; force plex.direct handling in this case
+            if server.activeConnection and ".plex.direct:" in server.activeConnection.address and \
+                    not server.activeConnection.pdHostnameResolved:
+                util.DEBUG_LOG("Forcing check for plex.direct connections of: {}", server)
+                force_check = True
+
+            if not force_check:
+                # only check stored or myplex servers
+                if server.sourceType not in (None, plexresource.ResourceConnection.SOURCE_MYPLEX):
+                    continue
+                # if we're set to honor dnsRebindingProtection=1 and the server has this flag at 0 or
+                # if we're set to honor publicAddressMatches=1 and the server has this flag at 0, and we haven't seen the
+                # server locally, skip plex.direct handling
+                if (((util.addonSettings.honorPlextvDnsrebind and not server.dnsRebindingProtection) or
+                        (util.addonSettings.honorPlextvPam and not server.sameNetwork and not server.anyLANConnection))
+                        and not server.anyPDHostNotResolvable):
+                    util.DEBUG_LOG("Ignoring DNS handling for plex.direct connections of: {}", server)
+                    continue
             hosts += [c.address for c in server.connections]
 
         knownHosts = pdm.getHosts()
@@ -1363,7 +1375,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if command == "NODATA":
                 raise util.NoDataException
         except util.NoDataException:
-            util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
             return
 
         if self._restarting:
@@ -1637,8 +1649,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not mli:
             return
 
-        if mli.dataSource is None:
+        if mli.dataSource is None or mli.dataSource == kodigui.DUMMY_DATA_SOURCE:
             return
+
+        ds = mli.dataSource
 
         section_hub_key = "{}:{}".format(self.lastSection.key, hub.hubIdentifier)
 
@@ -1655,7 +1669,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             options.append({'key': 'hide', 'display': T(33659, "Hide Hub: {}").format(hub_title)})
             has_prev = True
 
-        if mli.dataSource.TYPE in ('episode', 'season', 'movie', 'show'):
+        if ds.TYPE in ('episode', 'season', 'movie', 'show'):
             if has_prev:
                 options.append(dropdown.SEPARATOR)
 
@@ -1665,13 +1679,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 select_base = has_prev and 1 or 0
                 has_mp = True
 
-            if (mli.dataSource.isFullyWatched or mli.dataSource.isWatched or
-                    mli.dataSource.viewedLeafCount.asInt() > 0):
+            if ds.isFullyWatched or ds.isWatched or ds.viewedLeafCount.asInt() > 0:
                 options.append({'key': 'mark_unwatched', 'display': T(32318, "Mark Unplayed")})
                 select_base = has_prev and 1 or has_mp and 0
                 has_mp = True
 
-            if mli.dataSource.TYPE in ('episode', 'movie'):
+            if ds.TYPE in ('episode', 'movie'):
                     #hub.hubIdentifier == "continueWatching"):
                 if hub.hubIdentifier in ("home.continue", "continueWatching", "home.ondeck"):
                     # allow removing items from CW
@@ -1679,18 +1692,22 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     options.append({'key': 'remove_cw', 'display': T(33662, "Remove from Continue Watching")})
                     if not has_mp:
                         select_base = 1
-                if util.getSetting('home_inprogress_resume') and mli.dataSource.in_progress:
+                if util.getSetting('home_inprogress_resume') and ds.in_progress:
                     # this is an in progress item that would be auto resumed; add specific entry to visit media instead
                     options.insert(0, dropdown.SEPARATOR)
-                    options.insert(0, {'key': 'start_over', 'display': T(32317, 'Play from beginning')})
-                    options.insert(1, {'key': 'to_item', 'display': T(33019, "Visit media item")})
-                    select_base = 0
+                    options.insert(1, {'key': 'start_over', 'display': T(32317, 'Play from beginning')})
+                    options.insert(2, {'key': 'to_item', 'display': T(33019, "Visit media item")})
+                    select_base = 1
+                elif ds.in_progress:
+                    options.insert(0, dropdown.SEPARATOR)
+                    options.insert(1, {'key': 'start_over', 'display': T(32317, 'Play from beginning')})
+                    options.insert(2, {'key': 'resume', 'display': T(32429, "Resume from {}").format(util.timeDisplay(ds.viewOffset.asInt()).lstrip('0').lstrip(':'))})
 
 
-            if mli.dataSource.TYPE in ('episode', 'season'):
+            if ds.TYPE in ('episode', 'season'):
                 options.append(dropdown.SEPARATOR)
                 options.append({'key': 'to_show', 'display': T(32323, "Go To Show")})
-                if mli.dataSource.TYPE == 'episode':
+                if ds.TYPE == 'episode':
                     options.append({'key': 'to_season', 'display': T(32400, "Go To Season")})
 
             if 'items' in util.getSetting('cache_requests'):
@@ -1731,7 +1748,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     return
 
             if choice["key"] == "mark_watched":
-                self.toggleWatched(item=mli.dataSource, state=True)
+                self.toggleWatched(item=ds, state=True)
 
             elif choice["key"] == "mark_unwatched":
                 mli.dataSource.markUnwatched()
@@ -1750,42 +1767,52 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if button != 0:
                     return
 
-            mli.dataSource.removeFromContinueWatching()
+            ds.removeFromContinueWatching()
             self._updateOnDeckHubs()
 
         elif choice["key"] in ("to_season", "to_show"):
-            target = mli.dataSource.show() if choice["key"] == "to_show" else mli.dataSource.season()
+            target = ds.show() if choice["key"] == "to_show" else ds.season()
             try:
                 command = opener.open(target, dialog_props=self.carriedProps)
                 if command == "NODATA":
                     raise util.NoDataException
             except util.NoDataException:
-                util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+                util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
                 return
 
         elif choice["key"] == "to_item":
             try:
-                command = opener.open(mli.dataSource, dialog_props=self.carriedProps)
+                command = opener.open(ds, dialog_props=self.carriedProps)
                 if command == "NODATA":
                     raise util.NoDataException
             except util.NoDataException:
-                util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+                util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
                 return
 
         elif choice["key"] == "start_over":
             try:
-                command = opener.open(mli.dataSource, auto_play=True, start_over=True, dialog_props=self.carriedProps)
+                command = opener.open(ds, auto_play=True, start_over=True, dialog_props=self.carriedProps)
                 if command == "NODATA":
                     raise util.NoDataException
             except util.NoDataException:
-                util.ERROR("No data - disconnected?", notify=True, time_ms=5000)
+                util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
+                return
+            return
+
+        elif choice["key"] == "resume":
+            try:
+                command = opener.open(ds, auto_play=True, dialog_props=self.carriedProps)
+                if command == "NODATA":
+                    raise util.NoDataException
+            except util.NoDataException:
+                util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
                 return
             return
 
         elif choice["key"] == "cache_reset":
             try:
-                util.DEBUG_LOG('Clearing requests cache for {}...', mli.dataSource)
-                mli.dataSource.clearCache()
+                util.DEBUG_LOG('Clearing requests cache for {}...', ds)
+                ds.clearCache()
             except Exception as e:
                 util.DEBUG_LOG("Couldn't clear cache: {}", e)
 
@@ -2701,6 +2728,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             if len(items) > 1:
                 items[0].setProperty('first', '1')
+                items[-1].setProperty('last', '1')
             elif items:
                 items[0].setProperty('only', '1')
 
@@ -2787,6 +2815,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             items.append(kodigui.ManagedListItem(T(32459, 'Offline Mode'), data_source='go_online'))
         else:
             items.append(kodigui.ManagedListItem(T(32460, 'Sign In'), data_source='signin'))
+        items.append(kodigui.ManagedListItem(T(32924, 'Minimize'), data_source='minimize'))
+        items.append(kodigui.ManagedListItem(T(32336, 'Exit'), data_source='exit'))
 
         if len(items) > 1:
             items[0].setProperty('first', '1')
@@ -2800,7 +2830,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.userList.addItems(items)
         itemHeight = util.vscale(66, r=0)
 
-        self.getControl(801).setHeight((len(items) * itemHeight) + 80)
+        self.userList.setHeight((len(items) * itemHeight))
+        self.getControl(self.USER_MENU_GROUP_ID).setHeight((len(items) * itemHeight))
+        self.getControl(self.USER_MENU_BG_ID).setHeight((len(items) * itemHeight) + 80)
 
         if not mouse:
             self.setFocusId(self.USER_LIST_ID)
@@ -2849,6 +2881,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.closeOption = option
             kill_background()
             self.doClose()
+        elif option == 'exit':
+            self._shuttingDown = True
+            util.DEBUG_LOG("Home: Initiating shutdown, setting background")
+            background.setShutdown()
+            self.closeOption = "exit"
+            self.doClose()
+            return
+        elif option == 'minimize':
+            self.storeLastBG()
+            util.setGlobalProperty('is_active', '')
+            xbmc.executebuiltin('ActivateWindow(10000)')
+            return
         else:
             self.closeOption = option
             kill_background()

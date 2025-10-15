@@ -280,6 +280,11 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         elif controlID == self.SUB_ITEM_LIST_ID:
             if not self.fromWatchlist:
                 self.subItemListClicked()
+            else:
+                mli = self.subItemListControl.getSelectedItem()
+                if not mli:
+                    return
+                self.wl_item_opener(mli.dataSource, self.openItem)
         elif controlID == self.PLAYER_STATUS_BUTTON_ID:
             self.showAudioPlayer()
         elif controlID == self.EXTRA_LIST_ID:

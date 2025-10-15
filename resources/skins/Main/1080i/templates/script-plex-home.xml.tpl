@@ -7286,7 +7286,7 @@
                     <texture>script.plex/indicators/dropdown-triangle.png</texture>
                     <colordiffuse>FF222222</colordiffuse>
                 </control>
-                <control type="group">
+                <control type="group" id="901">
                     <visible>Control.HasFocus(250) | !String.IsEmpty(Window.Property(show.options))</visible>
                     <posx>-213</posx>
                     <posy>{{ vscale(70) }}</posy>
@@ -7306,11 +7306,11 @@
                         <colordiffuse>FF1F1F1F</colordiffuse>
                     </control>
                     <control type="list" id="250">
-                        <hitrect x="0" y="-10" w="300" h="208" />
+                        <hitrect x="0" y="-10" w="300" h="422" />
                         <posx>0</posx>
                         <posy>0</posy>
                         <width>300</width>
-                        <height>{{ vscale(264) }}</height>
+                        <height>{{ vscale(422) }}</height>
                         <onleft>201</onleft>
                         <onunfocus>SetProperty(show.options,)</onunfocus>
                         <scrolltime>200</scrolltime>

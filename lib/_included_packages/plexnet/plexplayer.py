@@ -112,7 +112,9 @@ class PlexPlayer(BasePlayer):
 
         # Add soft subtitle info
         if self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_ANY:
-            obj.subtitleUrl = server.buildUrl(self.choice.subtitleStream.getSubtitlePath(), True)
+            # add sub autosync settings per item
+            auto_sync = self.item.playbackSettings.auto_sync
+            obj.subtitleUrl = server.buildUrl(self.choice.subtitleStream.getSubtitlePath(auto_sync=auto_sync), True)
         elif self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_DP:
             obj.subtitleConfig = {'TrackName': "mkv/" + str(self.choice.subtitleStream.index.asInt() + 1)}
 
@@ -650,8 +652,9 @@ class PlexPlayer(BasePlayer):
         builder.addParam("path", path)
 
         if self.choice.subtitleStream and self.choice.subtitleStream.should_auto_sync:
-            builder.addParam("autoAdjustSubtitle",
-                             util.INTERFACE.getPreference('auto_sync', True) and '1' or '0')
+            # add sub autosync settings per item
+            auto_sync = self.item.playbackSettings.auto_sync
+            builder.addParam("autoAdjustSubtitle", auto_sync and '1' or '0')
 
         part = self.media.parts[partIndex]
         seekOffset = int(self.seekValue / 1000)
@@ -695,7 +698,7 @@ class PlexPlayer(BasePlayer):
 
         qualityIndex = self.item.settings.getQualityIndex(self.item.getQualityType(server))
         #builder.addParam("videoQuality", self.item.settings.getGlobal("transcodeVideoQualities")[qualityIndex])
-        maxVideoResolution = "allow_4k" in features and "3840x2160" or "1920x1080"
+        maxVideoResolution = "allow_4k" in features and (self.item.settings.maxVerticalDPRes == 99999 and "99999x99999" or "3840x2160") or "1920x1080"
         builder.addParam("videoResolution", str(maxVideoResolution))
         builder.addParam("maxVideoBitrate", self.item.settings.getGlobal("transcodeVideoBitrates")[qualityIndex])
 
@@ -705,7 +708,7 @@ class PlexPlayer(BasePlayer):
 
         builder.extras.append(
             "add-limitation(scope=videoCodec&scopeName=*&context=streaming&protocol=http&"
-            "type=upperBound&name=video.height&value={}&isRequired=true)".format("allow_4k" in features and "2160" or
+            "type=upperBound&name=video.height&value={}&isRequired=true)".format("allow_4k" in features and str(self.item.settings.maxVerticalDPRes) or
                                                                                  "1088"))
 
         if self.media.mediaIndex is not None:

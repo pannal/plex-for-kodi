@@ -344,7 +344,7 @@
             <height>{{ vscale(350) }}</height>
             <width>993</width>
             <control type="label">
-                <width>893</width>
+                <width>963</width>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
                 <label>$INFO[Window.Property(ppi.Status)]</label>
@@ -353,7 +353,7 @@
                 <visible>Player.HasVideo + !String.IsEmpty(Window.Property(ppi.Status))</visible>
             </control>
             <control type="label">
-                <width>893</width>
+                <width>963</width>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
                 <label>[COLOR FFE5A00D]Mode:[/COLOR] $INFO[Window.Property(ppi.Mode)]</label>
@@ -362,7 +362,7 @@
                 <visible>Player.HasVideo + !String.IsEmpty(Window.Property(ppi.Mode))</visible>
             </control>
             <control type="label">
-                <width>893</width>
+                <width>963</width>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
                 <label>[COLOR FFE5A00D]Container:[/COLOR] $INFO[Window.Property(ppi.Container)]</label>
@@ -371,7 +371,7 @@
                 <visible>Player.HasVideo + !String.IsEmpty(Window.Property(ppi.Container))</visible>
             </control>
             <control type="textbox">
-                <width>893</width>
+                <width>963</width>
                 <autoscroll delay="1000" time="1000" repeat="2000"></autoscroll>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
@@ -381,7 +381,7 @@
                 <visible>Player.HasVideo + !String.IsEmpty(Window.Property(ppi.Video))</visible>
             </control>
             <control type="textbox">
-                <width>893</width>
+                <width>963</width>
                 <autoscroll delay="1000" time="1000" repeat="2000"></autoscroll>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
@@ -391,7 +391,7 @@
                 <visible>Player.HasVideo + [!String.IsEmpty(Window.Property(ppi.Audio)) | !String.IsEmpty(Window.Property(ppi.Subtitles))]</visible>
             </control>
             <control type="textbox">
-                <width>893</width>
+                <width>963</width>
                 <autoscroll delay="1000" time="1000" repeat="2000"></autoscroll>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
@@ -401,7 +401,7 @@
                 <visible>Player.HasVideo + !String.IsEmpty(Window.Property(ppi.User))</visible>
             </control>
             <control type="label">
-                <width>893</width>
+                <width>963</width>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
                 <label>[COLOR FFE5A00D]Buffer:[/COLOR] $INFO[Player.CacheLevel]%$INFO[Window.Property(ppi.BufferMB), (of ~, MB]$INFO[Window.Property(ppi.ReadFactor),$COMMA Readfactor: ,x)]$INFO[Window.Property(ppi.AReadFactor),$COMMA Readfactor: ,)]</label>
@@ -410,7 +410,7 @@
                 <visible>Player.HasVideo + String.IsEmpty(Window.Property(ppi.Buffered))</visible>
             </control>
             <control type="label">
-                <width>893</width>
+                <width>963</width>
                 <height>{{ vscale(50) }}</height>
                 <aligny>bottom</aligny>
                 <label>[COLOR FFE5A00D]Buffer:[/COLOR] $INFO[Window.Property(ppi.Buffered)]% (% of Video cached)$INFO[Window.Property(ppi.BufferMB), (of ~, MB]$INFO[Window.Property(ppi.ReadFactor),$COMMA Readfactor:,x)]$INFO[Window.Property(ppi.AReadFactor),$COMMA Readfactor: ,)]</label>

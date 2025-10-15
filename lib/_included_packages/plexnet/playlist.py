@@ -80,6 +80,8 @@ class BasePlaylist(plexobjects.PlexObject, signalsmixin.SignalsMixin):
         if self.pos >= len(self._items):
             self.pos = 0
 
+        self.trigger("current.changed")
+
         return True
 
     __next__ = next
@@ -94,6 +96,8 @@ class BasePlaylist(plexobjects.PlexObject, signalsmixin.SignalsMixin):
         self.pos -= 1
         if self.pos < 0:
             self.pos = len(self._items) - 1
+
+        self.trigger("current.changed")
 
         return True
 
@@ -112,6 +116,7 @@ class BasePlaylist(plexobjects.PlexObject, signalsmixin.SignalsMixin):
             return False
 
         self.pos = pos
+        self.trigger("current.changed")
         return True
 
     def current(self):

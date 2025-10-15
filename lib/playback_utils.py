@@ -20,6 +20,7 @@ ATTR_MAP = {
     "e": "show_intro_skip_early",
     "p": "skip_post_play_tv",
     "v": "media_version",
+    "s": "auto_sync",
 }
 
 VIRTUAL_ATTRS = ("media_version",)
@@ -31,6 +32,7 @@ TRANS_MAP = OrderedDict((
     ("auto_skip_credits", 32526),
     ("show_intro_skip_early", 33505),
     ("skip_post_play_tv", 32973),
+    ("auto_sync", 33655),
 ))
 
 ATTR_MAP_REV = dict((v, k) for k, v in ATTR_MAP.items())
@@ -144,7 +146,7 @@ class PlaybackManager(object):
         if skey is not None and value is not None:
             self.glob = self.glob._replace(**{skey: value})
         else:
-            self.glob = PlaybackSettings(**dict((k, util.getUserSetting(k, False)) for k in ATTR_MAP.values()))
+            self.glob = PlaybackSettings(**dict((k, util.getUserSetting(k)) for k in ATTR_MAP.values()))
 
     def setServerUUID(self, server=None):
         if not server and not plexapp.SERVERMANAGER.selectedServer:

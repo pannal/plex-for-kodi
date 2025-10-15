@@ -95,7 +95,7 @@ class PlexInterface(plexapp.AppInterface):
         'platform': 'Kodi',
         'appVersionStr': util.ADDON.getAddonInfo('version'),
         'clientIdentifier': CLIENT_ID,
-        'platformVersion': xbmc.getInfoLabel('System.BuildVersion'),
+        'platformVersion': plexnet_util.X_PLEX_PLATFORM_VERSION,
         'product': 'PM4K',
         'provides': 'player',
         'device': util.getPlatform() or plexapp.PLATFORM,
@@ -128,11 +128,11 @@ class PlexInterface(plexapp.AppInterface):
 
     bingeModeManager = None
 
-    def getPreference(self, pref, default=UNDEF):
+    def getPreference(self, pref, default=UNDEF, user=False):
         if pref == 'manual_connections':
             return self.getManualConnections()
         else:
-            return util.getSetting(pref, default=default)
+            return util.getSetting(pref, default=default) if not user else util.getUserSetting(pref, default=default)
 
     def getPlaybackFeatures(self):
         return self.getPreference("playback_features",
@@ -307,7 +307,7 @@ class PlexInterface(plexapp.AppInterface):
 
         if qualityIndex >= 9:
             if "allow_4k" in self.getPlaybackFeatures():
-                return allow4k and 2160 or 1088
+                return allow4k and self.maxVerticalDPRes or 1088
             else:
                 return 1088
         elif qualityIndex >= 6:
@@ -316,6 +316,10 @@ class PlexInterface(plexapp.AppInterface):
             return 480
         else:
             return 360
+
+    @property
+    def maxVerticalDPRes(self):
+        return util.addonSettings.unlockRes and 99999 or 2160
 
     def getThemeMusicValue(self):
         index = 10 - self.getPreference("theme_music", 5)
