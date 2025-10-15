@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="0.8.0-rc5.1"
+       version="1.0.0"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,9 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Core/KodiGUI: Revert the generic aggressive window show functionality introduced with RC1; do it only on VideoPlayer.open() (could lead to rare broken UI (flickering "home" button))
-- VideoPlayer: Be aggressive while waiting for the window to open
-- CE/LG: Don't throw rare traceback when exiting before Kodi has started playing a file
+- See changelog or forum
         </news>
         <assets>
             <icon>icon2.png</icon>
