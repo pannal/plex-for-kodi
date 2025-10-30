@@ -2121,7 +2121,7 @@ msgstr "Diese Anzahl an Medieninhalten pro gestückelter Anfrage in der Biblioth
 #: 
 msgctxt "#32973"
 msgid "Episodes: Skip Post Play screen"
-msgstr "Direkt zur nächsten Episode springen"
+msgstr "Episoden: Nahtlose Wiedergabe"
 
 #: 
 msgctxt "#32974"
@@ -3345,3 +3345,67 @@ msgstr "an der ersten Abspannmarkierung"
 msgctxt "#34027"
 msgid "earliest between threshold percent and first credits marker"
 msgstr "frühester Wert zwischen Fortschrittsgrenze und erster Abspannmarkierung"
+
+msgctxt "#34028"
+msgid "\"Use alternate seek\" valid seek window"
+msgstr "\"Alternatives Spulen\" valides Spulfenster"
+
+msgctxt "#34029"
+msgid "When \"Use alternate seek\" is enabled, any seek amount outside of this threshold window will be applied, otherwise the seek attempt will be ignored. If you encounter any seek issues, play with this value (ms, default: 2000)"
+msgstr "Mit aktiviertem \"Alternatives Spulen\", wird jeder Spulversuch größer als dieser Wert angewandt, ansonsten wird der Spulversuch ignoriert. Sollten Probleme beim Spulen auftreten, diesen Wert verändern (ms, Standard: 2000)"
+
+msgctxt "#34030"
+msgid "Unlock Direct Play for above 4K"
+msgstr "Direct Play für über 4K freischalten"
+
+msgctxt "#34031"
+msgid "Producer"
+msgstr "Produzent"
+
+msgctxt "#34032"
+msgid "Audio Language"
+msgstr "Tonspur Sprache"
+
+msgctxt "#34033"
+msgid "Subtitle Language"
+msgstr "Untertitel Sprache"
+
+msgctxt "#34034"
+msgid "Folder Location"
+msgstr "Speicherort"
+
+msgctxt "#34035"
+msgid "Editions"
+msgstr "Edition"
+
+msgctxt "#34036"
+msgid "DOVI"
+msgstr "DOVI"
+
+msgctxt "#34037"
+msgid "HDR"
+msgstr "HDR"
+
+msgctxt "#34038"
+msgid "Force plex.direct mapping"
+msgstr "plex.direct-Zuordnung erzwingen"
+
+msgctxt "#34039"
+msgid "If you (still) don't see any posters: Under certain circumstances when Kodi still can't resolve hostnames when loading assets, even though the host resolves natively, enable this to force plex.direct mapping via advancedsettings.xml."
+msgstr "Sind (weiterhin) keine Poster sichtbar: In bestimmten Fällen kann Kodi weiterhin keine Hostnamen auflösen. In dem Fall aktivieren um die plex.direct-Zuordnung via advancedsettings.xml zu erzwingen."
+
+msgctxt "#34040"
+msgid "By Progress"
+msgstr "Nach Fortschritt"
+
+msgctxt "#34041"
+msgid "Progress"
+msgstr "Fortschritt"
+
+msgctxt "#34042"
+msgid "By Album"
+msgstr "Nach Album"
+
+msgctxt "#34043"
+msgid "Album"
+msgstr "Album"

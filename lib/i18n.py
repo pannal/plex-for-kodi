@@ -10,6 +10,6 @@ def T(ID, eng=''):
 TRANSLATED_ROLES = {
     'Director': T(32383, 'Director'),
     'Writer': T(32402, 'Writer'),
-    'Producer': 'Producer',
+    'Producer': T(34031, 'Producer'),
     '': T(32441, 'Unknown')
 }

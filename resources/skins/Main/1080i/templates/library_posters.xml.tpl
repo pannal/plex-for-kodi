@@ -1,17 +1,24 @@
 {% extends "library.xml.tpl" %}
 {% block filteropts_grouplist %}
-<control type="grouplist">
+<control type="grouplist" id="600">
     <visible>String.IsEmpty(Window.Property(hide.filteroptions))</visible>
-    <right>340</right>
-    <posy>{{ vscale(35) }}</posy>
+    <visible>!Integer.IsGreater(Container(101).ListItem.Property(index),{% block hide_filter_from_index %}5{% endblock %}) + String.IsEmpty(Window.Property(no.content)) + !String.IsEmpty(Window.Property(initialized))</visible>
+    <animation effect="slide" time="200" end="0,{{ vscale(-115) }}" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),{% block hide_filter_from_index %}5{% endblock %}) + String.IsEmpty(Window.Property(content.filling))">Conditional</animation>
+    {% block filteropts_animation %}
+        <animation effect="fade" start="0" end="100" time="200" reversible="true">VisibleChange</animation>
+    {% endblock %}
+    <right>170</right>
+    <posy>{{ vscale(135) }}</posy>
     <width>870</width>
     <height>{{ vscale(65) }}</height>
     <align>right</align>
     <itemgap>30</itemgap>
     <orientation>horizontal</orientation>
-    <onleft>204</onleft>
-    <onright>210</onright>
-    <ondown>50</ondown>
+    <onleft condition="String.IsEmpty(Window.Property(no.content.filtered))">304</onleft>
+    <onleft condition="!String.IsEmpty(Window.Property(no.content.filtered))">200</onleft>
+    <onright>151</onright>
+    <ondown>101</ondown>
+    <onup>200</onup>
     <control type="button" id="311">
         <visible>!String.IsEqual(Window.Property(media.itemType),folder)</visible>
         <enable>false</enable>

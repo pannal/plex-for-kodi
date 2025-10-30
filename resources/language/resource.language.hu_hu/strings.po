@@ -120,17 +120,17 @@ msgstr "„Lejátszás után” automatikus lejátszás"
 #: 
 msgctxt "#32040"
 msgid "Enable Subtitle Downloading"
-msgstr "Felirat letöltés engedélyezése"
+msgstr "Felirat letöltésének engedélyezése"
 
 #: 
 msgctxt "#32041"
 msgid "Enable Subtitle Downloading"
-msgstr "Felirat letöltés engedélyezése"
+msgstr "Felirat letöltésének engedélyezése"
 
 #: 
 msgctxt "#32042"
 msgid "Server Discovery (GDM)"
-msgstr "Szerver felderítés"
+msgstr "Szerver felderítése (GDM)"
 
 #: 
 msgctxt "#32043"
@@ -200,7 +200,7 @@ msgstr "Kodi verzió"
 #: 
 msgctxt "#32056"
 msgid "Screen Resolution"
-msgstr "Képernyőfelbontás"
+msgstr "Képernyő felbontása"
 
 #: 
 msgctxt "#32057"
@@ -940,7 +940,7 @@ msgstr "Keresés"
 #: 
 msgctxt "#32432"
 msgid "Space"
-msgstr "Space"
+msgstr "Szóköz"
 
 #: 
 msgctxt "#32433"
@@ -980,7 +980,7 @@ msgstr "Következő lejátszása"
 #: 
 msgctxt "#32440"
 msgid "On Deck"
-msgstr "Jelenlegi"
+msgstr "Fedélzeten"
 
 #: 
 msgctxt "#32441"
@@ -1230,7 +1230,7 @@ msgstr "Főcím átugrása gomb időkorlátja"
 #: 
 msgctxt "#32522"
 msgid "Automatically Skip Intro"
-msgstr "Automatikus főcím átugrása"
+msgstr "Főcím automatikus átugrása"
 
 #: 
 msgctxt "#32524"
@@ -1240,7 +1240,7 @@ msgstr "Beállíthatja, hogy a főcím átugrása gomb mennyi ideig jelenjen meg
 #: 
 msgctxt "#32525"
 msgid "Skip Credits Button Timeout"
-msgstr "„Stáblista átugrása” gomb időkorlát"
+msgstr "Stáblista átugrása gomb időkorlát"
 
 #: 
 msgctxt "#32526"
@@ -1250,7 +1250,7 @@ msgstr "Stáblista automatikus átugrása"
 #: 
 msgctxt "#32528"
 msgid "Set how long the skip credits button shows for."
-msgstr "Beállíthatja, hogy a „stáblista átugrása” gomb mennyi ideig jelenjen meg."
+msgstr "Beállíthatja, hogy a stáblista átugrása gomb mennyi ideig jelenjen meg."
 
 #: 
 msgctxt "#32540"
@@ -1381,14 +1381,14 @@ msgstr "Ha egy médiafájl egy feliratozással engedélyezett nyelvhez kényszer
 msgctxt "#32523"
 msgid "Automatically skip intros if available. Doesn't override enabled binge mode.\n"
 "Can be disabled/enabled per TV show."
-msgstr "Főcím automatikus átugrása, ha elérhető. Nem írja felül a bekapcsolt folyamatos nézési módot.\n"
+msgstr "Főcím automatikus átugrása, ha elérhető. Nem írja felül a bekapcsolt folyamatosnézés-módot.\n"
 "TV-műsoronként ki/bekapcsolható."
 
 #: 
 msgctxt "#32527"
 msgid "Automatically skip credits if available. Doesn't override enabled binge mode.\n"
 "Can be disabled/enabled per TV show."
-msgstr "Stáblista automatikus kihagyása, ha elérhető. Nem írja felül a bekapcsolt folyamatos nézési módot.\n"
+msgstr "Stáblista automatikus átugrása, ha elérhető. Nem írja felül a bekapcsolt folyamatosnézés-módot.\n"
 "TV-műsoronként ki/bekapcsolható."
 
 #: 
@@ -1414,7 +1414,7 @@ msgstr "Az összes könyvtár összes csomópontját frissíti, miután egy elem
 #: 
 msgctxt "#33505"
 msgid "Show intro skip button early"
-msgstr "Főcím kihagyása gomb korai megjelenítése"
+msgstr "Főcím átugrása gomb korai megjelenítése"
 
 #: 
 msgctxt "#33507"
@@ -1499,7 +1499,7 @@ msgstr "Jelölők"
 #: 
 msgctxt "#33613"
 msgid "Kodi Buffer Size (MB)"
-msgstr "Kodi puffer-méret (MB)"
+msgstr "Kodi puffer méret (MB)"
 
 #: 
 msgctxt "#33614"
@@ -1524,7 +1524,7 @@ msgstr "Felhasználói adatok/Profil elérési útvonal"
 #: 
 msgctxt "#33618"
 msgid "TV binge-viewing mode"
-msgstr "TV folyamatos-nézés mód"
+msgstr "TV folyamatosnézés-mód"
 
 #: 
 msgctxt "#33622"
@@ -1578,7 +1578,7 @@ msgstr "A főcím/stáblista jelölések talán egy kicsit koraiak a Plexben. Au
 #: 
 msgctxt "#32631"
 msgid "Playback (user-specific)"
-msgstr "Lejátszás (felhasználó-specifikus)"
+msgstr "Lejátszás (felhasználó specifikus)"
 
 #: 
 msgctxt "#33632"
@@ -1693,7 +1693,7 @@ msgstr "Egy időzítővel rendelkező jelölő automatikus kihagyásakor az OK/K
 #: 
 msgctxt "#32912"
 msgid "Show buffer-state on timeline"
-msgstr "Puffer-állapot megjelenítése az idővonalon"
+msgstr "Puffer állapotának megjelenítése az idővonalon"
 
 #: 
 msgctxt "#32913"
@@ -1969,7 +1969,7 @@ msgctxt "#32974"
 msgid "When finishing an episode, don't show Post Play but go to the next one immediately.\n"
 "Can be disabled/enabled per TV show. Doesn't override enabled binge mode. Overrides the Post Play setting."
 msgstr "Ha befejez egy epizódot, ne jelenjen meg a „Lejátszás után”, hanem azonnal lépjen a következő epizódra.\n"
-"TV-műsoronként ki/bekapcsolható. Nem írja felül a bekapcsolt folyamatos nézési módot. Felülírja a „Lejátszás után” beállítást."
+"TV-műsoronként ki/bekapcsolható. Nem írja felül a bekapcsolt folyamatosnézés-módot. Felülírja a „Lejátszás után” beállítást."
 
 #: 
 msgctxt "#32975"
@@ -2726,7 +2726,7 @@ msgstr "Soha ne mutassa a „Lejátszás után”-t"
 msgctxt "#33506"
 msgid "Show the intro skip button from the start of a video with an intro marker. The auto-skipping setting applies. Doesn't override enabled binge mode.\n"
 "Can be disabled/enabled per TV show."
-msgstr "A főcím átugrása gomb megjelenítése a videó elejétől kezdve egy főcím jelölővel. Az automatikus átugrás beállítása érvényes. Nem írja felül a bekapcsolt folyamatos nézés módot.\n"
+msgstr "A főcím átugrása gomb megjelenítése a videó elejétől kezdve egy főcím jelölővel. Az automatikus átugrás beállítása érvényes. Nem írja felül a bekapcsolt folyamatosnézés-módot.\n"
 "Tévéműsoronként ki/bekapcsolható."
 
 #: 
@@ -2993,7 +2993,7 @@ msgstr "A jelenleg használatban lévő fordítás frissítésre került. Az új
 #: 
 msgctxt "#33509"
 msgid "Early intro skip threshold (default: < 120s/2m)"
-msgstr "Korai főcím kihagyási küszöb (alapértelmezett: < 120s/2m)"
+msgstr "Korai főcím átugrása küszöb (alapértelmezett: < 120s/2m)"
 
 #: 
 msgctxt "#33007"

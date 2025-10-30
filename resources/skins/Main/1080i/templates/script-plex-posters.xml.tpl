@@ -17,6 +17,8 @@
             <height>{{ vscale(145) }}</height>
             <onup>200</onup>
             <ondown>101</ondown>
+            <onleft>210</onleft>
+            <onright>600</onright>
             <itemgap>-20</itemgap>
             <orientation>horizontal</orientation>
             <scrolltime tween="quadratic" easing="out">200</scrolltime>
@@ -45,7 +47,8 @@
             <posy>0</posy>
             <width>1800</width>
             <height>1190</height>
-            <onup>300</onup>
+            <onup condition="Integer.IsLess(Container(101).ListItem.Property(index),3)">300</onup>
+            <onup condition="Integer.IsLess(Container(101).ListItem.Property(index),6) + Integer.IsGreaterOrEqual(Container(101).ListItem.Property(index),3)">600</onup>
             <onright>151</onright>
             <scrolltime>200</scrolltime>
             <orientation>vertical</orientation>
@@ -257,7 +260,8 @@
         <posy>0</posy>
         <width>34</width>
         <height>1050</height>
-        <onleft>100</onleft>
+        <onleft condition="Integer.IsGreater(Container(101).ListItem.Property(index),5) | !Integer.IsEqual(Container(151).ListItem.Property(index),0)">100</onleft>
+        <onleft condition="!Integer.IsGreater(Container(101).ListItem.Property(index),5) + Integer.IsEqual(Container(151).ListItem.Property(index),0)">600</onleft>
         <onright>152</onright>
         <scrolltime>200</scrolltime>
         <orientation>vertical</orientation>
@@ -357,6 +361,7 @@
     <width>12</width>
     <height>910</height>
     <visible>true</visible>
+    <animation effect="zoom" time="200" start="1860,{{ vscale(150) }},12,910" end="1860,16,12,1055" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),5) + String.IsEmpty(Window.Property(content.filling))">Conditional</animation>
     <texturesliderbackground colordiffuse="40000000" border="5">script.plex/white-square-rounded.png</texturesliderbackground>
     <texturesliderbar colordiffuse="77FFFFFF" border="5">script.plex/white-square-rounded.png</texturesliderbar>
     <texturesliderbarfocus colordiffuse="FFE5A00D" border="5">script.plex/white-square-rounded.png</texturesliderbarfocus>

@@ -261,6 +261,7 @@ def getPlexHeaders():
             "X-Plex-Product": "PM4K",
             "X-Plex-Provides": not INTERFACE.getPreference("remotecontrol", False) and 'player' or '',
             "X-Plex-Device": INTERFACE.getGlobal("device"),
+            "X-Plex-Device-Vendor": INTERFACE.getGlobal("vendor"),
             "X-Plex-Model": INTERFACE.getGlobal("model"),
             "X-Plex-Device-Name": INTERFACE.getGlobal("friendlyName"),
             "X-Plex-Language": LANGUAGE_CODE,
@@ -296,11 +297,11 @@ def validInt(int_str):
         return 0
 
 
-def bitrateToString(bits):
+def bitrateToString(bits, multiplier=1):
     if not bits:
         return ''
 
-    speed = bits / 1000000.0
+    speed = bits / 1000000.0 * multiplier
     if speed < 1:
         speed = int(round(bits / 1000.0))
         return '{0} Kbps'.format(speed)

@@ -111,12 +111,14 @@ class PlexPlayer(BasePlayer):
             obj.frameRate = 30
 
         # Add soft subtitle info
-        if self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_ANY:
-            # add sub autosync settings per item
-            auto_sync = self.item.playbackSettings.auto_sync
-            obj.subtitleUrl = server.buildUrl(self.choice.subtitleStream.getSubtitlePath(auto_sync=auto_sync), True)
-        elif self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_DP:
-            obj.subtitleConfig = {'TrackName': "mkv/" + str(self.choice.subtitleStream.index.asInt() + 1)}
+        if not self.choice.audioStream or self.choice.audioStream.languageCode not in self.item.settings.getPreference(
+                "disable_subtitle_languages", []):
+            if self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_ANY:
+                # add sub autosync settings per item
+                auto_sync = self.item.playbackSettings.auto_sync
+                obj.subtitleUrl = server.buildUrl(self.choice.subtitleStream.getSubtitlePath(auto_sync=auto_sync), True)
+            elif self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_DP:
+                obj.subtitleConfig = {'TrackName': "mkv/" + str(self.choice.subtitleStream.index.asInt() + 1)}
 
         # Create one content metadata object for each part and store them as a
         # linked list. We probably want a doubly linked list, except that it
@@ -295,7 +297,12 @@ class PlexPlayer(BasePlayer):
                 # sidecar subs, burn or embed w/ an optional transcode.
                 for key in ("subtitles", "advancedSubtitles"):
                     decisionPath = re.sub(r'([?&]{0}=)\w+'.format(key), '', decisionPath)
+
                 subType = 'sidecar'  # AppSettings().getBoolPreference("custom_video_player"), "embedded", "sidecar")
+                # deselect subtitles if we don't need them
+                if self.choice.audioStream or self.choice.audioStream.languageCode in self.item.settings.getPreference(
+                        "disable_subtitle_languages", []):
+                    subType = "none"
                 decisionPath = http.addUrlParam(decisionPath, "subtitles=" + subType)
 
             # Global variables for all decisions

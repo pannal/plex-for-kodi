@@ -335,6 +335,7 @@ class DumbInterface(AppInterface):
         'provides': 'player',
         'device': platform.uname()[0],
         'model': 'Unknown',
+        'vendor': '',
         'friendlyName': 'PlexNet.API',
         'deviceInfo': DeviceInfo()
     }

@@ -30,7 +30,8 @@
         <align>left</align>
         <itemgap>60</itemgap>
         <orientation>horizontal</orientation>
-        <ondown>50</ondown>
+        <ondown condition="String.IsEmpty(Window.Property(no.content.filtered))">50</ondown>
+        <ondown condition="!String.IsEmpty(Window.Property(no.content.filtered))">600</ondown>
         <control type="group">
             <width>40</width>
             <height>{{ vscale(40) }}</height>
@@ -40,7 +41,8 @@
                 <width>40</width>
                 <height>{{ vscale(40) }}</height>
                 <onright>202</onright>
-                <ondown>50</ondown>
+                <ondown condition="String.IsEmpty(Window.Property(no.content.filtered))">50</ondown>
+                <ondown condition="!String.IsEmpty(Window.Property(no.content.filtered))">600</ondown>
                 <font>font12</font>
                 <focusedcolor>FF000000</focusedcolor>
                 <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/home-focus.png</texturefocus>
@@ -49,13 +51,14 @@
             </control>
         </control>
         <control type="label">
-            <width max="500">auto</width>
+            <width max="300">auto</width>
             <height>{{ vscale(40) }}</height>
             <font>font12</font>
             <align>left</align>
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
             <label>[UPPERCASE]$INFO[Window.Property(screen.title)][/UPPERCASE][COLOR=gray]$INFO[Window.Property(items.count),  (,)][/COLOR]</label>
+            <scroll>true</scroll>
         </control>
         <control type="group">
             <width>40</width>
@@ -65,9 +68,11 @@
                 <animation effect="zoom" start="144" end="100" time="100" center="20,{{ vscale(20) }}" reversible="false">UnFocus</animation>
                 <width>40</width>
                 <height>{{ vscale(40) }}</height>
-                <onright>204</onright>
+                <onright condition="String.IsEmpty(Window.Property(no.content.filtered))">204</onright>
+                <onright condition="!String.IsEmpty(Window.Property(no.content.filtered))">600</onright>
                 <onleft>201</onleft>
-                <ondown>50</ondown>
+                <ondown condition="String.IsEmpty(Window.Property(no.content.filtered))">50</ondown>
+                <ondown condition="!String.IsEmpty(Window.Property(no.content.filtered))">600</ondown>
                 <font>font12</font>
                 <focusedcolor>FF000000</focusedcolor>
                 <texturefocus colordiffuse="FFE5A00D">script.plex/buttons/search-focus.png</texturefocus>
@@ -78,7 +83,7 @@
     </control>
     <control type="group">
         <visible>Player.HasAudio + String.IsEmpty(Window(10000).Property(script.plex.theme_playing))</visible>
-        <posx>438</posx>
+        <posx>620</posx>
         <posy>0</posy>
         <control type="button" id="204">
             <visible>Player.HasAudio + String.IsEmpty(Window(10000).Property(script.plex.theme_playing))</visible>
@@ -87,7 +92,6 @@
             <width>260</width>
             <height>{{ vscale(75) }}</height>
             <onleft>202</onleft>
-            <onright>211</onright>
             <ondown>50</ondown>
             <font>font12</font>
             <textcolor>FFFFFFFF</textcolor>
@@ -174,18 +178,25 @@
         </control>
     </control>
     {% block filteropts_grouplist %}
-    <control type="grouplist"{% block filteropts_grouplist_attrs %}{% endblock %}>
+    <control type="grouplist"{% block filteropts_grouplist_attrs %} id="600"{% endblock %}>
         <visible>String.IsEmpty(Window.Property(hide.filteroptions))</visible>
-        <right>340</right>
-        <posy>{{ vscale(35) }}</posy>
+        <visible>!Integer.IsGreater(Container(101).ListItem.Property(index),{% block hide_filter_from_index %}5{% endblock %}) + String.IsEmpty(Window.Property(no.content)) + !String.IsEmpty(Window.Property(initialized))</visible>
+        <animation effect="slide" time="200" end="0,{{ vscale(-115) }}" tween="quadratic" easing="out" condition="Integer.IsGreater(Container(101).ListItem.Property(index),{% block hide_filter_from_index %}5{% endblock %}) + String.IsEmpty(Window.Property(content.filling))">Conditional</animation>
+        {% block filteropts_animation %}
+            <animation effect="fade" start="0" end="100" time="200" reversible="true">VisibleChange</animation>
+        {% endblock %}
+        <right>170</right>
+        <posy>{{ vscale(135) }}</posy>
         <width>1000</width>
         <height>{{ vscale(65) }}</height>
         <align>right</align>
         <itemgap>30</itemgap>
         <orientation>horizontal</orientation>
-        <onleft>204</onleft>
-        <onright>210</onright>
-        <ondown>50</ondown>
+        <onleft condition="String.IsEmpty(Window.Property(no.content.filtered))">304</onleft>
+        <onleft condition="!String.IsEmpty(Window.Property(no.content.filtered))">200</onleft>
+        <onright>151</onright>
+        <ondown>101</ondown>
+        <onup>200</onup>
         <control type="button" id="311">
             <enable>false</enable>
             <width max="300">auto</width>

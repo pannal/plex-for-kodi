@@ -73,7 +73,7 @@ class MyPlexManager(object):
                 for conn in resource.connections:
                     util.DEBUG_LOG('  {0}', conn)
 
-                if 'server' in resource.provides:
+                if 'server' in resource.provides or resource.product == "Plex Media Server":
                     server = plexserver.createPlexServerForResource(resource)
                     util.DEBUG_LOG('  {0}', server)
                     servers.append(server)

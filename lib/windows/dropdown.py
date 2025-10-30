@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from kodi_six import xbmcgui
+from kodi_six import xbmc, xbmcgui
 
 from lib import util
 from . import kodigui
@@ -16,11 +16,13 @@ class DropdownDialog(kodigui.BaseDialog):
     width = 1920
     height = 1080
     optionHeight = util.vscalei(66)
+    separatorHeight = util.vscalei(2)
     dropWidth = 360
     borderOff = -20
 
     GROUP_ID = 100
     OPTIONS_LIST_ID = 250
+    SCROLLBAR_ID = 1152
 
     def __init__(self, *args, **kwargs):
         kodigui.BaseDialog.__init__(self, *args, **kwargs)
@@ -40,6 +42,9 @@ class DropdownDialog(kodigui.BaseDialog):
         self.optionsCallback = kwargs.get('options_callback', None)
         self.header = kwargs.get('header')
         self.selectIndex = kwargs.get('select_index')
+        self.selectItem = kwargs.get('select_item')
+        self.isSubList = kwargs.get('is_sub_list')
+        self.openSubLists = kwargs.get('open_sublists')
         self.onCloseCallback = kwargs.get('onclose_callback')
         self.choice = None
 
@@ -57,9 +62,12 @@ class DropdownDialog(kodigui.BaseDialog):
     def onFirstInit(self):
         self.setProperty('dropdown', self.setDropdownProp and '1' or '')
         self.setProperty('header', self.header)
+        optLen = len(list(filter(lambda x: x != SEPARATOR, self.options)))
+        separators = len(list(filter(lambda x: x == SEPARATOR, self.options)))
+        self.setBoolProperty('scroll', optLen > 14)
         self.optionsList = kodigui.ManagedControlList(self, self.OPTIONS_LIST_ID, 14)
-        self.showOptions()
-        height = min(self.optionHeight * 14, len(self.options) * self.optionHeight) + util.vscalei(86)
+        openSubList = self.showOptions()
+        height = min(self.optionHeight * 14, optLen * self.optionHeight + separators * self.separatorHeight) + util.vscalei(86)
         ol_height = height - util.vscalei(86)
         y = self.y
 
@@ -89,14 +97,20 @@ class DropdownDialog(kodigui.BaseDialog):
             from lib import player
             player.PLAYER.on('session.ended', self.playbackSessionEnded)
 
+        if openSubList and self.openSubLists:
+            # once the item is selected, open its sublist if wanted
+            self.setChoice()
+
     def onAction(self, action):
         try:
             pass
         except:
             util.ERROR()
 
+        controlID = self.getFocusId()
+
         if self.roundRobin and action in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN) and \
-                self.getFocusId() == self.OPTIONS_LIST_ID:
+                controlID == self.OPTIONS_LIST_ID:
             to_pos = None
             last_index = self.optionsList.size() - 1
 
@@ -115,6 +129,13 @@ class DropdownDialog(kodigui.BaseDialog):
                     return
 
                 self.lastSelectedItem = self.optionsList.control.getSelectedPosition()
+        elif self.suboptionCallback and action == xbmcgui.ACTION_MOVE_RIGHT:
+            if self.optionsList.getSelectedItem().dataSource.get("is_sub_list"):
+                self.setChoice()
+
+        elif controlID == self.SCROLLBAR_ID and action == xbmcgui.ACTION_SELECT_ITEM:
+            self.setChoice()
+            return
 
         kodigui.BaseDialog.onAction(self, action)
 
@@ -148,7 +169,7 @@ class DropdownDialog(kodigui.BaseDialog):
         if not mli:
             return
 
-        choice = self.options[self.optionsList.getSelectedPosition()]
+        choice = self.options[self.optionsList.getSelectedPos()]
 
         if choice.get('ignore'):
             return
@@ -156,7 +177,16 @@ class DropdownDialog(kodigui.BaseDialog):
         if self.suboptionCallback:
             options = self.suboptionCallback(choice)
             if options:
-                sub = showDropdown(options, (self.x + 290, self.y + 10), close_direction='left', with_indicator=True)
+                sub_select = None
+                if self.selectItem and self.selectItem.get("sub"):
+                    sub_select = self.selectItem["sub"]
+
+                # disable scrollbar temporarily
+                oldprop = self.getBoolProperty('scroll')
+                self.setBoolProperty('scroll', False)
+                sub = showDropdown(options, (self.x + 290, self.y + 10), close_direction='left',
+                                   with_indicator=True, select_item=sub_select, is_sub_list=True)
+                self.setBoolProperty('scroll', oldprop)
                 if not sub:
                     return
 
@@ -174,10 +204,22 @@ class DropdownDialog(kodigui.BaseDialog):
     def showOptions(self):
         items = []
         options = []
+        sids = None
+        hadSub = False
+        if self.selectItem:
+            sids = self.selectItem.copy()
+            sids["indicator"] = ''
+            if "sub" in sids:
+                sids.pop("sub")
+                hadSub = True
+
         for oo in self.options:
             if oo:
                 o = oo.copy()
-                item = kodigui.ManagedListItem(o['display'], thumbnailImage=o.get('indicator', ''), data_source=o)
+                ds = o.copy()
+                # clear indicator for the dataSource so we can find it later
+                ds["indicator"] = ''
+                item = kodigui.ManagedListItem(o['display'], thumbnailImage=o.get('indicator', ''), data_source=ds)
                 item.setProperty('with.indicator', self.withIndicator and '1' or '')
                 item.setProperty('align', self.alignItems)
                 items.append(item)
@@ -202,6 +244,28 @@ class DropdownDialog(kodigui.BaseDialog):
         if self.selectIndex is not None:
             self.optionsList.setSelectedItemByPos(self.selectIndex)
             self.lastSelectedItem = self.selectIndex
+        elif sids is not None:
+            # select the wanted item and wait for it to actually be selected
+            mli = self.optionsList.getListItemByDataSource(sids)
+            if not mli:
+                util.DEBUG_LOG("Dropdown: item not found: {}", sids)
+                return False
+
+            pos = self.optionsList.getManagedItemPosition(mli)
+            self.optionsList.setSelectedItemByPos(pos)
+            while self.optionsList and self.optionsList.getSelectedPos() != pos:
+                util.MONITOR.waitForAbort(0.01)
+
+            if not self.optionsList:
+                util.DEBUG_LOG("Dropdown: something went wrong")
+                return False
+
+            self.lastSelectedItem = pos
+
+            # we expect further sub-dropdowns
+            if hadSub and self.suboptionCallback:
+                return True
+        return False
 
 
 class DropdownHeaderDialog(DropdownDialog):
@@ -222,6 +286,9 @@ def showDropdown(
     options_callback=None,
     header=None,
     select_index=None,
+    select_item=None,
+    open_sublists=False,
+    is_sub_list=False,
     onclose_callback=None,
     dialog_props=None
 ):
@@ -241,6 +308,9 @@ def showDropdown(
             options_callback=options_callback,
             header=header,
             select_index=select_index,
+            select_item=select_item,
+            open_sublists=open_sublists,
+            is_sub_list=is_sub_list,
             onclose_callback=onclose_callback,
             dialog_props=dialog_props,
         )
@@ -259,6 +329,9 @@ def showDropdown(
             options_callback=options_callback,
             header=header,
             select_index=select_index,
+            select_item=select_item,
+            open_sublists=open_sublists,
+            is_sub_list=is_sub_list,
             onclose_callback=onclose_callback,
             dialog_props=dialog_props,
         )

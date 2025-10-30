@@ -195,6 +195,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self._ignoreTick = False
         self._abortBufferWait = False
         self._playerDebugActive = False
+        self._playerNativePPIActive = False
         self._item_states = {}
         self.no_spoilers = util.getSetting('no_episode_spoilers4')
         self.no_time_no_osd_spoilers = util.getSetting('no_osd_time_spoilers')
@@ -421,7 +422,6 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         if self.handler.playlist:
             self.handler.playlist.on('change', self.updateProperties)
             self.handler.playlist.on('current.changed', self.updateProperties)
-            self.player.on('video.progress', self.storePlaylistProgress)
 
         self.seekbarControl = self.getControl(self.SEEK_IMAGE_ID)
         self.positionControl = self.getControl(self.POSITION_IMAGE_ID)
@@ -617,12 +617,14 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                     self.hideOSD()
 
                 if action == xbmcgui.ACTION_CONTEXT_MENU or (self.getProperty('show.PPI') and action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT)):
-                    if self.getProperty('show.PPI'):
+                    if self.getProperty('show.PPI') and not self._playerDebugActive and not self._playerNativePPIActive:
                         if action == xbmcgui.ACTION_MOVE_LEFT:
                             self.showPPIDialog(real_ppi=True, debug=True)
                         else:
                             self.showPPIDialog(real_ppi=True)
                         return
+                if self._playerNativePPIActive and action in (xbmcgui.ACTION_MOVE_UP, xbmcgui.ACTION_MOVE_DOWN):
+                    self._playerNativePPIActive = False
 
                 passThroughMain = False
                 if controlID == self.SKIP_MARKER_BUTTON_ID:
@@ -679,12 +681,18 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         return
 
                     if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_STEP_FORWARD):
+                        if self.handler.waitingForSOS:
+                            util.DEBUG_LOG("SeekDialog: Ignoring seek action as we're waiting for SOS")
+                            return
                         self.setProperty('show.chapters', '')
                         if self.useDynamicStepsForTimeline:
                             return self.skipForward()
                         return self.seekByOffset(10000, auto_seek=self.useAutoSeek)
 
                     elif action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_STEP_BACK):
+                        if self.handler.waitingForSOS:
+                            util.DEBUG_LOG("SeekDialog: Ignoring seek action as we're waiting for SOS")
+                            return
                         self.setProperty('show.chapters', '')
                         if self.useDynamicStepsForTimeline:
                             return self.skipBack()
@@ -730,6 +738,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         return
 
                     if action in (xbmcgui.ACTION_MOVE_RIGHT, xbmcgui.ACTION_MOVE_LEFT):
+                        if self.handler.waitingForSOS:
+                            util.DEBUG_LOG("SeekDialog: Ignoring seek action as we're waiting for SOS")
+                            return
                         # we're seeking from the timeline, with the OSD closed; act as we're skipping
                         if not self._seeking:
                             self.selectedOffset = self.trueOffset()
@@ -810,6 +821,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                             xbmc.executebuiltin('Action(playerdebug)')
                             self._playerDebugActive = False
                             return
+                        if self._playerNativePPIActive:
+                            self._playerNativePPIActive = False
 
                     # immediate marker timer actions
                     if self.countingDownMarker:
@@ -987,10 +1000,6 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         elif controlID == self.SKIP_FORWARD_BUTTON_ID:
             self.skipForward(immediate=not self.useAutoSeek)
 
-    def storePlaylistProgress(self, data, **kw):
-        gprk, prk, rk, state = data
-        self._item_states[rk] = state
-
     def stop(self):
         self._ignoreTick = True
         self.doClose()
@@ -1013,7 +1022,6 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         if self.handler.playlist:
             self.handler.playlist.off('change', self.updateProperties)
             self.handler.playlist.off('current.changed', self.updateProperties)
-            self.player.off('video.progress', self.storePlaylistProgress)
 
         try:
             if self.playlistDialog:
@@ -1038,6 +1046,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                     self._playerDebugActive = True
                 else:
                     xbmc.executebuiltin('Action(playerprocessinfo)')
+                    self._playerNativePPIActive = True
             return
 
         for attrib in SESSION_ATTRIBUTE_TYPES.values():
@@ -2137,7 +2146,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         if ((not self.resumeSeekBehindOnlyDP or self.isDirectPlay)
                 and self.resumeSeekBehind and to > amount):
             util.DEBUG_LOG("SeekDialog: Seeking back from {} to {}", to, to - amount)
-            self.doSeek(to - amount)
+            self.doSeek(max(to - amount, 0))
 
     def onPlayBackResumed(self):
         util.DEBUG_LOG("SeekDialog: OnPlaybackResumed")
@@ -2758,7 +2767,8 @@ class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):
         idx = 1
         for pi in self.playlist.items():
             # mark watched items in playlist during current playback session
-            if self.item_states.get(pi.ratingKey, None) is True:
+            util.DEBUG_LOG("ROLLER: %r %r %r" % (self.handler.getProgressForItem(str(pi.ratingKey), None), self.handler._progressHld, pi.ratingKey))
+            if self.handler.getProgressForItem(str(pi.ratingKey), None) is True:
                 pi.set('viewCount',pi.get('viewCount', 0).asInt() + 1)
                 pi.set('viewOffset', 0)
 

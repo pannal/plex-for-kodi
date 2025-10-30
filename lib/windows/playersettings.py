@@ -130,7 +130,7 @@ class VideoSettingsDialog(kodigui.BaseDialog, util.CronReceiver, PlexSubtitleDow
                 options.append(('kodi_colours', T(32967, 'Kodi Colour Settings'), ''))
 
         if self.viaOSD:
-            if self.parent.getProperty("show.PPI"):
+            if self.parent.getProperty("show.PPI") or self.parent._playerDebugActive or self.parent._playerNativePPIActive:
                 options += [
                     ('stream_info', T(32483, 'Hide Stream Info'), ''),
                 ]
@@ -223,7 +223,14 @@ class VideoSettingsDialog(kodigui.BaseDialog, util.CronReceiver, PlexSubtitleDow
                     self.parent.hidePPIDialog()
                 else:
                     #xbmc.executebuiltin('Action(PlayerProcessInfo)')
-                    self.parent.showPPIDialog()
+                    if self.parent._playerDebugActive:
+                        xbmc.executebuiltin('Action(playerdebug)')
+                        self.parent._playerDebugActive = False
+                    elif self.parent._playerNativePPIActive:
+                        xbmc.executebuiltin('Action(playerprocessinfo)')
+                        self.parent._playerNativePPIActive = False
+                    else:
+                        self.parent.showPPIDialog()
             self.doClose()
             return
 

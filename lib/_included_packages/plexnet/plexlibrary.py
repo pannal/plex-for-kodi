@@ -187,13 +187,13 @@ class LibrarySection(plexobjects.PlexObject):
 
         return plexobjects.PlexObject.getAbsolutePath(self, key)
 
-    def all(self, start=None, size=None, filter_=None, sort=None, unwatched=False, type_=None):
+    def all(self, start=None, size=None, filter_=None, sort=None, unwatched=False, type_=None, hdr=False, dovi=False):
         if self.key.startswith('/'):
             path = '{0}/all'.format(self.key)
         else:
             path = '/library/sections/{0}/all'.format(self.key)
         
-        return self.items(path, start, size, filter_, sort, unwatched, type_, False)
+        return self.items(path, start, size, filter_, sort, unwatched, type_, False, hdr=hdr, dovi=dovi)
 
     @property
     def settings(self):
@@ -223,7 +223,7 @@ class LibrarySection(plexobjects.PlexObject):
         
         return self.items(path, start, size, None, None, False, None, True)
 
-    def items(self, path, start, size, filter_, sort, unwatched, type_, tag_fallback):
+    def items(self, path, start, size, filter_, sort, unwatched, type_, tag_fallback, hdr=False, dovi=False):
 
         args = {}
         if self.DEFAULT_URL_ARGS:
@@ -258,6 +258,10 @@ class LibrarySection(plexobjects.PlexObject):
             else:
                 # might not apply anywhere
                 args['unwatchedLeaves'] = 1
+        if hdr:
+            args['hdr'] = 1
+        if dovi:
+            args['dovi'] = 1
 
         if args:
             path += util.joinArgs(args, '?' not in path)
@@ -265,7 +269,7 @@ class LibrarySection(plexobjects.PlexObject):
         return plexobjects.listItems(self.server, path, tag_fallback=tag_fallback, not_cachable=not self.cachable,
                                      cache_ref=self.cacheRef)
 
-    def jumpList(self, filter_=None, sort=None, unwatched=False, type_=None):
+    def jumpList(self, filter_=None, sort=None, unwatched=False, type_=None, hdr=False, dovi=False):
         if self.key.startswith('/'):
             path = '{0}/firstCharacter'.format(self.key)
         else:
@@ -294,6 +298,10 @@ class LibrarySection(plexobjects.PlexObject):
             else:
                 # might not apply anywhere
                 args['unwatchedLeaves'] = 1
+        if hdr:
+            args['hdr'] = 1
+        if dovi:
+            args['dovi'] = 1
 
         if args:
             path += util.joinArgs(args, '?' not in path)

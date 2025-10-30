@@ -1,3 +1,52 @@
+[-1.0.5d-]
+- Core/Plex.direct: Only check native resolving of hostnames containing plex.direct
+- Core/Plex.direct: Reset mapped hosts if the user skips the confirmation dialog
+- Core/Plex.direct: Fix long-existing issue with multiple servers in certain circumstances not triggering plex.direct host mapping check
+- Core/Plex.direct: Force mapping if requested
+- Core/GDM: GDM could still be reported as active under certain circumstances
+- Core/MyPlex: Consider a device that is product="Plex Media Server" as a server as well, even if it doesn't provide the correct attributes (can happen; very rare)
+- Core/PlexNet/CoreELEC: Properly report device and platform parameters to Plex.tv
+- Player: Don't throw away progress data during consecutive watch sessions; properly represent watched state in current video playlist during those
+- Player: Honor "Never show Post Play" properly even when an episode has ended
+- Player/Timeline: Never allow timeline reporting below 0 seconds
+- Player: SeekBehind: Never allow seek target to be < 0
+- Player/SeekDialog/AltSeekFix: Never react to seek attempts while we're waiting for a seek to happen
+- Player/MDE: If we don't want a subtitle, report it properly to the Plex server (still bugged, probably server-side)
+- Libraries: Move filter options out of the header area to fix overlapping music player and long filter descriptions
+- Libraries: Unify and optimize play/filter/jumplist/scrollbar navigation
+- Libraries/Listviews/Squares: Autoscroll long description texts
+- Libraries/Photos: Fix PhotoDirectory browsing
+- Library/Movies: Add filters for Writer, Producer, Editions, Audio Language, Subtitle Language, Folder Location (only if admin)
+- Library/Shows: Add filters for Director, Writer, Producer; correctly separate Studio and Network filters
+- Libraries: Store subfilter states
+- Libraries: Re-select currently selected items in filter dropdowns
+- Libraries: When re-opening applied filters, re-open all subfilter dropdowns until we reach our current one
+- Libraries: Cache subfilter content
+- Libraries: Depending on which "side" of the library view we are, when pressing "up", select either the left buttons or the right buttons
+- Libraries: Enable fast navigation through subfilter lists via scrollbar
+- Library/Movies: Allow filtering by HDR and DOVI; allow multiple boolean filters at the same time
+- Library/Photos: Fix filtering
+- Libraries: Allow filter clearing for boolean filters
+- Libraries/Movies: Add "year" and "progress" sort types
+- Libraries: Shows/Movies use sort order from PlexWeb
+- Libraries: Movies: Show current sort reference value if possible in addition to movie year
+- Libraries: Photos: Properly implement PlexWeb sort; fix display
+- Libraries/PosterSmall: Fix vertical cutoff
+- Libraries/Posters/PostersSmall: Scale and position scrollbar appropriately when moving down
+- Libraries: Re-select currently used item type and sort attribute in dropdowns
+- Dropdown: Allow opening a sublist by pressing RIGHT
+- Dropdown: Show scrollbar if a (child-)dropdown needs scrolling
+- Dropdown: Fix shadow size; perfect shadow positioning
+- PostPlay: Remove leftover bifurcation line
+- SeekDialog: Be smarter about playerprocessinfo/playerdebug/PM4K stream info (press left/right)
+- Settings: Make the combined continue watching/ondeck hub default enabled
+- Settings: Add setting "Force plex.direct mapping" (default: False)
+- Settings: Sanitize defaults ("Loop Theme Music" off vs on, "Home: Resume in-progress items" off vs on)
+- Settings: Temporarily remove "custom" theme setting as it's been broken for a while now
+- Settings: Rename "Episodes: Skip Post Play screen" to "Episodes: Continuous playback" to make functionality clearer
+- AddonSettings: widen maximum for "Use alternate seek" wait for seek to 5000 (was 2500)
+
+
 [-1.0.0-]
 CoreELEC
 - Fix issues with delayed audio playback via the alternate seek method

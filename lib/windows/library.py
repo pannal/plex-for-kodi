@@ -122,55 +122,64 @@ SORT_KEYS = {
         'titleSort': {'title': T(32357, 'By Title'), 'display': T(32358, 'Title'), 'defSortDesc': False},
         'addedAt': {'title': T(32351, 'By Date Added'), 'display': T(32352, 'Date Added'), 'defSortDesc': True},
         'originallyAvailableAt': {'title': T(32353, 'By Release Date'), 'display': T(32354, 'Release Date'),
-                                  'defSortDesc': True},
-        'lastViewedAt': {'title': T(32355, 'By Date Viewed'), 'display': T(32356, 'Date Viewed'), 'defSortDesc': True},
+                                  'defSortDesc': True, 'subDisplay': 'originallyAvailableAt', 'subDisplayExclusive': True},
+        'lastViewedAt': {'title': T(32355, 'By Date Viewed'), 'display': T(32356, 'Date Viewed'), 'defSortDesc': True, 'subDisplay': 'lastViewedAt'},
         'rating': {'title': T(33107, 'By Critic Rating'), 'display': T(33108, ' Critic Rating'), 'defSortDesc': True},
         'audienceRating': {'title': T(33101, 'By Audience Rating'), 'display': T(33102, 'Audience Rating'),
                            'defSortDesc': True},
         # called "Rating" in PlexWeb, using more obvious "This is this user's rating" here
         'userRating': {'title': T(33103, 'By my Rating'), 'display': T(33104, 'My Rating'), 'defSortDesc': True},
         'contentRating': {'title': T(33105, 'By Content Rating'), 'display': T(33106, 'Content Rating'),
-                          'defSortDesc': True},
-        'resolution': {'title': T(32361, 'By Resolution'), 'display': T(32362, 'Resolution'), 'defSortDesc': True},
-        'duration': {'title': T(32363, 'By Duration'), 'display': T(32364, 'Duration'), 'defSortDesc': True},
+                          'defSortDesc': False, 'subDisplay': 'contentRating'},
+        'resolution': {'title': T(32361, 'By Resolution'), 'display': T(32362, 'Resolution'), 'defSortDesc': True, 'subDisplay': 'resolutionString'},
+        'duration': {'title': T(32363, 'By Duration'), 'display': T(32364, 'Duration'), 'defSortDesc': True, 'subDisplay': 'duration'},
         'unwatched': {'title': T(32367, 'By Unplayed'), 'display': T(32368, 'Unplayed'), 'defSortDesc': False},
-        'viewCount': {'title': T(32371, 'By Play Count'), 'display': T(32372, 'Play Count'), 'defSortDesc': True},
-        'mediaBitrate': {'title': T(33731, 'By Bitrate'), 'display': T(33732, 'Bitrate'), 'defSortDesc': True},
+        'year': {'title': T(32377, 'Year'), 'display': T(32377, 'Year'), 'defSortDesc': True},
+        'viewOffset': {'title': T(34040, 'By Progress'), 'display': T(34041, 'Progress'), 'defSortDesc': True},
+        'viewCount': {'title': T(32371, 'By Play Count'), 'display': T(32372, 'Play Count'), 'defSortDesc': True, 'subDisplay': 'viewCount'},
+        'mediaBitrate': {'title': T(33731, 'By Bitrate'), 'display': T(33732, 'Bitrate'), 'defSortDesc': True, 'subDisplay': 'mediaBitrate'},
         'random': {'title': T(33730, 'Randomly'), 'display': T(33730, 'Randomly'), 'defSortDesc': True},
     },
     'show': {
         'titleSort': {'title': T(32357, 'By Title'), 'display': T(32358, 'Title'), 'defSortDesc': False},
         'year': {'title': T(32377, "Year"), 'display': T(32377, "Year"), 'defSortDesc': True},
         'show.titleSort': {'title': T(32457, 'By Show'), 'display': T(32456, 'Show'), 'defSortDesc': False},
-        'episode.addedAt': {'title': T(33042, 'Episode Date Added'), 'display': T(33042, 'Episode Date Added'), 'defSortDesc': True},
-        'originallyAvailableAt': {'title': T(32365, 'By First Aired'), 'display': T(32366, 'First Aired'),
-                                  'defSortDesc': False},
-        'unviewedLeafCount': {'title': T(32367, 'By Unplayed'), 'display': T(32368, 'Unplayed'), 'defSortDesc': True},
+        'originallyAvailableAt': {'title': T(32353, 'By Release Date'), 'display': T(32354, 'Release Date'),
+                                  'defSortDesc': True, 'subDisplay': 'originallyAvailableAt', 'subDisplayExclusive': True},
         'rating': {'title': T(33107, 'By Critic Rating'), 'display': T(33108, ' Critic Rating'), 'defSortDesc': True},
         'audienceRating': {'title': T(33101, 'By Audience Rating'), 'display': T(33102, 'Audience Rating'),
                            'defSortDesc': True},
         # called "Rating" in PlexWeb, using more obvious "This is this user's rating" here
         'userRating': {'title': T(33103, 'By my Rating'), 'display': T(33104, 'My Rating'), 'defSortDesc': True},
         'contentRating': {'title': T(33105, 'By Content Rating'), 'display': T(33106, 'Content Rating'),
-                          'defSortDesc': True},
+                          'defSortDesc': True, 'subDisplay': 'contentRating'},
+        'unviewedLeafCount': {'title': T(32367, 'By Unplayed'), 'display': T(32368, 'Unplayed'), 'defSortDesc': True},
+        'episode.addedAt': {'title': T(33042, 'Episode Date Added'), 'display': T(33042, 'Episode Date Added'), 'defSortDesc': True},
+        'addedAt': {'title': T(32351, 'By Date Added'), 'display': T(32352, 'Date Added'), 'defSortDesc': True, 'subDisplay': 'addedAt'},
+        'lastViewedAt': {'title': T(32355, 'By Date Added'), 'display': T(32356, 'Date Added'), 'defSortDesc': True, 'subDisplay': 'lastViewedAt'},
         'random': {'title': T(33730, 'Randomly'), 'display': T(33730, 'Randomly'), 'defSortDesc': True},
     },
     'artist': {
         'titleSort': {'title': T(32357, 'By Title'), 'display': T(32358, 'Title'), 'defSortDesc': False},
-        'artist.titleSort': {'title': T(32463, 'By Artist'), 'display': T(32462, 'Artist'), 'defSortDesc': False},
+        'userRating': {'title': T(33103, 'By my Rating'), 'display': T(33104, 'My Rating'), 'defSortDesc': True},
+        'addedAt': {'title': T(32351, 'By Date Added'), 'display': T(32352, 'Date Added'), 'defSortDesc': True, 'subDisplay': 'addedAt'},
         'lastViewedAt': {'title': T(32369, 'By Date Played'), 'display': T(32370, 'Date Played'), 'defSortDesc': False},
+        'viewCount': {'title': T(32371, 'By Play Count'), 'display': T(32372, 'Play Count'), 'defSortDesc': True, 'subDisplay': 'viewCount'},
         'random': {'title': T(33730, 'Randomly'), 'display': T(33730, 'Randomly'), 'defSortDesc': True},
     },
     'track': {
         'titleSort': {'title': T(32357, 'By Title'), 'display': T(32358, 'Title'), 'defSortDesc': False},
+        'userRating': {'title': T(33103, 'By my Rating'), 'display': T(33104, 'My Rating'), 'defSortDesc': True},
         'artist.titleSort': {'title': T(32463, 'By Artist'), 'display': T(32462, 'Artist'), 'defSortDesc': False},
-        'lastViewedAt': {'title': T(32369, 'By Date Played'), 'display': T(32370, 'Date Played'), 'defSortDesc': False},
+        'lastViewedAt': {'title': T(32369, 'By Date Played'), 'display': T(32370, 'Date Played'), 'defSortDesc': True},
         'viewCount': {'title': T(32371, 'By Play Count'), 'display': T(32372, 'Play Count'), 'defSortDesc': True}
     },
     'photo': {
-        'titleSort': {'title': T(32357, 'By Title'), 'display': T(32358, 'Title'), 'defSortDesc': False},
+        'addedAt': {'title': T(32351, 'By Date Added'), 'display': T(32352, 'Date Added'), 'defSortDesc': True, 'subDisplay': 'addedAt'},
         'originallyAvailableAt': {'title': T(32373, 'By Date Taken'), 'display': T(32374, 'Date Taken'),
-                                  'defSortDesc': True}
+                                  'defSortDesc': True, 'subDisplay': 'originallyAvailableAt', 'subDisplayExclusive': True},
+        'photos.titleSort': {'title': T(32357, 'By Title'), 'display': T(32358, 'Title'), 'defSortDesc': False},
+        'mediaCount': {'title': T(34042, 'By Album'), 'display': T(34043, 'Album'), 'defSortDesc': False},
     },
     'photodirectory': {},
     'collection': {},
@@ -246,7 +255,8 @@ class CreateDefaultItemsTask(backgroundthread.Task):
         self.callback(items, self.key, firstMli)
 
 class ChunkRequestTask(backgroundthread.Task):
-    def setup(self, section, start, size, callback, filter_=None, sort=None, unwatched=False, subDir=False):
+    def setup(self, section, start, size, callback, filter_=None, sort=None, unwatched=False, subDir=False, hdr=False,
+              dovi=False):
         self.section = section
         self.start = start
         self.size = size
@@ -254,6 +264,8 @@ class ChunkRequestTask(backgroundthread.Task):
         self.filter = filter_
         self.sort = sort
         self.unwatched = unwatched
+        self.hdr = hdr
+        self.dovi = dovi
         self.subDir = subDir
         return self
 
@@ -270,7 +282,11 @@ class ChunkRequestTask(backgroundthread.Task):
             if ITEM_TYPE == 'folder':
                 items = self.section.folder(self.start, self.size, self.subDir)
             else:
-                items = self.section.all(self.start, self.size, self.filter, self.sort, self.unwatched, type_=type_)
+                # supplying this type kills all results (bug: 2025/10/21)
+                if type_ == plexobjects.SEARCHTYPES["photo"]:
+                    type_ = None
+                items = self.section.all(self.start, self.size, self.filter, self.sort, self.unwatched, type_=type_,
+                                         hdr=self.hdr, dovi=self.dovi)
 
             if self.isCanceled():
                 return
@@ -401,6 +417,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.lastFocusID = None
         self.lastNonOptionsFocusID = None
         self.refill = False
+        self.subOptionCache = {}
 
         self.dcpjPos = 0
         self.dcpjThread = None
@@ -419,6 +436,9 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         PlaybackBtnMixin.reset(self)
         util.setGlobalProperty('sort', '')
         self.filterUnwatched = self.librarySettings.getSetting('filter.unwatched', False)
+        self.filterHDR = self.librarySettings.getSetting('filter.hdr', False)
+        self.filterDOVI = self.librarySettings.getSetting('filter.dovi', False)
+        self.filter = self.filter or self.librarySettings.getSetting('filter', None)
         self.sort = self.librarySettings.getSetting('sort', self.section.DEFAULT_SORT)
         self.sortDesc = self.librarySettings.getSetting('sort.desc', self.section.DEFAULT_SORT_DESC)
 
@@ -476,8 +496,13 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.setProperty('unwatched.hascount', self.section.TYPE == 'show' and '1' or '')
         util.setGlobalProperty('sort', self.sort)
         self.setProperty('filter1.display', self.filterUnwatched and T(32368, 'UNPLAYED') or T(32345, 'All'))
-        self.setProperty('sort.display',
-                         SORT_KEYS[self.section.TYPE].get(self.sort, SORT_KEYS['movie'].get(self.sort))['title'])
+        try:
+            self.setProperty('sort.display',
+                             SORT_KEYS[self.section.TYPE].get(self.sort, SORT_KEYS['movie'].get(self.sort))['title'])
+        except TypeError:
+            self.resetSort()
+            self.setProperty('sort.display',
+                             SORT_KEYS[self.section.TYPE].get(self.sort, SORT_KEYS['movie'].get(self.sort))['title'])
         self.setProperty('media.itemType', ITEM_TYPE or self.section.TYPE)
         self.setProperty('media.type', TYPE_PLURAL.get(ITEM_TYPE or self.section.TYPE, self.section.TYPE))
         self.setProperty('media', self.section.TYPE)
@@ -734,6 +759,8 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         if self.playBtnClicked:
             return
 
+        self.subOptionCache = {}
+
         self.playBtnClicked = True
         filter_ = self.getFilterOpts()
         sort = self.getSortOpts()
@@ -798,7 +825,15 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         else:
             return
 
-        result = dropdown.showDropdown(options, (1280, 106), with_indicator=True)
+        selectItem = None
+        curType = self.librarySettings.getItemType()
+        try:
+            selectItem = list(filter(lambda o: o["type"] == curType, options))[0]
+        except:
+            pass
+
+        result = dropdown.showDropdown(options, (1280, 106), with_indicator=True,
+                                       select_item=not self.getBoolProperty('no.content.filtered') and selectItem or None)
         if not result:
             return
 
@@ -849,8 +884,9 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         defSortByOption = {}
 
         if self.section.TYPE == 'movie':
-            searchTypes = ['titleSort', 'addedAt', 'originallyAvailableAt', 'lastViewedAt', 'rating', 'audienceRating',
-                           'userRating', 'contentRating', 'resolution', 'duration', 'mediaBitrate', 'random']
+            searchTypes = ['titleSort', 'year', 'originallyAvailableAt', 'rating', 'audienceRating', 'userRating',
+                           'contentRating', 'duration', 'viewOffset', 'viewCount', 'addedAt', 'lastViewedAt',
+                           'resolution', 'mediaBitrate', 'random']
             if ITEM_TYPE == 'collection':
                 searchTypes = ['titleSort', 'addedAt', 'contentRating']
 
@@ -879,7 +915,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                 defSortByOption[stype] = option.get('defSortDesc')
                 options.append(option)
         elif self.section.TYPE == 'artist':
-            searchTypes = ['titleSort', 'addedAt', 'lastViewedAt', 'viewCount']
+            searchTypes = ['titleSort', 'userRating', 'addedAt', 'lastViewedAt', 'viewCount', 'random']
             if ITEM_TYPE == 'album':
                 searchTypes = ['titleSort', 'artist.titleSort', 'addedAt', 'lastViewedAt', 'viewCount',
                                'originallyAvailableAt', 'rating', 'random']
@@ -895,7 +931,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                 defSortByOption[stype] = option.get('defSortDesc')
                 options.append(option)
         elif self.section.TYPE == 'photo':
-            searchTypes = ['titleSort', 'addedAt', 'originallyAvailableAt', 'rating']
+            searchTypes = ['addedAt', 'originallyAvailableAt', 'photos.titleSort', 'mediaCount']
             for stype in searchTypes:
                 option = SORT_KEYS['photo'].get(stype, SORT_KEYS['movie'].get(stype)).copy()
                 option['type'] = stype
@@ -913,7 +949,14 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         else:
             return
 
-        result = dropdown.showDropdown(options, (1280, 106), with_indicator=True)
+        selectItem = None
+        try:
+            selectItem = list(filter(lambda o: o["type"] == self.sort, options))[0]
+        except:
+            pass
+
+        result = dropdown.showDropdown(options, (1280, 106), with_indicator=True,
+                                       select_item=not self.getBoolProperty('no.content.filtered') and selectItem or None)
         if not result:
             return
 
@@ -1010,12 +1053,19 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                 subKey = self.filter['sub']['val']
 
         if option['type'] in (
-            'year', 'decade', 'genre', 'contentRating', 'collection', 'director', 'actor', 'country', 'studio', 'resolution', 'label',
-            'make', 'model', 'aperture', 'exposure', 'iso', 'lens'
+            'year', 'decade', 'genre', 'contentRating', 'collection', 'director', 'actor', 'country', 'studio', 'network', 'resolution', 'label',
+            'make', 'model', 'aperture', 'exposure', 'iso', 'lens', 'writer', 'producer', 'editionTitle', 'location', 'audioLanguage', 'subtitleLanguage'
         ):
-            options = [{'val': o.key, 'display': o.title, 'indicator': o.key == subKey and check or ''} for o in
-                       self.section.listChoices(option['type'],
-                                                libtype=self.librarySettings.getItemType() or self.section.TYPE)]
+            # cache suboptions
+            ck = (self.librarySettings.getItemType() or self.section.TYPE, option['type'])
+            if ck in self.subOptionCache:
+                options = self.subOptionCache[ck]
+            else:
+                options = [{'val': o.key, 'display': o.title, 'indicator': o.key == subKey and check or ''} for o in
+                            self.section.listChoices(option['type'],
+                                                     libtype=self.librarySettings.getItemType() or self.section.TYPE)]
+                self.subOptionCache[ck] = options
+
             if not options:
                 options = [{'val': None, 'display': T(32375, 'No filters available'), 'ignore': True}]
 
@@ -1032,11 +1082,14 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
         options = []
 
+        if self.filter or self.filterHDR or self.filterDOVI:
+            options.append({'type': 'clear_filter', 'display': T(32376, 'CLEAR FILTER').upper(), 'indicator': 'script.plex/indicators/remove.png'})
+
         if self.section.TYPE in ('movie', 'show') and not ITEM_TYPE == 'collection':
             options.append({'type': 'unwatched', 'display': T(32368, 'UNPLAYED').upper(), 'indicator': self.filterUnwatched and check or ''})
-
-        if self.filter:
-            options.append({'type': 'clear_filter', 'display': T(32376, 'CLEAR FILTER').upper(), 'indicator': 'script.plex/indicators/remove.png'})
+            if self.section.TYPE == 'movie':
+                options.append({'type': 'hdr', 'display': T(34037, 'HDR'), 'indicator': self.filterHDR and check or ''})
+                options.append({'type': 'dovi', 'display': T(34036, 'DOVI'), 'indicator': self.filterDOVI and check or ''})
 
         if options:
             options.append(None)  # Separator
@@ -1046,13 +1099,18 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             'decade': {'type': 'decade', 'display': T(32378, 'Decade'), 'indicator': self.hasFilter('decade') and check or ''},
             'genre': {'type': 'genre', 'display': T(32379, 'Genre'), 'indicator': self.hasFilter('genre') and check or ''},
             'contentRating': {'type': 'contentRating', 'display': T(32380, 'Content Rating'), 'indicator': self.hasFilter('contentRating') and check or ''},
-            'network': {'type': 'studio', 'display': T(32381, 'Network'), 'indicator': self.hasFilter('studio') and check or ''},
+            'network': {'type': 'network', 'display': T(32381, 'Network'), 'indicator': self.hasFilter('network') and check or ''},
             'collection': {'type': 'collection', 'display': T(32382, 'Collection'), 'indicator': self.hasFilter('collection') and check or ''},
             'director': {'type': 'director', 'display': T(32383, 'Director'), 'indicator': self.hasFilter('director') and check or ''},
             'actor': {'type': 'actor', 'display': T(32384, 'Actor'), 'indicator': self.hasFilter('actor') and check or ''},
+            'writer': {'type': 'writer', 'display': T(32402, 'Writer'), 'indicator': self.hasFilter('writer') and check or ''},
+            'producer': {'type': 'producer', 'display': T(34031, 'Producer'), 'indicator': self.hasFilter('producer') and check or ''},
             'country': {'type': 'country', 'display': T(32385, 'Country'), 'indicator': self.hasFilter('country') and check or ''},
             'studio': {'type': 'studio', 'display': T(32386, 'Studio'), 'indicator': self.hasFilter('studio') and check or ''},
             'resolution': {'type': 'resolution', 'display': T(32362, 'Resolution'), 'indicator': self.hasFilter('resolution') and check or ''},
+            'audioLanguage': {'type': 'audioLanguage', 'display': T(34032, 'Audio Language'), 'indicator': self.hasFilter('audioLanguage') and check or ''},
+            'subtitleLanguage': {'type': 'subtitleLanguage', 'display': T(34033, 'Subtitle Language'), 'indicator': self.hasFilter('subtitleLanguage') and check or ''},
+            'editionTitle': {'type': 'editionTitle', 'display': T(34035, 'Editions'), 'indicator': self.hasFilter('editionTitle') and check or ''},
             'label': {'type': 'label', 'display': T(32387, 'Labels'), 'indicator': self.hasFilter('label') and check or ''},
             'released': {'type': 'released', 'display': T(34001, 'Released'),
                       'indicator': self.hasFilter('released') and check or ''},
@@ -1065,12 +1123,21 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             'lens': {'type': 'lens', 'display': T(32392, 'Lens'), 'indicator': self.hasFilter('lens') and check or ''}
         }
 
+        for k, option in optionsMap.items():
+            option["is_sub_list"] = True
+
+        if pnUtil.ACCOUNT.isAdmin:
+            optionsMap['location'] = {'type': 'location', 'display': T(34034, 'Folder Location'), 'indicator': self.hasFilter('location') and check or ''}
+
         if self.section.TYPE == 'movie':
             if ITEM_TYPE == 'collection':
                 options.append(optionsMap['contentRating'])
             else:
-                for k in ('year', 'decade', 'genre', 'contentRating', 'collection', 'director', 'actor', 'country', 'studio', 'resolution', 'label'):
-                    options.append(optionsMap[k])
+                for k in ('year', 'decade', 'genre', 'contentRating', 'collection', 'director', 'actor',
+                          'writer', 'producer', 'country', 'studio', 'resolution', 'audioLanguage', 'subtitleLanguage',
+                          'editionTitle', 'label', 'location'):
+                    if k in optionsMap:
+                        options.append(optionsMap[k])
         elif self.section.TYPE == 'show':
             if ITEM_TYPE == 'episode':
                 for k in ('year', 'collection', 'resolution'):
@@ -1079,7 +1146,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                 for k in ('genre', 'year', 'decade', 'collection', 'label'):
                     options.append(optionsMap[k])
             else:
-                for k in ('year', 'genre', 'contentRating', 'network', 'collection', 'actor', 'label'):
+                for k in ('year', 'genre', 'contentRating', 'studio', 'network', 'collection', 'director', 'actor', 'writer', 'producer', 'label'):
                     options.append(optionsMap[k])
         elif self.section.TYPE == 'artist':
             for k in ('genre', 'country', 'collection'):
@@ -1091,30 +1158,47 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             for k in self.section.ALLOWED_FILTERS:
                 options.append(optionsMap[k])
 
-        result = dropdown.showDropdown(options, (980, 106), with_indicator=True, suboption_callback=self.subOptionCallback)
+        result = dropdown.showDropdown(options, (980, 106), with_indicator=True,
+                                       suboption_callback=self.subOptionCallback,
+                                       select_item=not self.getBoolProperty('no.content.filtered') and self.filter or None,
+                                       open_sublists=not self.getBoolProperty('no.content.filtered'))
         if not result:
             return
 
         choice = result['type']
 
         if choice == 'clear_filter':
-            self.filter = None
+            self.clearFilters(skip_display=True)
+
         elif choice == 'unwatched':
             self.filterUnwatched = not self.filterUnwatched
             self.librarySettings.setSetting('filter.unwatched', self.filterUnwatched)
+        elif choice == 'hdr':
+            self.filterHDR = not self.filterHDR
+            self.librarySettings.setSetting('filter.hdr', self.filterHDR)
+        elif choice == 'dovi':
+            self.filterDOVI = not self.filterDOVI
+            self.librarySettings.setSetting('filter.dovi', self.filterDOVI)
         else:
             self.filter = result
+            self.librarySettings.setSetting('filter', self.filter)
 
         self.updateFilterDisplay()
 
-        if self.filter or choice in ('clear_filter', 'unwatched'):
+        if self.filter or choice in ('clear_filter', 'unwatched', 'hdr', 'dovi'):
             self.fill()
 
-    def clearFilters(self):
+    def clearFilters(self, skip_display=False):
         self.filter = None
         self.filterUnwatched = False
+        self.filterHDR = False
+        self.filterDOVI = False
         self.librarySettings.setSetting('filter.unwatched', self.filterUnwatched)
-        self.updateFilterDisplay()
+        self.librarySettings.setSetting('filter.hdr', self.filterHDR)
+        self.librarySettings.setSetting('filter.dovi', self.filterDOVI)
+        self.librarySettings.setSetting('filter', None)
+        if not skip_display:
+            self.updateFilterDisplay()
 
     def resetSort(self):
         self.sort = 'titleSort'
@@ -1132,10 +1216,27 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             if self.filter.get('sub'):
                 disp = u'{0}: {1}'.format(disp, self.filter['sub']['display'])
             self.setProperty('filter1.display', disp)
-            self.setProperty('filter2.display', self.filterUnwatched and T(32368, 'Unplayed') or '')
+            boolFilters = []
+            if self.filterUnwatched:
+                boolFilters.append(T(32368, 'Unplayed'))
+            if self.filterHDR:
+                boolFilters.append(T(34037, 'HDR'))
+            if self.filterDOVI:
+                boolFilters.append(T(34036, 'DOVI'))
+            self.setProperty('filter2.display', ", ".join(boolFilters))
         else:
             self.setProperty('filter2.display', '')
-            self.setProperty('filter1.display', self.filterUnwatched and T(32368, 'Unplayed') or T(32345, 'All'))
+            boolFilters = []
+            if self.filterUnwatched:
+                boolFilters.append(T(32368, 'Unplayed'))
+            else:
+                if not self.filterHDR and not self.filterDOVI:
+                    boolFilters.append(T(32345, 'All'))
+            if self.filterHDR:
+                boolFilters.append(T(34037, 'HDR'))
+            if self.filterDOVI:
+                boolFilters.append(T(34036, 'DOVI'))
+            self.setProperty('filter1.display', ", ".join(boolFilters))
 
     def showPanelClicked(self):
         mli = self.showPanelControl.getSelectedItem()
@@ -1145,6 +1246,8 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         sectionType = self.section.TYPE
 
         updateUnwatchedAndProgress = False
+
+        self.subOptionCache = {}
 
         extra_kwargs = {}
 
@@ -1205,6 +1308,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             self.updateUnwatchedAndProgress(mli)
 
     def showPhoto(self, photo):
+        self.subOptionCache = {}
         if isinstance(photo, plexnet.photo.Photo) or photo.TYPE == 'clip':
             self.processCommand(opener.open(photo))
         else:
@@ -1268,8 +1372,8 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             return None
 
         if not self.filter.get('sub'):
-            util.DEBUG_LOG('Filter missing sub-filter data')
-            return None
+            #util.DEBUG_LOG('Filter missing sub-filter data')
+            return self.filter['type'], "1"
 
         if isinstance(self.filter['sub']['val'], six.string_types) and self.filter['sub']['val'].startswith("/"):
             return self.filter['type'], self.filter['sub']['val']
@@ -1303,15 +1407,23 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.finalChunkPosition = 0
 
         type_ = getQueryItemType(self.section)
+        # supplying this type kills all results (bug: 2025/10/21)
+        if type_ == plexobjects.SEARCHTYPES["photo"]:
+            type_ = None
 
         tasks = []
+
+        kw = {}
+        if self.section.TYPE == 'movie':
+            kw.update({"hdr": self.filterHDR, "dovi": self.filterDOVI})
 
         if self.sort != 'titleSort' or ITEM_TYPE in ('folder', 'episode') or self.subDir \
             or self.section.TYPE in ("collection", "movies_shows"):
             if ITEM_TYPE == 'folder':
                 sectionAll = self.section.folder(0, 0, self.subDir)
             else:
-                sectionAll = self.section.all(0, 0, filter_=self.getFilterOpts(), sort=self.getSortOpts(), unwatched=self.filterUnwatched, type_=type_)
+                sectionAll = self.section.all(0, 0, filter_=self.getFilterOpts(), sort=self.getSortOpts(),
+                                              unwatched=self.filterUnwatched, type_=type_, **kw)
 
             totalSize = sectionAll.totalSize.asInt()
 
@@ -1319,7 +1431,8 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                 self.showPanelControl.reset()
                 self.keyListControl.reset()
 
-                if self.filter or self.filterUnwatched:
+                if (self.filter or self.filterUnwatched or self.filterHDR or self.filterDOVI
+                        or self.librarySettings.getItemType()):
                     self.setBoolProperty('no.content.filtered', True)
                 else:
                     self.setBoolProperty('no.content', True)
@@ -1338,13 +1451,15 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             if collection_mode == 2 and not (self.filter or self.filterUnwatched):
                 jl_type = getQueryItemType(self.section, fallback_to_section_type=True, force_include_collections=True)
 
-            jumpList = self.section.jumpList(filter_=self.getFilterOpts(), sort=self.getSortOpts(), unwatched=self.filterUnwatched, type_=jl_type)
+            jumpList = self.section.jumpList(filter_=self.getFilterOpts(), sort=self.getSortOpts(),
+                                             unwatched=self.filterUnwatched, type_=jl_type, **kw)
 
             if not jumpList:
                 self.showPanelControl.reset()
                 self.keyListControl.reset()
 
-                if self.filter or self.filterUnwatched:
+                if (self.filter or self.filterUnwatched or self.filterHDR or self.filterDOVI
+                        or self.librarySettings.getItemType()):
                     self.setBoolProperty('no.content.filtered', True)
                 else:
                     self.setBoolProperty('no.content', True)
@@ -1359,6 +1474,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                 ji_size = ji.size.asInt()
                 mli = kodigui.ManagedListItem(ji.title, data_source=ji.key)
                 mli.setProperty('key', ji.key)
+                mli.setProperty('index', str(kidx))
                 mli.setProperty('original', '{0:02d}'.format(kidx))
                 self.keyItems[ji.key] = mli
                 jitems.append(mli)
@@ -1394,7 +1510,8 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         for startChunkPosition in range(0, totalSize, self.CHUNK_SIZE):
             tasks.append(
                 ChunkRequestTask().setup(
-                    self.section, startChunkPosition, self.CHUNK_SIZE, self._chunkCallback, filter_=self.getFilterOpts(), sort=self.getSortOpts(), unwatched=self.filterUnwatched, subDir=self.subDir
+                    self.section, startChunkPosition, self.CHUNK_SIZE, self._chunkCallback, filter_=self.getFilterOpts(),
+                    sort=self.getSortOpts(), unwatched=self.filterUnwatched, subDir=self.subDir, **kw
                 )
             )
 
@@ -1623,9 +1740,16 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             else:
                 for offset, obj in enumerate(items):
 
-                    mli = self.showPanelControl[pos]
+                    try:
+                        mli = self.showPanelControl[pos]
+                    except RuntimeError:
+                        util.LOG("Library/ChunkCallback: {} not found", pos)
+                        pos += 1
+                        continue
+
                     if obj:
                         mli.setProperty('index', str(pos))
+
                         if obj.TYPE == 'track':
                             mli.setLabel("{} - {}: {}".format(obj.grandparentTitle, obj.parentTitle, obj.title))
                         else:
@@ -1644,7 +1768,20 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                                 mli.setThumbnailImage(obj.defaultThumb.asTranscodedImageURL(*thumbDim))
                         mli.dataSource = obj
                         mli.setProperty('summary', obj.get('summary'))
-                        mli.setProperty('year', obj.get('year'))
+
+                        # get secondary sort based info
+                        sk_data = SORT_KEYS[self.section.TYPE].get(self.sort, {'subDisplay': None})
+                        sub_display = sk_data.get('subDisplay', None)
+                        sub_title = obj.get('year')
+                        if sub_display:
+                            if hasattr(obj, "meta_{}".format(sub_display)):
+                                res = getattr(obj, "meta_{}".format(sub_display))('')
+                                if res:
+                                    exclusive = sk_data.get('subDisplayExclusive', False)
+                                    sub_title = res
+                                    if not exclusive:
+                                        sub_title = "{} ({})".format(res, obj.get('year'))
+                        mli.setProperty('year', sub_title)
 
                         if obj.TYPE != 'collection':
                             if not obj.isDirectory() and obj.get('duration').asInt():
@@ -1689,7 +1826,8 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             self.alreadyFetchedChunkList.add(startChunkPosition)
             task = ChunkRequestTask().setup(self.section, startChunkPosition, self.CHUNK_SIZE,
                                             self._chunkCallback, filter_=self.getFilterOpts(), sort=self.getSortOpts(),
-                                            unwatched=self.filterUnwatched, subDir=self.subDir)
+                                            unwatched=self.filterUnwatched, subDir=self.subDir, hdr=self.filterHDR,
+                                            dovi=self.filterDOVI)
 
             self.tasks.add(task)
             backgroundthread.BGThreader.addTasksToFront([task])
@@ -1726,6 +1864,7 @@ class PostersWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     VIEWTYPE = 'panel'
     MULTI_WINDOW_ID = 0
 
+    ROW_SIZE = 6
     CHUNK_OVERCOMMIT = 6
 
 
@@ -1733,6 +1872,7 @@ class PostersSmallWindow(PostersWindow):
     xmlFile = 'script-plex-posters-small.xml'
     VIEWTYPE = 'panel2'
     MULTI_WINDOW_ID = 1
+    ROW_SIZE = 10
     CHUNK_OVERCOMMIT = 30
 
 
@@ -1740,6 +1880,7 @@ class ListView16x9Window(PostersWindow):
     xmlFile = 'script-plex-listview-16x9.xml'
     VIEWTYPE = 'list'
     MULTI_WINDOW_ID = 2
+    ROW_SIZE = 0
     CHUNK_OVERCOMMIT = 12
 
 
@@ -1752,6 +1893,7 @@ class SquaresWindow(PostersWindow):
 class ListViewSquareWindow(PostersWindow):
     xmlFile = 'script-plex-listview-square.xml'
     VIEWTYPE = 'list'
+    ROW_SIZE = 0
     MULTI_WINDOW_ID = 1
 
 

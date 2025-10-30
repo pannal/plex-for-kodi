@@ -1707,7 +1707,7 @@ msgid "Request this amount of media items per chunk request in library view (+6-
 msgstr ""
 
 msgctxt "#32973"
-msgid "Episodes: Skip Post Play screen"
+msgid "Episodes: Continuous playback"
 msgstr ""
 
 msgctxt "#32974"
@@ -2769,4 +2769,56 @@ msgstr ""
 
 msgctxt "#34030"
 msgid "Unlock Direct Play for above 4K"
+msgstr ""
+
+msgctxt "#34031"
+msgid "Producer"
+msgstr ""
+
+msgctxt "#34032"
+msgid "Audio Language"
+msgstr ""
+
+msgctxt "#34033"
+msgid "Subtitle Language"
+msgstr ""
+
+msgctxt "#34034"
+msgid "Folder Location"
+msgstr ""
+
+msgctxt "#34035"
+msgid "Editions"
+msgstr ""
+
+msgctxt "#34036"
+msgid "DOVI"
+msgstr ""
+
+msgctxt "#34037"
+msgid "HDR"
+msgstr ""
+
+msgctxt "#34038"
+msgid "Force plex.direct mapping"
+msgstr ""
+
+msgctxt "#34039"
+msgid "If you (still) don't see any posters: Under certain circumstances when Kodi still can't resolve hostnames when loading assets, even though the host resolves natively, enable this to force plex.direct mapping via advancedsettings.xml."
+msgstr ""
+
+msgctxt "#34040"
+msgid "By Progress"
+msgstr ""
+
+msgctxt "#34041"
+msgid "Progress"
+msgstr ""
+
+msgctxt "#34042"
+msgid "By Album"
+msgstr ""
+
+msgctxt "#34043"
+msgid "Album"
 msgstr ""

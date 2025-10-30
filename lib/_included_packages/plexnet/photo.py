@@ -45,6 +45,10 @@ class Photo(media.MediaItem):
 
 class PhotoDirectory(media.MediaItem):
     TYPE = 'photodirectory'
+    ALLOWED_FILTERS = ()
+    ALLOWED_SORT = ()
+    DEFAULT_SORT = 'titleSort'
+    DEFAULT_SORT_DESC = False
 
     def all(self, *args, **kwargs):
         path = self.key

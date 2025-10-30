@@ -1,7 +1,7 @@
 {% extends "library.xml.tpl" %}
 {% block header_bg %}{% endblock %}
 {% block header_animation %}{% endblock %}
-{% block filteropts_grouplist_attrs %} id="600"{% endblock %}
+{% block filteropts_animation %}{% endblock %}
 {% block no_content %}{% endblock %}
 
 {% block content %}
@@ -93,6 +93,7 @@
             <align>left</align>
             <textcolor>FFDDDDDD</textcolor>
             <label>$INFO[Container(101).ListItem.Property(camera.model),,[CR]]$INFO[Container(101).ListItem.Property(camera.lens),,[CR]]$INFO[Container(101).ListItem.Property(photo.dims),,[CR]]$INFO[Container(101).ListItem.Property(camera.settings),,[CR]]$INFO[Container(101).ListItem.Property(photo.summary),[CR],[CR]]$INFO[Container(101).ListItem.Property(summary)]</label>
+            <autoscroll delay="2000" time="2000" repeat="10000"></autoscroll>
         </control>
     </control>
 
@@ -110,7 +111,8 @@
                 <height>{{ vscale(145) }}</height>
                 <onup>200</onup>
                 <ondown>101</ondown>
-                <onright>101</onright>
+                <onleft>210</onleft>
+                <onright>600</onright>
                 <itemgap>-20</itemgap>
                 <orientation>horizontal</orientation>
                 <scrolltime tween="quadratic" easing="out">200</scrolltime>
@@ -131,7 +133,7 @@
             <visible>Integer.IsGreater(Container(101).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
             <defaultcontrol>101</defaultcontrol>
             <posx>750</posx>
-            <posy>0</posy>
+            <posy>{{ vscale(100) }}</posy>
             <width>1170</width>
             <height>1080</height>
             <control type="image">
@@ -143,11 +145,11 @@
                 <colordiffuse>20000000</colordiffuse>
             </control>
             <control type="list" id="101">
-                <hitrect x="60" y="0" w="1010" h="945" />
+                <hitrect x="60" y="0" w="1010" h="845" />
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>1170</width>
-                <height>945</height>
+                <height>845</height>
                 <onup>600</onup>
                 <onright>151</onright>
                 <onleft>304</onleft>
@@ -312,25 +314,23 @@
                     </control>
                 </focusedlayout>
             </control>
-
-            <control type="scrollbar" id="152">
-                <hitrect x="1108" y="33" w="90" h="879" />
-                <left>1128</left>
-                <top>33</top>
-                <width>12</width>
-                <height>879</height>
-                <onleft>101</onleft>
-                <visible>true</visible>
-                <texturesliderbackground colordiffuse="40000000" border="5">script.plex/white-square-rounded.png</texturesliderbackground>
-                <texturesliderbar colordiffuse="77FFFFFF" border="5">script.plex/white-square-rounded.png</texturesliderbar>
-                <texturesliderbarfocus colordiffuse="FFE5A00D" border="5">script.plex/white-square-rounded.png</texturesliderbarfocus>
-                <textureslidernib>-</textureslidernib>
-                <textureslidernibfocus>-</textureslidernibfocus>
-                <pulseonselect>false</pulseonselect>
-                <orientation>vertical</orientation>
-                <showonepage>false</showonepage>
-                <onleft>151</onleft>
-            </control>
+        </control>
+        <control type="scrollbar" id="152">
+            <hitrect x="1820" y="150" w="100" h="910" />
+            <left>1875</left>
+            <top>{{ vscale(15) }}</top>
+            <width>12</width>
+            <height>910</height>
+            <onleft>151</onleft>
+            <visible>true</visible>
+            <texturesliderbackground colordiffuse="40000000" border="5">script.plex/white-square-rounded.png</texturesliderbackground>
+            <texturesliderbar colordiffuse="77FFFFFF" border="5">script.plex/white-square-rounded.png</texturesliderbar>
+            <texturesliderbarfocus colordiffuse="FFE5A00D" border="5">script.plex/white-square-rounded.png</texturesliderbarfocus>
+            <textureslidernib>-</textureslidernib>
+            <textureslidernibfocus>-</textureslidernibfocus>
+            <pulseonselect>false</pulseonselect>
+            <orientation>vertical</orientation>
+            <showonepage>false</showonepage>
         </control>
     </control>
 
@@ -338,7 +338,7 @@
         <visible>String.IsEqual(Window(10000).Property(script.plex.sort),titleSort) + Integer.IsGreater(Container(101).NumItems,0) + String.IsEmpty(Window.Property(drawing))</visible>
         <defaultcontrol>151</defaultcontrol>
         <posx>1830</posx>
-        <posy>{{ vscale(135) + 33 }}</posy>
+        <posy>{{ vscale(150) }}</posy>
         <width>20</width>
         <height>920</height>
         <control type="list" id="151">
@@ -346,7 +346,7 @@
             <posy>0</posy>
             <width>34</width>
             <height>1050</height>
-            <onleft>100</onleft>
+            <onleft>600</onleft>
             <onright>152</onright>
             <scrolltime>200</scrolltime>
             <orientation>vertical</orientation>

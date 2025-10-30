@@ -174,7 +174,7 @@
                     <constraints>
                         <minimum>500</minimum>
                         <step>50</step>
-                        <maximum>2500</maximum>
+                        <maximum>5000</maximum>
                     </constraints>
                     <control type="slider" format="integer">
                         <popup>false</popup>

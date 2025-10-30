@@ -449,7 +449,7 @@ class Settings(object):
                 ),
                 ThemeMusicSetting('theme_music', T(32480, 'Theme music'), 5),
                 BoolSetting(
-                    'theme_music_loop', T(33737, 'Loop theme music'), True
+                    'theme_music_loop', T(33737, 'Loop theme music'), False
                 ),
                 PlayedThresholdSetting('played_threshold', T(33501, 'Video played threshold'), 1,
                                        show_cb=lambda: plexnet.plexapp.SERVERMANAGER.selectedServer.prefs.get("LibraryVideoPlayedThreshold", None) is None
@@ -488,7 +488,7 @@ class Settings(object):
                              ' of asking whether to resume or start from the beginning.')
                 ),
                 BoolSetting(
-                    'home_inprogress_resume', T(33713, 'Home: Resume in-progress items'), True
+                    'home_inprogress_resume', T(33713, 'Home: Resume in-progress items'), False
                 ).description(
                     T(33714, 'Resume in-progress items directly instead of visiting the media.')
                 ),
@@ -651,7 +651,7 @@ class Settings(object):
                         ('modern-dotted', T(32986, 'Modern (dotted)')),
                         ('modern-colored', T(32989, 'Modern (colored)')),
                         ('classic', T(32987, 'Classic')),
-                        ('custom', T(32988, 'Custom')),
+                        #('custom', T(32988, 'Custom')),
                     ), theme_relevant=True
                 ).description(
                     T(32984, 'stub')
@@ -725,7 +725,7 @@ class Settings(object):
                     [(g, g) for g in genres.GENRES_TV]
                 ).description(T(33017, "")),
                 BoolSetting(
-                    'hubs_use_new_continue_watching', T(32998, ''), False
+                    'hubs_use_new_continue_watching', T(32998, ''), True
                 ).description(
                     T(32999, "")
                 ),
@@ -887,7 +887,7 @@ class Settings(object):
                              'ing setting applies. Doesn\'t override enabled binge mode.\nCan be disabled/enabled per TV show.')
                 ),
                 BoolUserSetting(
-                    'skip_post_play_tv', T(32973, 'Episodes: Skip Post Play screen'), False
+                    'skip_post_play_tv', T(32973, 'Episodes: Continuous playback'), False
                 ).description(
                     T(32974, 'When finishing an episode, don\'t show Post Play but go to the next one immediately.'
                              '\nCan be disabled/enabled per TV show. Doesn\'t override enabled binge mode. '
@@ -924,6 +924,9 @@ class Settings(object):
                 ).description(
                     T(32992, 'stub')
                 ),
+                BoolSetting(
+                    'force_pd_mapping', T(34038, 'Force plex.direct mapping'), False
+                ).description(T(34039, 'stub')),
                 IPSetting('manual_ip_0', T(32044, 'Connection 1 IP'), ''),
                 IntegerSetting('manual_port_0', T(32045, 'Connection 1 Port'), 32400),
                 IPSetting('manual_ip_1', T(32046, 'Connection 2 IP'), ''),

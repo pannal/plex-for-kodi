@@ -16,6 +16,7 @@ SEARCHTYPES = {
     'artist': 8,
     'album': 9,
     'track': 10,
+    'photo': 13,
     'collection': 18,
     'movies_shows': 99,
 }

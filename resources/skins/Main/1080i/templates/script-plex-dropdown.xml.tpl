@@ -35,11 +35,13 @@
         <onup condition="String.IsEqual(Window.Property(close.direction),top)">Close</onup>
         <onup condition="!String.IsEqual(Window.Property(close.direction),top)">noop</onup>
         <onleft condition="String.IsEqual(Window.Property(close.direction),left)">Close</onleft>
+        <onright condition="!String.IsEmpty(Window.Property(scroll))">1152</onright>
         <onright condition="String.IsEqual(Window.Property(close.direction),right)">Close</onright>
         <ondown condition="String.IsEqual(Window.Property(close.direction),down)">Close</ondown>
         <ondown condition="!String.IsEqual(Window.Property(close.direction),down)">noop</ondown>
         <scrolltime>200</scrolltime>
         <orientation>vertical</orientation>
+        <pagecontrol>1152</pagecontrol>
         <!-- ITEM LAYOUT ########################################## -->
         <itemlayout height="{{ vscale(66) }}">
             <control type="image">
@@ -201,6 +203,23 @@
                 <texture colordiffuse="FF000000">script.plex/white-square.png</texture>
             </control>
         </focusedlayout>
+    </control>
+    <control type="scrollbar" id="1152">
+        <visible>!String.IsEmpty(Window.Property(scroll))</visible>
+        <left>300</left>
+        <top>0</top>
+        <width>6</width>
+        <height>{{ vscale(924) }}</height>
+        <visible>true</visible>
+        <texturesliderbackground colordiffuse="40000000">script.plex/white-square.png</texturesliderbackground>
+        <texturesliderbar colordiffuse="FFAAAAAA">script.plex/white-square.png</texturesliderbar>
+        <texturesliderbarfocus colordiffuse="FFE5A00D">script.plex/white-square.png</texturesliderbarfocus>
+        <textureslidernib colordiffuse="FFAAAAAA">script.plex/white-square.png</textureslidernib>
+        <textureslidernibfocus colordiffuse="FFE5A00D">script.plex/white-square.png</textureslidernibfocus>
+        <pulseonselect>true</pulseonselect>
+        <orientation>vertical</orientation>
+        <showonepage>false</showonepage>
+        <onleft>250</onleft>
     </control>
 </control>
 {% endblock controls %}

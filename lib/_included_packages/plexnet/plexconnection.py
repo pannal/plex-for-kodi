@@ -82,7 +82,7 @@ class PlexConnection(object):
         self.refreshed = True
         self.score = 0
         self.request = None
-        self.pdHostnameResolved = False
+        self.pdHostnameResolved = ".plex.direct:" not in address
 
         self.lastTestedAt = 0
         self.hasPendingRequest = False
@@ -96,7 +96,7 @@ class PlexConnection(object):
         if HAS_ICMPLIB and util.CHECK_LOCAL and not skipLocalCheck:
             self.checkLocal()
 
-        if not util.NO_HOST_CHECK:
+        if not util.NO_HOST_CHECK and not self.pdHostnameResolved:
             self.checkNativeResolve()
 
         self.getScore(True)

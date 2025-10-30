@@ -30,7 +30,7 @@ class PlexResource(object):
         self.sourceType = data.attrib.get('sourceType')
         self.uuid = self.clientIdentifier
 
-        if 'server' not in self.provides:
+        if 'server' not in self.provides and self.product != "Plex Media Server":
             return
 
         hasSecureConn = False
