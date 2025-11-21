@@ -115,7 +115,7 @@ msgstr "Automatikus bejelentkezés"
 #: 
 msgctxt "#32039"
 msgid "Post Play Auto Play"
-msgstr "„Lejátszás után” automatikus lejátszás"
+msgstr "Folytatás automatikus lejátszással"
 
 #: 
 msgctxt "#32040"
@@ -160,7 +160,7 @@ msgstr "2. Kapcsolat Port"
 #: 
 msgctxt "#32048"
 msgid "Audio"
-msgstr "Audió"
+msgstr "Hang"
 
 #: 
 msgctxt "#32049"
@@ -170,7 +170,7 @@ msgstr "Haladó beállítások"
 #: 
 msgctxt "#32050"
 msgid "Manual Servers"
-msgstr "Kézi szerverek"
+msgstr "Manuális szerverek"
 
 #: 
 msgctxt "#32051"
@@ -210,7 +210,7 @@ msgstr "Jelenlegi szerver verzió"
 #: 
 msgctxt "#32058"
 msgid "Never exceed original audio codec"
-msgstr "Soha ne lépje túl az eredeti audió-kodeket"
+msgstr "Soha ne lépje túl az eredeti hangkodeket"
 
 #: 
 msgctxt "#32059"
@@ -380,22 +380,22 @@ msgstr "Lejátszás az elejétől"
 #: 
 msgctxt "#32318"
 msgid "Mark Unplayed"
-msgstr "Nem nézettnek jelölés"
+msgstr "Nem megnézettnek jelölés"
 
 #: 
 msgctxt "#32319"
 msgid "Mark Played"
-msgstr "Nézettnek jelölés"
+msgstr "Megnézettnek jelölés"
 
 #: 
 msgctxt "#32320"
 msgid "Mark Season Unplayed"
-msgstr "Az évad nem nézettnek jelölése"
+msgstr "Az évad nem megnézettnek jelölése"
 
 #: 
 msgctxt "#32321"
 msgid "Mark Season Played"
-msgstr "Az évad nézettnek jelölése"
+msgstr "Az évad megnézettnek jelölése"
 
 #: 
 msgctxt "#32322"
@@ -450,7 +450,7 @@ msgstr "Probléma történt a tartalom törlése közben."
 #: 
 msgctxt "#32332"
 msgid "Home"
-msgstr "Kezdőoldal"
+msgstr "Kezdőképernyő"
 
 #: 
 msgctxt "#32333"
@@ -500,7 +500,7 @@ msgstr "A szerver nem elérhető. Kérem jelentkezzen be a szerverébe és ellen
 #: 
 msgctxt "#32342"
 msgid "Switch User"
-msgstr "Felhasználóváltás"
+msgstr "Felhasználó váltása"
 
 #: 
 msgctxt "#32343"
@@ -615,12 +615,12 @@ msgstr "Első sugárzás dátuma"
 #: 
 msgctxt "#32367"
 msgid "By Unplayed"
-msgstr "Nem nézettek szerint"
+msgstr "Nem megnézettek szerint"
 
 #: 
 msgctxt "#32368"
 msgid "Unplayed"
-msgstr "Nem nézett"
+msgstr "Nem megnézett"
 
 #: 
 msgctxt "#32369"
@@ -735,7 +735,7 @@ msgstr "Rekesz"
 #: 
 msgctxt "#32391"
 msgid "Shutter Speed"
-msgstr "Zár-sebesség"
+msgstr "Zársebesség"
 
 #: 
 msgctxt "#32392"
@@ -755,7 +755,7 @@ msgstr "Zene"
 #: 
 msgctxt "#32395"
 msgid "Audio"
-msgstr "Audió"
+msgstr "Hang"
 
 #: 
 msgctxt "#32396"
@@ -770,12 +770,12 @@ msgstr "Minőség"
 #: 
 msgctxt "#32398"
 msgid "Kodi Video Settings"
-msgstr "Kodi videó beállitások"
+msgstr "Kodi videóbeállitások"
 
 #: 
 msgctxt "#32399"
 msgid "Kodi Audio Settings"
-msgstr "Kodi audió beállitások"
+msgstr "Kodi hangbeállitások"
 
 #: 
 msgctxt "#32400"
@@ -960,7 +960,7 @@ msgstr "Nincs találat"
 #: 
 msgctxt "#32436"
 msgid "Paused"
-msgstr "Szünetelve"
+msgstr "Szüneteltetve"
 
 #: 
 msgctxt "#32437"
@@ -1155,12 +1155,12 @@ msgstr "%(percentage)s %%"
 #: 
 msgctxt "#32483"
 msgid "Hide Stream Info"
-msgstr "Stream-információk elrejtése"
+msgstr "Folyaminformációk elrejtése"
 
 #: 
 msgctxt "#32484"
 msgid "Show Stream Info"
-msgstr "Stream-információk megjelenítése"
+msgstr "Folyaminformációk megjelenítése"
 
 #: 
 msgctxt "#32485"
@@ -1210,7 +1210,7 @@ msgstr "Stáblista átugrása"
 #: 
 msgctxt "#32500"
 msgid "Always show post-play screen (even for short videos)"
-msgstr "Mindig jelenítse meg a lejátszás utáni képernyőt (még rövid videók esetén is)"
+msgstr "Mindig jelenítse meg a folytatás képernyőt (még rövid videók esetén is)"
 
 #: 
 msgctxt "#32501"
@@ -1394,12 +1394,12 @@ msgstr "Stáblista automatikus átugrása, ha elérhető. Nem írja felül a bek
 #: 
 msgctxt "#33501"
 msgid "Video played threshold"
-msgstr "Nézett videó küszöbérték"
+msgstr "Megnézett videó küszöbérték"
 
 #: 
 msgctxt "#33502"
 msgid "Set this to the same value as your Plex server (Settings>Library>Video played threshold) to avoid certain pitfalls, Default: 90 %"
-msgstr "Állítsa ezt a Plex-szerver azonos értékére (Beállítások>Könyvtár>Lejátszott videó küszöbérték), hogy elkerüljön bizonyos buktatókat, Alapértelmezett: 90 %"
+msgstr "Állítsa ezt a Plex szerver azonos értékére (Beállítások>Könyvtár>Lejátszott videó küszöbérték), hogy elkerüljön bizonyos buktatókat, Alapértelmezett: 90 %"
 
 #: 
 msgctxt "#33503"
@@ -1444,7 +1444,7 @@ msgstr "Videófejezetek megjelenítése"
 #: 
 msgctxt "#33602"
 msgid "If available, show video chapters from the video-file instead of the timeline-big-seek-steps."
-msgstr "Ha rendelkezésre áll, az idővonal nagyléptékű keresése helyett a videófájlból származó fejezetek megjelenítése."
+msgstr "Ha rendelkezésre áll, az idővonal nagyléptékű ugrása helyett, mutassa a videófájlból származó fejezeteket."
 
 #: 
 msgctxt "#33603"
@@ -1454,7 +1454,7 @@ msgstr "Virtuális fejezetek használata"
 #: 
 msgctxt "#33604"
 msgid "When the above is enabled and no video chapters are available, simulate them by using the markers identified by the Plex Server (Intro, Credits)."
-msgstr "Ha a fentiek engedélyezve vannak, és nem állnak rendelkezésre videókapacitások, szimulálja azokat a Plex-szerver által azonosított jelölésekkel (Főcím, Stáblista)."
+msgstr "Ha a fentiek engedélyezve vannak, és nem állnak rendelkezésre videókapacitások, szimulálja azokat a Plex szerver által azonosított jelölésekkel (Főcím, Stáblista)."
 
 #: 
 msgctxt "#33605"
@@ -1551,7 +1551,7 @@ msgctxt "#33626"
 msgid "Checks whether servers returned from Plex.tv are actually local/in your LAN. For specific setups (e.g. Docker) Plex.tv might not properly detect a local server.\n"
 "\n"
 "NOTE: Only works on Kodi 19 or above."
-msgstr "A „Plex.tv” által visszaküldött kiszolgálók ellenőrzése, hogy valóban helyi/LAN-on belül vannak-e. Bizonyos beállítások (pl. Docker) esetén előfordulhat, hogy a „Plex.tv” nem megfelelően érzékeli a helyi szervert.\n"
+msgstr "A Plex.tv által visszaküldött kiszolgálók ellenőrzése, hogy valóban helyi/LAN-on belül vannak-e. Bizonyos beállítások (pl. Docker) esetén előfordulhat, hogy a Plex.tv nem megfelelően érzékeli a helyi szervert.\n"
 "\n"
 "MEGJEGYZÉS: Csak Kodi 19 vagy afelett működik."
 
@@ -1563,7 +1563,7 @@ msgstr "A LAN/helyi szerverek előnyben részesítése a biztonsággal szemben"
 #: 
 msgctxt "#33628"
 msgid "Prioritizes local connections over secure ones. Needs the proper setting in \"Allow Insecure Connections\" and the Plex Server's \"Secure connections\" at \"Preferred\". Can be used to enforce manual servers."
-msgstr "A helyi kapcsolatokat előnyben részesíti a biztonságosakkal szemben. Szükséges a megfelelő beállítás a „Nem biztonságos kapcsolatok engedélyezése” és a Plex-szerver „Biztonságos kapcsolatok” „Előnyben részesített” beállítása. Használható kézi szerverek kikényszerítésére."
+msgstr "A helyi kapcsolatokat előnyben részesíti a biztonságosakkal szemben. Szükséges a megfelelő beállítás a „Nem biztonságos kapcsolatok engedélyezése” és a Plex szerver „Biztonságos kapcsolatok” „Előnyben részesített” beállítása. Használható kézi szerverek kikényszerítésére."
 
 #: 
 msgctxt "#33629"
@@ -1668,7 +1668,7 @@ msgstr "Másodpercben."
 #: 
 msgctxt "#32905"
 msgid "Cancel post-play timer by pressing OK/SELECT"
-msgstr "A lejátszás utáni időzítő törlése az OK/KIVÁLASZT gomb megnyomásával."
+msgstr "A folytatásidőzítő törlése az OK/KIVÁLASZT gomb megnyomásával."
 
 #: 
 msgctxt "#32906"
@@ -1773,7 +1773,7 @@ msgstr "Használja az epizódok miniatűrjeit a megtekintés folytatásában"
 #: 
 msgctxt "#32928"
 msgid "Instead of using media artwork, use thumbnails for episodes in the continue hub on the home screen if available."
-msgstr "A médiaképek használata helyett használja az epizódok miniatűrjeit a kezdőlapon található megtekintés folytatásában, ha rendelkezésre állnak."
+msgstr "A médiaképek használata helyett használja az epizódok miniatűrjeit a kezdőképernyőn található megtekintés folytatásában, ha rendelkezésre állnak."
 
 #: 
 msgctxt "#32929"
@@ -1818,12 +1818,12 @@ msgstr "Dinamikus háttér átfedése"
 #: 
 msgctxt "#32944"
 msgid "Burn-in SSA subtitles (DirectStream)"
-msgstr "Beégetett SSA feliratok (DirectStream)"
+msgstr "Beégetett SSA feliratok (Közvetlen folyam)"
 
 #: 
 msgctxt "#32945"
 msgid "When Direct Streaming instruct the Plex Server to burn in SSA/ASS subtitles (thus transcoding the video stream). If disabled it will not touch the video stream, but will convert the subtitle to unstyled text."
-msgstr "Közvetlen lejátszás esetén utasítsa a Plex-szervert, hogy égesse be az SSA/ASS feliratokat (így átkódolja a videófolyamot). Ha letiltja, akkor nem nyúl a videófolyamhoz, de a feliratot stilizálatlan szöveggé alakítja át."
+msgstr "Közvetlen folyam esetén utasítsa a Plex szervert, hogy égesse be az SSA/ASS feliratokat (így átkódolja a videófolyamot). Ha letiltja, akkor nem nyúl a videófolyamhoz, de a feliratot stilizálatlan szöveggé alakítja át."
 
 #: 
 msgctxt "#32946"
@@ -1843,7 +1843,7 @@ msgstr "Automatikus átugrás engedélyezése átkódoláskor"
 #: 
 msgctxt "#32949"
 msgid "When transcoding/DirectStreaming, allow auto-skip functionality."
-msgstr "Átkódolás/Közvetlen lejátszás esetén engedélyezze az automatikus átugrási funkciót."
+msgstr "Átkódolás/Közvetlen folyam esetén engedélyezze az automatikus átugrás funkciót."
 
 #: 
 msgctxt "#32950"
@@ -1877,12 +1877,12 @@ msgstr "Kodi billentyűzetének használata a kereséshez"
 #: 
 msgctxt "#32956"
 msgid "Poster resolution scaling %"
-msgstr "Plakát felbontás méretezése %"
+msgstr "Plakát felbontásának méretezése %"
 
 #: 
 msgctxt "#32957"
 msgid "In percent. Scales the resolution of all posters/thumbnails for better image quality. May impact PMS/PM4K performance, will increase the cache usage accordingly. Recommended: 200-300 % for for big screens if your hardware can handle it. Needs addon restart."
-msgstr "Százalékban. A jobb képminőség érdekében méretezi az összes poszter/alakkép felbontását. Befolyásolhatja a PMS/PM4K teljesítményét, ennek megfelelően növeli a gyorsítótár használatát. Ajánlott: 200-300 % a nagy képernyőkhöz, ha a hardver képes kezelni. Kiegészítő újraindítása szükséges."
+msgstr "Százalékban. A jobb képminőség érdekében méretezi az összes plakátok/miniatűrök felbontását. Befolyásolhatja a PMS/PM4K teljesítményét, ennek megfelelően növeli a gyorsítótár használatát. Ajánlott: 200-300 % a nagy képernyőkhöz, ha a hardver képes kezelni. Kiegészítő újraindítása szükséges."
 
 #: 
 msgctxt "#32958"
@@ -1892,7 +1892,7 @@ msgstr "OpenSubtitles.com eltérés kiszámítása"
 #: 
 msgctxt "#32959"
 msgid "When opening the subtitle download feature, automatically calculate the OpenSubtitles.com hash for the given file. Can improve search results, downloads 2*64 KB of the video file to calculate the hash."
-msgstr "A felirat letöltési funkció megnyitásakor automatikusan kiszámítja az OpenSubtitles.com eltérést az adott fájlhoz. Javíthatja a keresési eredményeket, az eltérés kiszámításához 2*64 KB-ot tölt le a videófájlból."
+msgstr "A feliratletöltési funkció megnyitásakor automatikusan kiszámítja az OpenSubtitles.com eltérést az adott fájlhoz. Javíthatja a keresési eredményeket, az eltérés kiszámításához 2*64 KB-ot tölt le a videófájlból."
 
 #: 
 msgctxt "#32960"
@@ -1917,7 +1917,7 @@ msgstr "Videók közötti várakozás (s)"
 #: 
 msgctxt "#32964"
 msgid "When playing back consecutive videos (e.g. TV shows), wait this long before starting the next one in the queue. Might fix compatibility issues with certain configurations."
-msgstr "Egymást követő videók (pl. tévéműsorok) lejátszásakor várjon ennyit, mielőtt a sorban következő videót elindítja. Bizonyos konfigurációk esetén kompatibilitási problémákat javíthat."
+msgstr "Egymást követő videók (pl. TV-műsorok) lejátszásakor várjon ennyit, mielőtt a sorban következő videót elindítja. Bizonyos konfigurációk esetén kompatibilitási problémákat javíthat."
 
 #: 
 msgctxt "#32965"
@@ -1962,14 +1962,14 @@ msgstr "Könyvtári nézetben darabonként kérje le ezt a médiaelem-mennyiség
 #: 
 msgctxt "#32973"
 msgid "Episodes: Skip Post Play screen"
-msgstr "Epizódok: „Lejátszás után” képernyő átugrása"
+msgstr "Epizódok: Folytatás képernyő átugrása"
 
 #: 
 msgctxt "#32974"
 msgid "When finishing an episode, don't show Post Play but go to the next one immediately.\n"
 "Can be disabled/enabled per TV show. Doesn't override enabled binge mode. Overrides the Post Play setting."
-msgstr "Ha befejez egy epizódot, ne jelenjen meg a „Lejátszás után”, hanem azonnal lépjen a következő epizódra.\n"
-"TV-műsoronként ki/bekapcsolható. Nem írja felül a bekapcsolt folyamatosnézés-módot. Felülírja a „Lejátszás után” beállítást."
+msgstr "Ha befejez egy epizódot, ne jelenjen meg a folytatás, hanem azonnal lépjen a következő epizódra.\n"
+"TV-műsoronként ki/bekapcsolható. Nem írja felül a bekapcsolt folyamatosnézés-módot. Felülírja a folytatás beállítását."
 
 #: 
 msgctxt "#32975"
@@ -1989,7 +1989,7 @@ msgstr "Engedélyezze, ha a hardver képes kezelni a VC1-et. Ha kikapcsolja, akk
 #: 
 msgctxt "#32979"
 msgid "Allows the server to only transcode streams of a video that need transcoding, while streaming the others unaltered. If disabled, force the server to transcode everything not direct playable."
-msgstr "Lehetővé teszi a szerver számára, hogy a videónak csak az átkódolást igénylő streamjeit kódolja át, míg a többit változatlanul továbbítja. Ha letiltja, akkor a szervert arra kényszeríti, hogy minden olyan adatot átkódoljon, amely nem játszható le közvetlenül."
+msgstr "Lehetővé teszi a szerver számára, hogy a videónak csak az átkódolást igénylő folyamjait kódolja át, míg a többit változatlanul továbbítja. Ha letiltja, akkor a szervert arra kényszeríti, hogy minden olyan adatot átkódoljon, amely nem játszható le közvetlenül."
 
 #: 
 msgctxt "#32980"
@@ -2074,7 +2074,7 @@ msgstr "OK"
 #: 
 msgctxt "#32998"
 msgid "Use new Continue Watching hub on Home"
-msgstr "Használja az új „Lejátszás folytatása” megjelenítést a kezdőlapon"
+msgstr "Használja az új „Lejátszás folytatása” megjelenítést a kezdőképernyőn"
 
 #: 
 msgctxt "#32999"
@@ -2084,7 +2084,7 @@ msgstr "Ahelyett, hogy szétválasztaná a „Lejátszás folytatása” és a k
 #: 
 msgctxt "#33000"
 msgid "Enable path mapping"
-msgstr "Útvonal létrehozásának engedélyezése"
+msgstr "Elérési útvonal engedélyezése"
 
 #: 
 msgctxt "#33002"
@@ -2104,7 +2104,7 @@ msgstr "Nincs ismertető OSD nélkül"
 #: 
 msgctxt "#33005"
 msgid "When seeking without the OSD open, hide all time-related information from the user."
-msgstr "Ha OSD nélkül léptet, rejtsen el minden idővel kapcsolatos információt a felhasználó elől."
+msgstr "OSD nélküli léptetés esetében minden idővel kapcsolatos információt el kell rejteni a felhasználó elől."
 
 #: 
 msgctxt "#33006"
@@ -2209,12 +2209,12 @@ msgstr "Kodi forrás kiválasztása a(z) {}"
 #: 
 msgctxt "#33032"
 msgid "Show path mapping indicators"
-msgstr "Útvonal hozzárendelés-jelzők megjelenítése"
+msgstr "Elérési útvonal hozzárendelés-jelzők megjelenítése"
 
 #: 
 msgctxt "#33033"
 msgid "When path mapping is active for a library, display an indicator."
-msgstr "Ha egy könyvtár esetében aktív az elérési út hozzárendelése, akkor megjelenít egy jelzőt."
+msgstr "Ha a könyvtárhoz aktív az elérési útvonal, jelzőt kell megjeleníteni."
 
 #: 
 msgctxt "#33035"
@@ -2239,12 +2239,12 @@ msgstr "Mozgat"
 #: 
 msgctxt "#33040"
 msgid "Reset library order"
-msgstr "Könyvtársorrend alaphelyzetbe állítása"
+msgstr "Könyvtár sorrendjének visszaállítása"
 
 #: 
 msgctxt "#33034"
 msgid "Library settings"
-msgstr "Könyvtárbeállítások"
+msgstr "Könyvtár beállítások"
 
 #: 
 msgctxt "#32357"
@@ -2269,7 +2269,7 @@ msgstr "Epizód dátuma hozzáadva"
 #: 
 msgctxt "#33001"
 msgid "Long-press (or context menu) on a library item or: Honor path_mapping.json in the addon_data/script.plexmod folder when DirectPlaying media. This can be used to stream using other techniques such as SMB/NFS/etc. instead of the default HTTP handler. path_mapping.example.json is included in the addon's main directory."
-msgstr "Nyomja hosszan (vagy kontext menü) a könyvtári elemet vagy: path_mapping.json az addon_data/script.plexmod mappában KözvetlenLejátszás média alatt. Ez használható más technikák, például SMB/NFS/stb. segítségével történő streamelésre az alapértelmezett HTTP kezelő helyett. path_mapping.example.json a kiegészítő főkönyvtárában található."
+msgstr "Hosszan nyomjon (vagy kattintson a helyi menüre) egy könyvtári elemet, vagy: a path_mapping.json fájlt az addon_data/script.plexmod mappában, amikor közvetlen lejátszás használ. Ez használható más technikák, például SMB/NFS/stb. segítségével történő streamelésre az alapértelmezett HTTP kezelő helyett. path_mapping.example.json a kiegészítő főkönyvtárában található."
 
 #: 
 msgctxt "#33043"
@@ -2330,7 +2330,7 @@ msgstr "Keverés"
 msgctxt "#32939"
 msgid "User-specific.\n"
 "Only applies to video player UI"
-msgstr "Felhasználó-specifikus.\n"
+msgstr "Felhasználó specifikus.\n"
 "Csak a videólejátszó felhasználói felületére vonatkozik"
 
 #: 
@@ -2368,7 +2368,7 @@ msgstr "Felülírja a fentieket bizonyos műfajok esetében. Alapértelmezett: R
 #: 
 msgctxt "#33024"
 msgid "Hide background in modern indicators"
-msgstr "Háttér elrejtése a modern mutatókban"
+msgstr "Háttér elrejtése a modern jelölők esetében"
 
 #: 
 msgctxt "#33044"
@@ -2515,12 +2515,12 @@ msgstr "Modern (2024)"
 #: 
 msgctxt "#33077"
 msgid "Scale modern indicators"
-msgstr "Modern mutatók méretezése"
+msgstr "Modern jelölők méretezése"
 
 #: 
 msgctxt "#33078"
 msgid "Scale the modern indicators based on the poster size used. Default: On (tiny: 0.75, small: 1.0, medium: 1.175, big: 1.3)"
-msgstr "A modern mutatókat a használt plakátméret alapján méretezze. Alapértelmezett: (apró: 0,75, kicsi: 1,0, közepes: 1,175, nagy: 1,3)"
+msgstr "A modern jelölőket a használt plakátméret alapján méretezze. Alapértelmezett: (apró: 0,75, kicsi: 1,0, közepes: 1,175, nagy: 1,3)"
 
 #: 
 msgctxt "#33079"
@@ -2555,27 +2555,27 @@ msgstr "Elemezze"
 #: 
 msgctxt "#33085"
 msgid "Map key to home"
-msgstr "Gomb hozzárendelés a kezdőlaphoz"
+msgstr "Gomb hozzárendelése a kezdőképernyőhöz"
 
 #: 
 msgctxt "#33086"
 msgid "Press the key you want to map to go to home within {} seconds"
-msgstr "Nyomja meg azt a gombot, amelyet le akar képezni, hogy {} másodpercen belül a kezdőlapra váltson."
+msgstr "Nyomja meg azt a gombot, amelyet le akar képezni, hogy {} másodpercen belül a kezdőképernyőre váltson."
 
 #: 
 msgctxt "#33620"
 msgid "Plex server connect timeout"
-msgstr "Plex-szerver kapcsolódási időkorlát"
+msgstr "Plex szerver kapcsolódási időkorlát"
 
 #: 
 msgctxt "#33621"
 msgid "Sets the maximum amount of time to connect to a Plex Server in seconds. Default: 5"
-msgstr "Beállítja a Plex-szerverhez való csatlakozás maximális időtartamát másodpercben. Alapértelmezett: 5"
+msgstr "Beállítja a Plex szerverhez való csatlakozás maximális időtartamát másodpercben. Alapértelmezett: 5"
 
 #: 
 msgctxt "#32940"
 msgid "Video Player"
-msgstr "Videó lejátszó"
+msgstr "Videólejátszó"
 
 #: 
 msgctxt "#33050"
@@ -2590,7 +2590,7 @@ msgstr "Ébredés után történjen valami. A normális működés folytatásáh
 #: 
 msgctxt "#33087"
 msgid "Bind a key to immediately go to the Home view. Cancel using BACK/PREVIOUS_MENU. Clear bound key using the STOP or CONTEXT_MENU (long press OK/Enter) button on the setting."
-msgstr "Egy gomb programozásával azonnal a Kezdőlap nézetre léphet. Megszakítás a VISSZA/PREVIOUS_MENU használatával. Törölje a programozott gombot a STOP vagy a CONTEXT_MENU (OK/Enter hosszú nyomása) gomb használatával a beállításon."
+msgstr "Egy gomb programozásával azonnal a kezdőképernyőre léphet. Megszakítás a VISSZA/PREVIOUS_MENU használatával. Törölje a programozott gombot a STOP vagy a CONTEXT_MENU (OK/Enter hosszú nyomása) gomb használatával a beállításon."
 
 #: 
 msgctxt "#33088"
@@ -2600,12 +2600,12 @@ msgstr "Csak a videolejátszó felhasználói felületére vonatkozik"
 #: 
 msgctxt "#33089"
 msgid "Automatic seek-back"
-msgstr "Automatikus visszaléptetés"
+msgstr "Automatikus visszaugrás"
 
 #: 
 msgctxt "#33090"
 msgid "If your audio doesn't resume as fast as the video, or you want to catch up after a longer pause, use this to seek back after resuming from pause to compensate for the delay. Default: Off"
-msgstr "Ha a hang nem folytatódik olyan gyorsan, mint a videó, vagy ha hosszabb szünet után szeretné bepótolni a lemaradást, használja a visszaléptetés funkciót a szünetről való folytatás után a késleltetés kompenzálására. Alapértelmezett: Ki"
+msgstr "Ha a hang nem folytatódik olyan gyorsan, mint a videó, vagy ha hosszabb szünet után szeretné bepótolni a lemaradást, használja a visszaugrás funkciót a szünetről való folytatás után a késleltetés kompenzálására. Alapértelmezett: Ki"
 
 #: 
 msgctxt "#33091"
@@ -2615,22 +2615,22 @@ msgstr "{sec_or_ms} {unit_s_or_ms}"
 #: 
 msgctxt "#33092"
 msgid "Seek back on pause"
-msgstr "Visszaléptetés szüneteltetéskor"
+msgstr "Visszaugrás szüneteltetéskor"
 
 #: 
 msgctxt "#33093"
 msgid "Seek back after"
-msgstr "Visszaléptetés azután"
+msgstr "Visszaugrás"
 
 #: 
 msgctxt "#33094"
 msgid "Only seek back after having paused at least a certain amount of seconds"
-msgstr "Csak akkor léptet vissza, ha legalább egy bizonyos számú másodpercnyi szünetet tartott"
+msgstr "Csak akkor ugrik vissza, ha legalább egy bizonyos számú másodpercnyi szünetet tartott"
 
 #: 
 msgctxt "#33095"
 msgid "Seek back on pause instead of on resume. When Transcoding you should enable this."
-msgstr "Folytatás helyett szünetre való visszaléptetés. Átkódoláskor ezt engedélyeznie kell."
+msgstr "Szüneteltetés esetén visszaugrás a folytatás helyett. Átkódoláskor ezt engedélyeznie kell."
 
 #: 
 msgctxt "#33096"
@@ -2640,12 +2640,12 @@ msgstr "Csak közvetlen lejátszással"
 #: 
 msgctxt "#33097"
 msgid "Enable seek back ony when we're Direct Playing, not Transcoding."
-msgstr "Csak akkor engedélyezze a visszaléptetést, ha közvetlen lejátszásról van szó, nem pedig átkódolásról."
+msgstr "Csak akkor engedélyezze a visszaugrást, ha közvetlen lejátszásról van szó, nem pedig átkódolásról."
 
 #: 
 msgctxt "#33098"
 msgid "Tickrate (Hz)"
-msgstr "Kattintás mértéke (Hz)"
+msgstr "Ketyegésmérték (Hz)"
 
 #: 
 msgctxt "#33099"
@@ -2655,12 +2655,12 @@ msgstr "Szabályozza, hogy bizonyos kattintások milyen gyakran történjenek a 
 #: 
 msgctxt "#33636"
 msgid "Plex server read timeout"
-msgstr "Plex-szerver olvasási időkorlát"
+msgstr "Plex szerver olvasási időkorlát"
 
 #: 
 msgctxt "#33637"
 msgid "Sets the maximum amount of time to read from a Plex Server in seconds. Default: 10"
-msgstr "Beállítja a Plex-szerverről történő olvasás maximális időtartamát másodpercben. Alapértelmezett: 10"
+msgstr "Beállítja a Plex szerverről történő olvasás maximális időtartamát másodpercben. Alapértelmezett: 10"
 
 #: 
 msgctxt "#33638"
@@ -2710,7 +2710,7 @@ msgstr "Csak akkor kezeli a plex.direct kiszolgálókat, ha a kiszolgáló publi
 #: 
 msgctxt "#32101"
 msgid "If enabled, when playback ends and there is a 'Next Up' item available, it will be automatically be played after a {} second delay."
-msgstr "Engedélyezése esetén a lejátszás végeztével, ha van egy „Következő” elem, az automatikusan lejátszásra kerül egy {} másodperces késleltetés után."
+msgstr "Engedélyezése esetén a lejátszás végeztével, ha van egy következő elem, az automatikusan lejátszásra kerül {} másodperces késleltetés után."
 
 #: 
 msgctxt "#33651"
@@ -2720,7 +2720,7 @@ msgstr "Indítás késleltetése"
 #: 
 msgctxt "#33652"
 msgid "Never show Post Play"
-msgstr "Soha ne mutassa a „Lejátszás után”-t"
+msgstr "Ne jelenjen meg a folytatás"
 
 #: 
 msgctxt "#33506"
@@ -2753,12 +2753,12 @@ msgstr "ACME (kiegészítő által biztosított)"
 #: 
 msgctxt "#33639"
 msgid "Plex.tv: Sets the maximum amount of time to connect to Plex.tv in seconds. Default: 1"
-msgstr "Plex.tv: tv-hez való kapcsolódás maximális időtartamának beállítása másodpercben. Alapértelmezett: 1"
+msgstr "Plex.tv: Plex.tv-hez való kapcsolódás maximális időtartamának beállítása másodpercben. Alapértelmezett: 1"
 
 #: 
 msgctxt "#33641"
 msgid "Plex.tv: Sets the maximum amount of time to read from Plex.tv in seconds. Default: 2"
-msgstr "Plex.tv: tv-ről történő olvasás maximális időtartamának beállítása másodpercben. Alapértelmezett: 2"
+msgstr "Plex.tv: Plex.tv-ről történő olvasás maximális időtartamának beállítása másodpercben. Alapértelmezett: 2"
 
 #: 
 msgctxt "#33653"
@@ -2778,7 +2778,7 @@ msgstr "Feliratok automatikus szinkronizálása"
 #: 
 msgctxt "#33656"
 msgid "Only for External SRT subtitles. The PMS setting for voice activity detection has to be enabled for this to work."
-msgstr "Csak külső SRT feliratok esetén. A hangtevékenység-érzékelés PMS-beállításának engedélyezve kell lennie ahhoz, hogy ez működjön."
+msgstr "Csak külső SRT feliratok esetében. Ahhoz, hogy ez működjön, engedélyezni kell a PMS hangaktivitás-érzékelési beállítást."
 
 #: in player quick settings UI, needs to be short
 msgctxt "#33657"
@@ -2808,27 +2808,27 @@ msgstr "Ha nem szeretné, hogy a kliens kezelje a HDR-t (vagy a HDR-átalakítá
 #: 
 msgctxt "#33662"
 msgid "Remove from Continue Watching"
-msgstr "Megtekintés folytatásából való törlés"
+msgstr "Lejátszás folytatásából való törlés"
 
 #: 
 msgctxt "#33663"
 msgid "Home: Confirm item actions"
-msgstr "Kezdőlap: Megerősítem a műveleteket"
+msgstr "Kezdőképernyő: Megerősítem a műveleteket"
 
 #: 
 msgctxt "#33664"
 msgid "When acting on items in the Home view, such as mark played, hide from continue watching etc., show a confirmation dialog."
-msgstr "A Kezdőlap nézetben lévő elemekkel kapcsolatos műveletek, például a lejátszott elem jelölése, a további megtekintés elrejtése stb. esetén megjelenik egy megerősítő párbeszédpanel."
+msgstr "Kezdőképernyőn lévő elemekkel kapcsolatos műveletek, például lejátszott elem jelölése, lejátszás folytatása elrejtése stb. esetén megjelenik egy megerősítő párbeszédpanel."
 
 #: 
 msgctxt "#33665"
 msgid "Disable audio codecs"
-msgstr "Audió-kodekek letiltása"
+msgstr "Hangkodekek letiltása"
 
 #: 
 msgctxt "#33666"
 msgid "Audio codecs you can't play back. Disables Direct Play for such media items, enables Direct Stream if possible, transcodes audio stream to compatible format."
-msgstr "Nem lejátszható hangkodekek. Letiltja a közvetlen lejátszást az ilyen médiaelemek esetében, ha lehetséges, engedélyezi a közvetlen adatfolyamot, átkódolja a hangfolyamot kompatibilis formátumba."
+msgstr "Nem lejátszható hangkodekek. Letiltja a közvetlen lejátszást az ilyen médiaelemek esetében, ha lehetséges, engedélyezi a közvetlen folyamot, átkódolja a hangfolyamot kompatibilis formátumba."
 
 #: 
 msgctxt "#32002"
@@ -2888,7 +2888,7 @@ msgstr "Frissítések keresése"
 #: 
 msgctxt "#33673"
 msgid "Automatically check for updates periodically. If installed from a Kodi repository and the Update Source setting is set to Repository, Kodi itself will handle the updating of this addon. Needs a Kodi restart when changed."
-msgstr "Idönként automatikusan ellenőrizze a frissítéseket. Ha egy Kodi-tárolóból telepíti, és a Frissítés forrása beállítás a Tárolóra van állítva, a Kodi maga fogja kezelni a kiegészítő frissítését. Módosításkor a Kodi újraindítása szükséges."
+msgstr "Időnként automatikusan ellenőrizze a frissítéseket. Ha a Kodi-tárolóból telepíti, és a frissítés forrása a tároló, akkor a Kodi maga fogja kezelni a kiegészítő frissítését. Módosításkor a Kodi újraindítása szükséges."
 
 #: 
 msgctxt "#33674"
@@ -2898,7 +2898,7 @@ msgstr "Frissítések keresése indításkor"
 #: 
 msgctxt "#33675"
 msgid "Automatically check for updates on startup. Doesn't do much when Update source is Repository. Needs a Kodi restart when changed."
-msgstr "Automatikusan ellenőrizze a frissítéseket indításkor. Nem sokat tesz, ha a Frissítés forrása Tároló. Módosításkor a Kodi újraindítása szükséges."
+msgstr "Indításkor automatikusan ellenőrizze a frissítéseket. Tároló esetében ritkábbak a frissítések. Módosításkor a Kodi újraindítása szükséges."
 
 #: 
 msgctxt "#33676"
@@ -3008,17 +3008,17 @@ msgstr "Elmosódás mértéke a le nem játszott/folyamatban lévő epizódokná
 #: 
 msgctxt "#33010"
 msgid "Unplayed"
-msgstr "Nem nézett"
+msgstr "Nem megnézett"
 
 #: 
 msgctxt "#33012"
 msgid "No unplayed episode titles"
-msgstr "Nincsenek nem nézett epizódok"
+msgstr "Nincsenek nem megnézett epizódok"
 
 #: 
 msgctxt "#33022"
 msgid "Played indicators"
-msgstr "Nézett mutatók"
+msgstr "Megnézett jelölők"
 
 #: 
 msgctxt "#33023"
@@ -3069,7 +3069,7 @@ msgstr "Kérdezz"
 #: 
 msgctxt "#33695"
 msgid "Where do you want to download subtitles from? Note: Currently this only applies to the subtitle quick actions in the player. The subtitle download in stream settings always uses Plex as a source."
-msgstr "Honnan szeretné letölteni a feliratokat? Megjegyzés: Ez jelenleg csak a lejátszó feliratozási gyorsműveleteire vonatkozik. A felirat letöltése a stream beállításokban mindig a Plexet használja forrásként."
+msgstr "Honnan szeretné letölteni a feliratokat? Megjegyzés: Ez jelenleg csak a lejátszó feliratozási gyorsműveleteire vonatkozik. A felirat letöltése a folyam beállításaiban mindig a Plexet használja forrásként."
 
 #: 
 msgctxt "#33696"
@@ -3104,7 +3104,7 @@ msgstr "Visszacsatolás a Kodiba"
 #: 
 msgctxt "#33702"
 msgid "When no subtitles are found via the Plex subtitle search, fall back to Kodi subtitle search. Note: Currently this only applies to the subtitle quick actions in the player. The subtitle download in stream settings always uses Plex as a source."
-msgstr "Ha a Plex felirat keresője nem talál semmit, akkor térjen vissza a Kodi felirat keresőjére. Megjegyzés: Ez jelenleg csak a lejátszó feliratozási gyorsbeavatkozásaira vonatkozik. A folyam beállításokban a felirat letöltés mindig a Plexet használja forrásként."
+msgstr "Ha a Plex feliratkeresője nem talál semmit, akkor térjen vissza a Kodi feliratkeresőjére. Megjegyzés: Ez jelenleg csak a lejátszó feliratozási gyorsbeavatkozásaira vonatkozik. A folyam beállításaiban a felirat letöltése mindig a Plexet használja forrásként."
 
 #: 
 msgctxt "#33703"
@@ -3129,7 +3129,7 @@ msgstr "Képek homályosítása"
 #: 
 msgctxt "#33707"
 msgid "Blur images on home (in progress)"
-msgstr "Képek homályosítása a kezdőlapon (folyamatban)"
+msgstr "Képek homályosítása a kezdőképernyőn (folyamatban)"
 
 #: 
 msgctxt "#33708"
@@ -3154,12 +3154,12 @@ msgstr "Mindig folytassa a médiát"
 #: 
 msgctxt "#33712"
 msgid "When playback of an in-progress media is requested, resume it by default instead of asking whether to resume or start from the beginning."
-msgstr "Ha egy folyamatban lévő média lejátszását kérik, alapértelmezés szerint folytassa azt, ahelyett, hogy megkérdezné, hogy folytassa-e vagy kezdje elölről."
+msgstr "Ha kérés érkezik a folyamatban lévő média lejátszása iránt, alapértelmezés szerint folytassa azt, ahelyett, hogy megkérdezné, hogy folytassa-e vagy kezdje elölről."
 
 #: 
 msgctxt "#33713"
 msgid "Home: Resume in-progress items"
-msgstr "Kezdőlap: Folyamatban lévő tételek folytatása"
+msgstr "Kezdőképernyő: Folyamatban lévő elemek folytatása"
 
 #: 
 msgctxt "#33714"
@@ -3184,7 +3184,7 @@ msgstr "Hibakeresések"
 #: 
 msgctxt "#33718"
 msgid "Played"
-msgstr "Nézett"
+msgstr "Megnézett"
 
 #: 
 msgctxt "#33719"
@@ -3199,7 +3199,7 @@ msgstr "Ha olyan főcím jelölővel találkozik, amelynek kezdőidő eltolódá
 #: 
 msgctxt "#33649"
 msgid "\"Use alternate seek\" wait for seek"
-msgstr "„Alternatív léptetés használata” várjon az ugrásra"
+msgstr "„Alternatív léptetés használata” várjon az léptetésre"
 
 #: 
 msgctxt "#33650"
@@ -3216,7 +3216,7 @@ msgctxt "#33668"
 msgid "ATTENTION: Only enable this if you have reproducible audio issues after seeking/resuming.\n"
 "\n"
 "Use an alternative seek method in videos, which can help in problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by default for CoreELEC and LG WebOS)"
-msgstr "FIGYELEM: Csak akkor engedélyezze ezt a funkciót, ha a léptetés/újrakezdés után reprodukálható hangproblémái vannak.\n"
+msgstr "FIGYELEM: Csak akkor engedélyezze ezt, ha a léptetés/folytatás után reprodukálható hangproblémák jelentkeznek.\n"
 "\n"
 "Használjon alternatív léptetési módszert a videókban, ami segíthet a problémás helyzetekben; saját problémákat/hibákat hoz. Alapértelmezés szerint letiltva (CoreELEC és LG WebOS esetén alapértelmezés szerint engedélyezve)."
 
@@ -3253,12 +3253,12 @@ msgstr "A gyorsítótárazott Plex adatok megőrzése"
 #: 
 msgctxt "#33726"
 msgid "Instead of clearing the cache when exiting the addon, persist it instead. Warning: You'll most likely encounter missing items in libraries or outdated data. Use the corresponding menu functionalities to clear the cache for specific items or libraries."
-msgstr "Ahelyett, hogy törli a gyorsítótárat a kiegészítőből való kilépéskor, tartsa meg azt. Figyelmeztetés: A könyvtárakból valószínűleg hiányzó elemekkel vagy elavult adatokkal fog találkozni. Használja a megfelelő menüfunkciókat a gyorsítótár törléséhez bizonyos elemek vagy könyvtárak esetében."
+msgstr "Ahelyett, hogy törli a gyorsítótárat a kiegészítőből való kilépéskor, tartsa meg azt. Figyelmeztetés: A könyvtárakban valószínűleg hiányzó elemekkel vagy elavult adatokkal fog találkozni. Használja a megfelelő menüfunkciókat a gyorsítótár törléséhez bizonyos elemek vagy könyvtárak esetében."
 
 #: 
 msgctxt "#33727"
 msgid "Store Plex server responses for items and library views in a local SQLite database. Doesn't cache anything else (Home/Hubs are always up to date). Massively speeds up consecutive visits to items and libraries. Certain important events, such as watch state changes, automatically delete the item cache and its corresponding library cache. (Default: Off)"
-msgstr "A Plex-szerver válaszainak tárolása az elemekre és a könyvtári nézetekre egy helyi SQLite-adatbázisban. Semmi mást nem gyorsítótáraz (a Kezdőlap/Csomópontok mindig naprakész). Jelentősen felgyorsítja az elemek és könyvtárak egymást követő látogatását. Bizonyos fontos események, mint például az óra állapotának változása, automatikusan törli az elem- és a hozzá tartozó könyvtár-gyorsítótárat. (Alapértelmezett: Ki)"
+msgstr "A Plex szerver válaszainak tárolása az elemekre és a könyvtári nézetekre egy helyi SQLite-adatbázisban. Semmi mást nem gyorsítótáraz (a Kezdőképernyő/Csomópontok mindig naprakész). Jelentősen felgyorsítja az elemek és könyvtárak egymást követő látogatását. Bizonyos fontos események, mint például az óra állapotának változása, automatikusan törli az elem- és a hozzá tartozó könyvtár-gyorsítótárat. (Alapértelmezett: Ki)"
 
 #: 
 msgctxt "#33728"
@@ -3303,7 +3303,7 @@ msgstr "Mindig automatikus indítás"
 #: 
 msgctxt "#33736"
 msgid "By default PM4K won't auto-start when the current window isn't a Home-derived window (e.g.: Settings). Enable this if you always want to auto-start PM4K regardless of the current window. Can also improve start-up time."
-msgstr "Alapértelmezés szerint a PM4K nem indul el automatikusan, ha az aktuális ablak nem a Kezdőlapról származó ablak (pl.: Beállítások). Engedélyezze ezt, ha azt szeretné, hogy a PM4K mindig automatikusan elinduljon, függetlenül az aktuális ablaktól. Az indítási időt is javíthatja."
+msgstr "Alapértelmezés szerint a PM4K nem indul el automatikusan, ha az aktuális ablak nem a kezdőképernyőről származó ablak (pl.: Beállítások). Engedélyezze ezt, ha azt szeretné, hogy a PM4K mindig automatikusan induljon, függetlenül az aktuális ablaktól. Az indítási időt is javíthatja."
 
 #: 
 msgctxt "#33737"
@@ -3336,12 +3336,12 @@ msgstr "Hány elemet töltsön be a Kodi lejátszási listájába, mielőtt a Pl
 #: 
 msgctxt "#33740"
 msgid "Home: Episodes season thumbnails"
-msgstr "Kezdőoldal: Évadok epizódjainak miniatűrjei"
+msgstr "Kezdőképernyő: Évadok epizódjainak miniatűrjei"
 
 #: 
 msgctxt "#33741"
 msgid "Use season thumbnails/posters when displaying episodes in hubs instead of the TV show's."
-msgstr "A TV-műsorok helyett használjon évadminiatűröket/posztereket az epizódok megjelenítéséhez a csomópontokban."
+msgstr "A TV-műsorok helyett használjon évadminiatűröket/plakátokat az epizódok megjelenítéséhez a csomópontokban."
 
 #: 
 msgctxt "#34000"
@@ -3421,7 +3421,7 @@ msgstr "lejátszás közben"
 #: 
 msgctxt "#34015"
 msgid "User-specific. Use OK/ENTER button to pause instead of showing the OSD (which can then only be accessed using DOWN), or resume when paused. Only works with 'Behave like official Plex clients' enabled."
-msgstr "Felhasználó-specifikus. Az OK/ENTER gombbal szüneteltetheti a lejátszást az OSD megjelenítése helyett (amelyet ezután csak a LE gombbal érhet el), vagy folytathatja a lejátszást szüneteltetés után. Csak akkor működik, ha a „Hivatalos Plex kliensekhez hasonló viselkedés” beállítás engedélyezve van."
+msgstr "Felhasználó specifikus. Az OK/ENTER gombbal szüneteltetheti a lejátszást az OSD megjelenítése helyett (amelyet ezután csak a LE gombbal érhet el), vagy folytathatja a lejátszást szüneteltetés után. Csak akkor működik, ha a „Hivatalos Plex kliensekhez hasonló viselkedés” beállítás engedélyezve van."
 
 #: 
 msgctxt "#34016"
@@ -3441,7 +3441,7 @@ msgstr "Kapcsolódó média"
 #: watchlist discover hub title prefix
 msgctxt "#34019"
 msgid "Discover: {}"
-msgstr "Fedezze fel: {}"
+msgstr "Felfedezés: {}"
 
 #: 
 msgctxt "#34020"
@@ -3456,12 +3456,12 @@ msgstr "Kérem várjon …"
 #: 
 msgctxt "#34022"
 msgid "Video play completion behaviour"
-msgstr "Videólejátszás befejezési viselkedés"
+msgstr "Videólejátszás befejezésviselkedés"
 
 #: 
 msgctxt "#34023"
 msgid "Decide whether to use end credits markers to determine the 'watched' state of video items. When markers are not available the selected threshold percentage will be used."
-msgstr "Döntse el, hogy a videók „megtekintett” állapotának meghatározásához végső stáblista-jelölőket kíván-e használni. Ha jelölők nem állnak rendelkezésre, akkor a kiválasztott küszöbérték százalékos aránya kerül alkalmazásra."
+msgstr "Döntse el, hogy a videók megtekintett állapotának meghatározásához végső stáblista-jelölőket kíván-e használni. Ha jelölők nem állnak rendelkezésre, akkor a kiválasztott küszöbérték százalékos aránya kerül alkalmazásra."
 
 #: 
 msgctxt "#34024"
@@ -3482,4 +3482,89 @@ msgstr "az első stáblista-jelölő pozíciója"
 msgctxt "#34027"
 msgid "earliest between threshold percent and first credits marker"
 msgstr "legkorábban a küszöbérték és az első stáblista-jelölő között"
+
+#: 
+msgctxt "#32973"
+msgid "Episodes: Continuous playback"
+msgstr "Epizódok: Folyamatos lejátszás"
+
+#: 
+msgctxt "#34028"
+msgid "\"Use alternate seek\" valid seek window"
+msgstr "„Alternatív léptetés használata” érvényes keresési ablak"
+
+#: 
+msgctxt "#34029"
+msgid "When \"Use alternate seek\" is enabled, any seek amount outside of this threshold window will be applied, otherwise the seek attempt will be ignored. If you encounter any seek issues, play with this value (ms, default: 2000)"
+msgstr "Ha az „Alternatív léptetés használata” be van kapcsolva, akkor minden, ezen küszöbérték-ablakon kívüli ugrási érték alkalmazásra kerül, ellenkező esetben az léptetési kísérlet figyelmen kívül marad. Ha bármilyen léptetési problémát tapasztal, próbálkozzon ezzel az értékkel (ms, alapértelmezett: 2000)."
+
+#: 
+msgctxt "#34030"
+msgid "Unlock Direct Play for above 4K"
+msgstr "Közvetlen lejátszás feloldása 4K felett"
+
+#: 
+msgctxt "#34031"
+msgid "Producer"
+msgstr "Producer"
+
+#: 
+msgctxt "#34032"
+msgid "Audio Language"
+msgstr "Hangsáv nyelve"
+
+#: 
+msgctxt "#34033"
+msgid "Subtitle Language"
+msgstr "Felirat nyelve"
+
+#: 
+msgctxt "#34034"
+msgid "Folder Location"
+msgstr "Mappa helye"
+
+#: 
+msgctxt "#34035"
+msgid "Editions"
+msgstr "Kiadások"
+
+#: 
+msgctxt "#34036"
+msgid "DOVI"
+msgstr "DOVI"
+
+#: 
+msgctxt "#34037"
+msgid "HDR"
+msgstr "HDR"
+
+#: 
+msgctxt "#34038"
+msgid "Force plex.direct mapping"
+msgstr "Kényszerített plex.direct leképezés"
+
+#: 
+msgctxt "#34039"
+msgid "If you (still) don't see any posters: Under certain circumstances when Kodi still can't resolve hostnames when loading assets, even though the host resolves natively, enable this to force plex.direct mapping via advancedsettings.xml."
+msgstr "Ha (még mindig) nem lát semmilyen plakátot: Bizonyos körülmények között, amikor a Kodi továbbra sem tudja feloldani a gazdagép nevét az eszközök betöltésekor, annak ellenére, hogy a gazdagép natívan feloldódik, engedélyezze ezt a beállítást, hogy kényszerítse a plex.direct leképezést az advancedsettings.xml fájlon keresztül."
+
+#: 
+msgctxt "#34040"
+msgid "By Progress"
+msgstr "Folyamat szerint"
+
+#: 
+msgctxt "#34041"
+msgid "Progress"
+msgstr "Folyamat"
+
+#: 
+msgctxt "#34042"
+msgid "By Album"
+msgstr "Album szerint"
+
+#: 
+msgctxt "#34043"
+msgid "Album"
+msgstr "Album"
 

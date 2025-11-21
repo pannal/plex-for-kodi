@@ -300,7 +300,7 @@ class PlexPlayer(BasePlayer):
 
                 subType = 'sidecar'  # AppSettings().getBoolPreference("custom_video_player"), "embedded", "sidecar")
                 # deselect subtitles if we don't need them
-                if self.choice.audioStream or self.choice.audioStream.languageCode in self.item.settings.getPreference(
+                if not self.choice.audioStream or self.choice.audioStream.languageCode in self.item.settings.getPreference(
                         "disable_subtitle_languages", []):
                     subType = "none"
                 decisionPath = http.addUrlParam(decisionPath, "subtitles=" + subType)

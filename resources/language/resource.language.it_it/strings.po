@@ -3466,3 +3466,88 @@ msgctxt "#34027"
 msgid "earliest between threshold percent and first credits marker"
 msgstr ""
 
+#: 
+msgctxt "#32973"
+msgid "Episodes: Continuous playback"
+msgstr ""
+
+#: 
+msgctxt "#34028"
+msgid "\"Use alternate seek\" valid seek window"
+msgstr ""
+
+#: 
+msgctxt "#34029"
+msgid "When \"Use alternate seek\" is enabled, any seek amount outside of this threshold window will be applied, otherwise the seek attempt will be ignored. If you encounter any seek issues, play with this value (ms, default: 2000)"
+msgstr ""
+
+#: 
+msgctxt "#34030"
+msgid "Unlock Direct Play for above 4K"
+msgstr ""
+
+#: 
+msgctxt "#34031"
+msgid "Producer"
+msgstr ""
+
+#: 
+msgctxt "#34032"
+msgid "Audio Language"
+msgstr ""
+
+#: 
+msgctxt "#34033"
+msgid "Subtitle Language"
+msgstr ""
+
+#: 
+msgctxt "#34034"
+msgid "Folder Location"
+msgstr ""
+
+#: 
+msgctxt "#34035"
+msgid "Editions"
+msgstr ""
+
+#: 
+msgctxt "#34036"
+msgid "DOVI"
+msgstr ""
+
+#: 
+msgctxt "#34037"
+msgid "HDR"
+msgstr ""
+
+#: 
+msgctxt "#34038"
+msgid "Force plex.direct mapping"
+msgstr ""
+
+#: 
+msgctxt "#34039"
+msgid "If you (still) don't see any posters: Under certain circumstances when Kodi still can't resolve hostnames when loading assets, even though the host resolves natively, enable this to force plex.direct mapping via advancedsettings.xml."
+msgstr ""
+
+#: 
+msgctxt "#34040"
+msgid "By Progress"
+msgstr ""
+
+#: 
+msgctxt "#34041"
+msgid "Progress"
+msgstr ""
+
+#: 
+msgctxt "#34042"
+msgid "By Album"
+msgstr ""
+
+#: 
+msgctxt "#34043"
+msgid "Album"
+msgstr ""
+

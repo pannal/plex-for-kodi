@@ -2120,7 +2120,7 @@ msgstr "Diese Anzahl an Medieninhalten pro gestückelter Anfrage in der Biblioth
 
 #: 
 msgctxt "#32973"
-msgid "Episodes: Skip Post Play screen"
+msgid "Episodes: Continuous playback"
 msgstr "Episoden: Nahtlose Wiedergabe"
 
 #: 
