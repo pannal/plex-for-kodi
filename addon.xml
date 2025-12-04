@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.0.5e"
+       version="1.0.5f"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="3.0.0"/>
@@ -34,7 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Plexplayer: Fix crash with non-existant audio stream
+- Watchlist: Adhere to new plex.tv watchlist limit of 100 items (was: 300; unannounced)
         </news>
         <assets>
             <icon>icon2.png</icon>
