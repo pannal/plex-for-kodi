@@ -446,7 +446,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.finalChunkPosition = 0
 
         if self.section.TYPE == 'movies_shows':
-            self.CHUNK_SIZE = min(300, util.addonSettings.libraryChunkSize)
+            self.CHUNK_SIZE = min(100, util.addonSettings.libraryChunkSize)
         else:
             self.CHUNK_SIZE = util.addonSettings.libraryChunkSize
 
