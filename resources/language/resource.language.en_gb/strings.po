@@ -2970,3 +2970,11 @@ msgstr ""
 msgctxt "#34076"
 msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -2.5s"
 msgstr ""
+
+msgctxt "#34077"
+msgid "Use per-library hubs on Home"
+msgstr ""
+
+msgctxt "#34078"
+msgid "Show separate 'Recently Added' rows for each library instead of merged rows by type (e.g., one 'Recently Added Movies' row becomes separate rows for '4K Movies', 'Documentaries', etc.)."
+msgstr ""

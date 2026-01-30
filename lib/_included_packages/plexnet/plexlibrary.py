@@ -689,11 +689,13 @@ class BaseHub(plexobjects.PlexObject):
             )
 
     def getCleanHubIdentifier(self, is_home=False):
-        if not self._identifier:
-            self._identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
-            if is_home and self._identifier == 'movie.recentlyreleased':
-                self._identifier = 'home.VIRTUAL.movies.recentlyreleased'
-        return self._identifier
+        # Don't use caching since is_home affects the result for movie.recentlyreleased
+        # Convert hubIdentifier to string to handle PlexValue objects properly
+        hub_id = str(self.hubIdentifier) if self.hubIdentifier else ''
+        identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', hub_id))
+        if is_home and identifier == 'movie.recentlyreleased':
+            identifier = 'home.VIRTUAL.movies.recentlyreleased'
+        return identifier
 
 
 class Hub(BaseHub):

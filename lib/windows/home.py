@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import json
+import re
 import threading
 import time
 import math
@@ -58,12 +59,31 @@ class HubsList(list):
 
 
 class SectionHubsTask(backgroundthread.Task):
-    def setup(self, section, callback, section_keys=None, ignore_hubs=None, reselect_pos_dict=None):
+    # Map library types to their "recently added" hub identifiers
+    LIBRARY_HUB_IDENTIFIERS = {
+        'show': 'tv.recentlyadded',
+        'movie': 'movie.recentlyadded',
+        'artist': 'music.recent.added',
+        'photo': 'photo.recent',
+        'video': 'video.recent',
+    }
+
+    # Merged home hubs to filter out when using per-library mode
+    MERGED_HOME_HUBS = frozenset([
+        'home.television.recent',
+        'home.movies.recent',
+        'home.music.recent',
+        'home.videos.recent',
+        'home.photos.recent',
+    ])
+
+    def setup(self, section, callback, section_keys=None, ignore_hubs=None, reselect_pos_dict=None, library_sections=None):
         self.section = section
         self.callback = callback
         self.section_keys = section_keys
         self.ignore_hubs = ignore_hubs
         self.reselect_pos_dict = reselect_pos_dict
+        self.library_sections = library_sections  # All library sections for per-library hubs on home screen
         return self
 
     def run(self):
@@ -78,6 +98,22 @@ class SectionHubsTask(backgroundthread.Task):
             hubs = HubsList(self.section.server.hubs(self.section.key, count=HUB_PAGE_SIZE,
                                                                       section_ids=self.section_keys,
                                                                       ignore_hubs=self.ignore_hubs)).init()
+
+            # For home section with library sections, replace merged hubs with per-library hubs
+            if self.section.key is None and self.library_sections:
+                util.DEBUG_LOG('Home hubs BEFORE filtering: {}', [h.hubIdentifier for h in hubs])
+                # Filter out all merged home.*.recent hubs
+                hubs = HubsList([h for h in hubs
+                    if h.getCleanHubIdentifier(is_home=True) not in self.MERGED_HOME_HUBS]).init()
+                hubs.lastUpdated = time.time()
+                util.DEBUG_LOG('Home hubs AFTER filtering: {}', [h.hubIdentifier for h in hubs])
+
+                # Fetch per-library hubs for all library types
+                for lib_section in self.library_sections:
+                    if self.isCanceled():
+                        return
+                    self._fetchAndAddLibraryHub(hubs, lib_section)
+
             if self.isCanceled():
                 return
             self.callback(self.section, hubs, reselect_pos_dict=self.reselect_pos_dict)
@@ -92,6 +128,28 @@ class SectionHubsTask(backgroundthread.Task):
             hubs = HubsList().init()
             hubs.invalid = True
             self.callback(self.section, hubs)
+
+    def _fetchAndAddLibraryHub(self, hubs, lib_section):
+        """Fetch recently added hub for a specific library and add to hubs list."""
+        hub_identifier = self.LIBRARY_HUB_IDENTIFIERS.get(lib_section.type)
+        if not hub_identifier:
+            util.DEBUG_LOG('No hub identifier mapping for library type: {}', lib_section.type)
+            return
+
+        try:
+            section_hubs = self.section.server.hubs(lib_section.key, count=HUB_PAGE_SIZE)
+            for hub in section_hubs:
+                if hub.getCleanHubIdentifier() == hub_identifier:
+                    # Attach custom metadata for display
+                    hub._customTitle = "Recently Added - {}".format(lib_section.title)
+                    hub._libraryKey = lib_section.key
+                    hub._libraryType = lib_section.type
+                    hub._customIdentifier = 'home.library.recent.{}'.format(lib_section.key)
+                    hubs.append(hub)
+                    util.DEBUG_LOG('Added per-library hub for: {} (type={})', lib_section.title, lib_section.type)
+                    return
+        except Exception as e:
+            util.DEBUG_LOG('Failed to fetch hub for section {}: {}', lib_section.key, e)
 
 
 class UpdateHubTask(backgroundthread.Task):
@@ -416,6 +474,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     THUMB_AR16X9_DIM = util.scaleResolution(532, 299)
     THUMB_SQUARE_DIM = util.scaleResolution(244, 244)
 
+    # Base indices for home hubs (Continue Watching / On Deck only)
+    # Per-library hubs will be inserted after these using type-appropriate indices
+    # Note: Merged home.*.recent hubs are removed when per-library mode is enabled
+    BASE_HOME_HUBS = {
+        'home.continue': {'base_index': 0, 'with_progress': True, 'with_art': True, 'do_updates': True, 'text2lines': True},
+        'continueWatching': {'base_index': 1, 'with_progress': True, 'do_updates': True, 'text2lines': True},
+        'home.ondeck': {'base_index': 1, 'with_progress': True, 'do_updates': True, 'text2lines': True},
+    }
+
+    # Index pools by control type for per-library hubs
+    # These must match the hub control definitions (HUB_POSTER_*, HUB_SQUARE_*, HUB_AR16X9_*)
+    POSTER_INDICES = [2, 3, 4, 7, 8, 13, 14, 15, 16]  # For show, movie libraries
+    SQUARE_INDICES = [5, 9, 10, 11, 12, 20, 21, 22]   # For artist (music), photo libraries
+    AR16X9_INDICES = [6, 17, 18, 19, 23]              # For video libraries
+
     def __init__(self, *args, **kwargs):
         kodigui.BaseWindow.__init__(self, *args, **kwargs)
         SpoilersMixin.__init__(self, *args, **kwargs)
@@ -449,6 +522,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.hubSettings = None
         self.anyLibraryHidden = False
         self.wantedSections = None
+        self.dynamicHubMap = {}  # Built at runtime based on libraries
+        self.libraryCount = 0  # Number of libraries for dynamic hub mapping
+        self.librarySections = []  # Library sections for per-library hubs
         self.movingSection = False
         self._initialMovingSectionPos = None
         self.block_section_change = False
@@ -461,6 +537,97 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.lock = threading.Lock()
 
         util.setGlobalBoolProperty('off.sections', '')
+
+    def buildDynamicHubMap(self, library_sections):
+        """Build hub index mapping based on all library sections.
+
+        When per-library mode is enabled:
+        - Libraries are grouped by type and assigned to appropriate control indices
+        - Poster indices for show/movie, square indices for artist/photo, ar16x9 for video
+        - This ensures proper thumbnail display (posters vs album art vs video thumbnails)
+
+        When per-library mode is disabled (legacy):
+        - Uses merged hubs from static HUBMAP (home.television.recent, etc.)
+        """
+        self.libraryCount = len(library_sections)
+        self.dynamicHubMap = {}
+
+        # Add Continue Watching / On Deck hubs with fixed indices
+        for identifier, config in self.BASE_HOME_HUBS.items():
+            base_idx = config['base_index']
+            new_config = {k: v for k, v in config.items() if k != 'base_index'}
+            new_config['index'] = base_idx
+            self.dynamicHubMap[identifier] = new_config
+            util.DEBUG_LOG('Added to dynamicHubMap: {} -> index {}', identifier, base_idx)
+
+        if library_sections:
+            # Per-library mode: group libraries by display type and assign appropriate indices
+            poster_libs = []   # show, movie
+            square_libs = []   # artist (music), photo
+            ar16x9_libs = []   # video
+
+            for lib_section in library_sections:
+                if lib_section.type in ('show', 'movie'):
+                    poster_libs.append(lib_section)
+                elif lib_section.type in ('artist', 'photo'):
+                    square_libs.append(lib_section)
+                elif lib_section.type == 'video':
+                    ar16x9_libs.append(lib_section)
+
+            # Assign poster libraries to poster indices
+            for i, lib_section in enumerate(poster_libs):
+                if i >= len(self.POSTER_INDICES):
+                    util.DEBUG_LOG('Warning: Not enough poster indices for library: {}', lib_section.title)
+                    continue
+                identifier = 'home.library.recent.{}'.format(lib_section.key)
+                self.dynamicHubMap[identifier] = {
+                    'index': self.POSTER_INDICES[i],
+                    'do_updates': True,
+                    'with_progress': True,
+                    'text2lines': True,
+                    'library_key': lib_section.key,
+                    'library_title': lib_section.title,
+                    'library_type': lib_section.type,
+                }
+
+            # Assign square libraries (music/photo) to square indices
+            for i, lib_section in enumerate(square_libs):
+                if i >= len(self.SQUARE_INDICES):
+                    util.DEBUG_LOG('Warning: Not enough square indices for library: {}', lib_section.title)
+                    continue
+                identifier = 'home.library.recent.{}'.format(lib_section.key)
+                self.dynamicHubMap[identifier] = {
+                    'index': self.SQUARE_INDICES[i],
+                    'do_updates': True,
+                    'text2lines': True,
+                    'library_key': lib_section.key,
+                    'library_title': lib_section.title,
+                    'library_type': lib_section.type,
+                }
+
+            # Assign video libraries to ar16x9 indices
+            for i, lib_section in enumerate(ar16x9_libs):
+                if i >= len(self.AR16X9_INDICES):
+                    util.DEBUG_LOG('Warning: Not enough ar16x9 indices for library: {}', lib_section.title)
+                    continue
+                identifier = 'home.library.recent.{}'.format(lib_section.key)
+                self.dynamicHubMap[identifier] = {
+                    'index': self.AR16X9_INDICES[i],
+                    'do_updates': True,
+                    'with_progress': True,
+                    'ar16x9': True,
+                    'library_key': lib_section.key,
+                    'library_title': lib_section.title,
+                    'library_type': lib_section.type,
+                }
+
+            util.DEBUG_LOG('Built dynamic HUBMAP: {} poster libs, {} square libs, {} ar16x9 libs',
+                          len(poster_libs), len(square_libs), len(ar16x9_libs))
+        else:
+            # Legacy mode: merged hubs fall through to static HUBMAP
+            util.DEBUG_LOG('Legacy mode: using static HUBMAP for merged hubs')
+
+        util.DEBUG_LOG('dynamicHubMap keys: {}', list(self.dynamicHubMap.keys()))
 
     def onFirstInit(self):
         # set last BG image if possible
@@ -768,6 +935,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         plexapp.util.APP.on('change:no_episode_spoilers4', self.setDirty)
         plexapp.util.APP.on('change:spoilers_allowed_genres2', self.setDirty)
         plexapp.util.APP.on('change:hubs_use_new_continue_watching', self.setDirty)
+        plexapp.util.APP.on('change:use_per_library_hubs', self.setDirty)
         plexapp.util.APP.on('change:path_mapping_indicators', self.setDirty)
         plexapp.util.APP.on('change:hub_season_thumbnails', self.setDirty)
         plexapp.util.APP.on('change:use_watchlist', self.setDirty)
@@ -800,6 +968,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         plexapp.util.APP.off('change:no_episode_spoilers4', self.setDirty)
         plexapp.util.APP.off('change:spoilers_allowed_genres2', self.setDirty)
         plexapp.util.APP.off('change:hubs_use_new_continue_watching', self.setDirty)
+        plexapp.util.APP.off('change:use_per_library_hubs', self.setDirty)
         plexapp.util.APP.off('change:path_mapping_indicators', self.setDirty)
         plexapp.util.APP.off('change:hub_season_thumbnails', self.setDirty)
         plexapp.util.APP.off('change:use_watchlist', self.setDirty)
@@ -1900,8 +2069,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         elif action == xbmcgui.ACTION_SELECT_ITEM:
             stop_moving()
             # store section order
-            self.librarySettings["order"] = [i.dataSource.key for i in self.sectionList.items if i.dataSource]
+            new_order = [i.dataSource.key for i in self.sectionList.items if i.dataSource]
+            self.librarySettings["order"] = new_order
             self.saveLibrarySettings()
+            # Immediately refresh per-library hubs with new order
+            if self.librarySections:
+                self.librarySections = sorted(self.librarySections,
+                                              key=lambda s: new_order.index(s.key) if s.key in new_order else 999)
+                self.buildDynamicHubMap(self.librarySections)
+                # Force home section hubs to refresh
+                if None in self.sectionHubs:
+                    self.sectionHubs[None] = None
+                self.showHubs(home_section, force=True)
 
     def checkSectionItem(self, force=False, action=None):
         item = self.sectionList.getSelectedItem()
@@ -2082,9 +2261,29 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def sectionHubsCallback(self, section, hubs, reselect_pos_dict=None):
         with self.lock:
             update = bool(self.sectionHubs.get(section.key))
-            # sort hubs by hubmap index
-            hubs.sort(key=lambda hub: self.HUBMAP.get(hub.getCleanHubIdentifier(is_home=section.key is None),
-                                                    {"index": 999})["index"])
+
+            def get_hub_sort_index(hub):
+                # Check for custom identifier first (per-library TV hubs)
+                # Check __dict__ directly to avoid triggering PlexObject.__getattr__ which creates empty PlexValues
+                custom_id = hub.__dict__.get('_customIdentifier') if hasattr(hub, '__dict__') else None
+                if custom_id:
+                    identifier = custom_id
+                else:
+                    # Compute identifier directly instead of relying on cached _identifier
+                    # Convert to string explicitly to handle PlexValue objects
+                    hub_id_str = str(hub.hubIdentifier) if hub.hubIdentifier else ''
+                    identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', hub_id_str))
+                    if section.key is None and identifier == 'movie.recentlyreleased':
+                        identifier = 'home.VIRTUAL.movies.recentlyreleased'
+                # Look up in dynamic map first, then static HUBMAP
+                if identifier in self.dynamicHubMap:
+                    return self.dynamicHubMap[identifier].get('index', 999)
+                if identifier in self.HUBMAP:
+                    return self.HUBMAP[identifier].get('index', 999)
+                return 999
+
+            # sort hubs by hubmap index (dynamic for home, static for sections)
+            hubs.sort(key=get_hub_sort_index)
 
             self.sectionHubs[section.key] = hubs
             self.setBoolProperty('loading.content', False)
@@ -2153,25 +2352,48 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         self.wantedSections = []
+        # Collect libraries for per-library hubs on home screen (if setting enabled)
+        # Library types: show, movie, artist (music), photo, video
+        library_sections = []
+        use_per_library_hubs = util.getSetting('use_per_library_hubs', True)
+        per_library_types = frozenset(['show', 'movie', 'artist', 'photo', 'video'])
+
         for section in _sections:
             if section.key in self.librarySettings and not self.librarySettings[section.key].get("show", True):
                 self.anyLibraryHidden = True
                 continue
             sections.append(section)
             self.wantedSections.append(section.key)
+            # Collect sections with "recently added" hubs for per-library mode
+            if use_per_library_hubs and section.type in per_library_types:
+                library_sections.append(section)
 
         # sort libraries
         if "order" in self.librarySettings:
             sections = sorted(sections, key=lambda s: self.librarySettings["order"].index(s.key)
                               if s.key in self.librarySettings["order"] else -1)
+            # Also sort library sections by library order
+            library_sections = sorted(library_sections, key=lambda s: self.librarySettings["order"].index(s.key)
+                                      if s.key in self.librarySettings["order"] else 999)
+
+        # Build dynamic hub map based on library sections
+        self.buildDynamicHubMap(library_sections)
+        self.librarySections = library_sections  # Store for stale section refresh
 
         # speedup if we don't have any hidden libraries
         if not self.anyLibraryHidden:
             self.wantedSections = None
 
         if plexapp.SERVERMANAGER.selectedServer.hasHubs():
-            self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections, self.ignoredHubs)
-                          for s in [home_section] + sections if not s.server.DEFER_HUBS]
+            self.tasks = []
+            for s in [home_section] + sections:
+                if s.server.DEFER_HUBS:
+                    continue
+                # Pass library_sections only for home_section (when per-library mode enabled)
+                lib_secs = library_sections if s == home_section else None
+                task = SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections,
+                                              self.ignoredHubs, library_sections=lib_secs)
+                self.tasks.append(task)
             backgroundthread.BGThreader.addTasks(self.tasks)
 
         show_pm_indicator = util.getSetting('path_mapping_indicators')
@@ -2252,11 +2474,15 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         hubs = self.sectionHubs.get(section.key)
         section_stale = False
 
-        if hubs is None and section.server.DEFER_HUBS:
-            util.DEBUG_LOG('Showing deferred hubs - Section: {0} - Update: {1}', section.key, update)
-            force = True
-            hubs = HubsList()
-            self.setBoolProperty('loading.content', True)
+        if hubs is None:
+            if section.server.DEFER_HUBS:
+                util.DEBUG_LOG('Showing deferred hubs - Section: {0} - Update: {1}', section.key, update)
+            # Create empty HubsList to avoid None errors when force=True
+            hubs = HubsList().init()
+            hubs.lastUpdated = 0  # Mark as needing refresh
+            if section.server.DEFER_HUBS:
+                force = True
+                self.setBoolProperty('loading.content', True)
 
         if not force:
             if hubs is not None:
@@ -2289,32 +2515,65 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if not update:
                 if section.key in self.sectionHubs:
                     self.sectionHubs[section.key] = None
+            # Pass library_sections for home section stale refresh
+            lib_secs = self.librarySections if section.key is None else None
             task = SectionHubsTask().setup(section, self.sectionHubsCallback, self.wantedSections,
                                            reselect_pos_dict=rpd,
-                                           ignore_hubs=self.ignoredHubs)
+                                           ignore_hubs=self.ignoredHubs, library_sections=lib_secs)
             self.tasks.append(task)
             backgroundthread.BGThreader.addTask(task)
             return
 
         util.DEBUG_LOG('Showing hubs - Section: {0} - Update: {1}', section.key, update)
+        util.DEBUG_LOG('Number of hubs to display: {}', len(hubs))
+        util.DEBUG_LOG('dynamicHubMap has {} entries', len(self.dynamicHubMap))
         hasContent = False
         skip = {}
 
         for hub in hubs:
-            identifier = hub.getCleanHubIdentifier(is_home=not section.key)
+            # Check for custom identifier first (per-library hubs)
+            # Check __dict__ directly to avoid triggering PlexObject.__getattr__ which creates empty PlexValues
+            custom_id = hub.__dict__.get('_customIdentifier') if hasattr(hub, '__dict__') else None
+            if custom_id:
+                identifier = custom_id
+                util.DEBUG_LOG('Hub {} using _customIdentifier: {}', hub.hubIdentifier, identifier)
+            else:
+                # Compute identifier directly instead of relying on cached _identifier
+                # Strip trailing .number patterns (e.g., movie.recentlyadded.4 -> movie.recentlyadded)
+                # Convert to string explicitly to handle PlexValue objects
+                hub_id_raw = hub.hubIdentifier
+                hub_id_str = str(hub_id_raw) if hub_id_raw else ''
+                util.DEBUG_LOG('Hub raw hubIdentifier: {} (type={}), str conversion: "{}"',
+                              hub_id_raw, type(hub_id_raw).__name__, hub_id_str)
+                identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', hub_id_str))
+                util.DEBUG_LOG('After regex: "{}"', identifier)
+                # Handle home section special case
+                if not section.key and identifier == 'movie.recentlyreleased':
+                    identifier = 'home.VIRTUAL.movies.recentlyreleased'
 
-            if identifier not in self.HUBMAP:
+            # Look up hub config in dynamic map first, then static HUBMAP
+            hub_config = self.dynamicHubMap.get(identifier) or self.HUBMAP.get(identifier)
+
+            util.DEBUG_LOG('Hub: {} (type={}) -> identifier: {} -> config found: {} (in dynamicHubMap: {}, in HUBMAP: {})',
+                          hub.hubIdentifier, type(hub.hubIdentifier).__name__, identifier, hub_config is not None,
+                          identifier in self.dynamicHubMap, identifier in self.HUBMAP)
+
+            if hub_config is None:
                 util.DEBUG_LOG('UNHANDLED - Hub: {0} [{1}]({2})'.format(hub.hubIdentifier, identifier,
                                                                         len(hub.items)))
                 continue
 
-            skip[self.HUBMAP[identifier]['index']] = 1
+            skip[hub_config['index']] = 1
+
+            # Get custom title if available (for per-library hubs)
+            custom_title = getattr(hub, '_customTitle', None)
 
             if self.showHub(hub, is_home=not section.key,
-                            reselect_pos=reselect_pos_dict.get(identifier) if reselect_pos_dict else None):
+                            reselect_pos=reselect_pos_dict.get(identifier) if reselect_pos_dict else None,
+                            hub_config=hub_config, custom_title=custom_title):
                 if hub.items:
                     hasContent = True
-                if self.HUBMAP[identifier].get('do_updates'):
+                if hub_config.get('do_updates'):
                     self.updateHubs[identifier] = hub
 
         if not hasContent:
@@ -2338,10 +2597,24 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 self.setFocusId(focus)
         self.storeLastBG()
 
-    def showHub(self, hub, items=None, is_home=False, reselect_pos=None):
-        identifier = hub.getCleanHubIdentifier(is_home=is_home)
+    def showHub(self, hub, items=None, is_home=False, reselect_pos=None, hub_config=None, custom_title=None):
+        # Check for custom identifier first (per-library hubs)
+        # Check __dict__ directly to avoid triggering PlexObject.__getattr__ which creates empty PlexValues
+        custom_id = hub.__dict__.get('_customIdentifier') if hasattr(hub, '__dict__') else None
+        if custom_id:
+            identifier = custom_id
+        else:
+            # Compute identifier directly instead of relying on cached _identifier
+            # Convert to string explicitly to handle PlexValue objects
+            hub_id_str = str(hub.hubIdentifier) if hub.hubIdentifier else ''
+            identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', hub_id_str))
+            if is_home and identifier == 'movie.recentlyreleased':
+                identifier = 'home.VIRTUAL.movies.recentlyreleased'
 
-        if identifier in self.HUBMAP:
+        # Use provided config or look up in dynamic map then static HUBMAP
+        config = hub_config or self.dynamicHubMap.get(identifier) or self.HUBMAP.get(identifier)
+
+        if config:
             util.DEBUG_LOG('HUB: {0} [{1}]({2}, {3}, reselect: {4})'.format(hub.hubIdentifier,
                                                                             identifier,
                                                                             len(hub.items),
@@ -2349,7 +2622,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                                                                             reselect_pos),
                            )
             self._showHub(hub, hubitems=items, reselect_pos=reselect_pos, identifier=identifier,
-                          **self.HUBMAP[identifier])
+                          title=custom_title, **config)
             return True
         else:
             util.DEBUG_LOG('UNHANDLED - Hub: {0} [{1}]({1})', hub.hubIdentifier, identifier,
@@ -2503,6 +2776,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         if not hub.items and not hubitems:
             control.reset()
+            util.DEBUG_LOG("Hub {} at index {} is empty (no items) - control reset", identifier, index)
             if self.lastFocusID == index + 400 and not self._anyItemAction:
                 util.DEBUG_LOG("Hub {} was focused but is gone.", identifier)
                 hubControlIndex = self.lastFocusID - 400
@@ -2512,7 +2786,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not hubitems:
             hub.reset()
 
-        self.setProperty('hub.4{0:02d}'.format(index), hub.title or kwargs.get('title'))
+        self.setProperty('hub.4{0:02d}'.format(index), kwargs.get('title') or hub.title)
         self.setProperty('hub.text2lines.4{0:02d}'.format(index), text2lines and '1' or '')
 
         use_reselect_pos = False

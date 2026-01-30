@@ -755,6 +755,11 @@ class Settings(object):
                     T(32999, "")
                 ),
                 BoolSetting(
+                    'use_per_library_hubs', T(34077, 'Use per-library hubs on Home'), True
+                ).description(
+                    T(34078, "Show separate 'Recently Added' rows for each library instead of merged rows by type.")
+                ),
+                BoolSetting(
                     'home_confirm_actions', T(33663, 'Home: Confirm item actions'), True
                 ).description(
                     T(33664, "When acting on items in the Home view, such as mark played, hide from continue "
