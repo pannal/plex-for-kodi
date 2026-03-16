@@ -49,7 +49,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 86
+THEME_VERSION = 87
 
 UI_INTERVAL = 1 / float(addonSettings.uiWaitRate)
 
