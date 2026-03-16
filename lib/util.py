@@ -124,6 +124,7 @@ DEBUG = addonSettings.debug
 
 
 hasCustomBGColour = False
+useSolidBackground = False
 if KODI_VERSION_MAJOR > 18:
     useSolidBackground = not addonSettings.dynamicBackgrounds and addonSettings.backgroundColour
     hasCustomBGColour = useSolidBackground and addonSettings.backgroundColour != "-"
