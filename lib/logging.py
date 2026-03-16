@@ -8,6 +8,15 @@ import logging
 
 from kodi_six import xbmc
 
+from .kodi_util import ADDON, translatePath
+from .addonsettings import addonSettings
+
+_SHUTDOWN = False
+
+def setShutdown():
+    global _SHUTDOWN
+    _SHUTDOWN = True
+
 
 def log(msg, *args, **kwargs):
     if args:
@@ -40,6 +49,39 @@ def log_error(txt='', hide_tb=False):
     xbmc.log("_________________________________________________________________________________", xbmc.LOGERROR)
     xbmc.log("`", xbmc.LOGERROR)
 
+
+
+def LOG(msg, *args, **kwargs):
+    return log(msg, *args, **kwargs)
+
+
+def DEBUG_LOG(msg, *args, **kwargs):
+    if _SHUTDOWN:
+        return
+
+    if not addonSettings.debug and not xbmc.getCondVisibility('System.GetBool(debug.showloginfo)'):
+        return
+
+    return log(msg, *args, **kwargs)
+
+
+def ERROR(txt='', hide_tb=False, notify=False, time_ms=3000):
+    short = log_error(txt, hide_tb)
+    if notify:
+        showNotification('ERROR: {0}'.format(txt or short), time_ms=time_ms)
+    return short
+
+
+def TEST(msg):
+    xbmc.log('---TEST: {0}'.format(msg), xbmc.LOGINFO)
+
+
+def showNotification(message, time_ms=3000, icon_path=None, header=ADDON.getAddonInfo('name')):
+    try:
+        icon_path = icon_path or translatePath(ADDON.getAddonInfo('icon'))
+        xbmc.executebuiltin('Notification({0},{1},{2},{3})'.format(header, message, time_ms, icon_path))
+    except RuntimeError:  # Happens when disabling the addon
+        xbmc.log(message, xbmc.LOGINFO)
 
 
 def service_log(msg, level=xbmc.LOGINFO, realm="Updater"):

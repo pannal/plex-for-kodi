@@ -79,26 +79,25 @@ class IsWatchlistedTask(WatchlistCheckBaseTask):
         if self.isCanceled():
             return
 
-        server = None
         try:
             if self.isCanceled():
                 return
-            server = self.getServer()
-            res = server.query("/library/metadata/{}/userState".format(self.guid))
-            is_wl = False
-
-            # some etree foo to find the watchlisted state
-            if res and res.get("size", 0):
-                for child in res:
-                    if child.tag == "UserState":
-                        if child.get("watchlistedAt", None):
-                            is_wl = True
-                        break
+            is_wl = is_watchlisted(guid=self.guid, server=self.getServer())
             self.callback(is_wl)
         except:
             util.ERROR()
-        finally:
-            del server
+
+
+def is_watchlisted(guid, server):
+    res = server.query("/library/metadata/{}/userState".format(guid))
+
+    # some etree foo to find the watchlisted state
+    if res and res.get("size", 0):
+        for child in res:
+            if child.tag == "UserState":
+                if child.get("watchlistedAt", None):
+                    return True
+        return False
 
 
 def wl_wrap(f):
@@ -116,22 +115,39 @@ def GUIDToRatingKey(guid):
     return guid.rsplit("/")[-1]
 
 
-def removeFromWatchlistBlind(guid):
+def removeFromWatchlistBlind(guid, ref):
     if not util.getUserSetting("use_watchlist", True):
         return
 
-    util.DEBUG_LOG("Watchlist: Trying to blindly remove {}", guid)
+    util.DEBUG_LOG("Watchlist: Blind: Trying to blindly remove {}", guid)
     try:
         if not guid or not guid.startswith("plex://"):
             return
 
         server = pnUtil.SERVERMANAGER.getDiscoverServer()
-        server.query("/actions/removeFromWatchlist", ratingKey=GUIDToRatingKey(guid), method="put")
+
+        g = GUIDToRatingKey(guid)
+        if not is_watchlisted(g, server):
+            return
+
+        tries = 0
+        while tries < 3:
+            server.query("/actions/removeFromWatchlist", ratingKey=g, method="put")
+            if not is_watchlisted(g, server):
+                break
+            util.LOG("Watchlist: Blind: Item still watchlisted, retrying ({}/3)", tries + 1)
+            util.MONITOR.waitForAbort(0.1)
+            tries += 1
+        else:
+            util.LOG("Watchlist: Blind: Action failed.")
+            return
     except:
         exc = traceback.format_exc()
         util.DEBUG_LOG("Watchlist: Failed to blindly remove {}: {}", guid, exc)
     else:
-        util.DEBUG_LOG("Watchlist: Removed {}", guid)
+        util.DEBUG_LOG("Watchlist: Possibly Removed {}", guid)
+        util.showNotification(T(34077, "{} successfully removed from Watchlist").format(ref.defaultTitle),
+                              time_ms=3000, header=T(34000, "Watchlist"))
 
 
 class WatchlistUtilsMixin(object):
@@ -215,6 +231,7 @@ class WatchlistUtilsMixin(object):
                     plexapp.util.APP.trigger('change:tempServer', server=server)
 
                 item_open_callback(item=rk, inherit_from_watchlist=False, server=server, is_watchlisted=True,
+                                   directly_from_watchlist=True,
                                    came_from=self.wl_ref)
             finally:
                 if server_differs:
@@ -225,12 +242,15 @@ class WatchlistUtilsMixin(object):
 
     @wl_wrap
     def wl_auto_remove(self, ref):
+        util.LOG("Watchlist: DEBUG: %s, %s, %s %s" % (ref.ratingKey, self.is_watchlisted, ref.isFullyWatched, util.getUserSetting('watchlist_auto_remove', True)))
         if self.is_watchlisted and ref.isFullyWatched and util.getUserSetting('watchlist_auto_remove', True):
             self.removeFromWatchlist(ref)
-            util.DEBUG_LOG("Watchlist: Item {} is fully watched, removed from watchlist", ref.ratingKey)
+            util.LOG("Watchlist: Item {} is fully watched, removed from watchlist", ref.ratingKey)
+            util.showNotification(T(34077, "{} successfully removed from Watchlist").format(ref.defaultTitle),
+                                  time_ms=3000, header=T(34000, "Watchlist"))
             return True
         elif not ref.isFullyWatched:
-            util.DEBUG_LOG("Watchlist: Item {} is not fully watched, skipping", ref.ratingKey)
+            util.LOG("Watchlist: Item {} is not fully watched, skipping", ref.ratingKey)
 
     @wl_wrap
     def watchlistItemAvailable(self, item, shortcut_watchlisted=False):
@@ -298,6 +318,9 @@ class WatchlistUtilsMixin(object):
         """
 
         def callback(state):
+            if state is None:
+                util.LOG("Watchlist: Couldn't parse watchlist response, assuming old state")
+                return
             self.is_watchlisted = state
             self.setBoolProperty("is_watchlisted", state)
             util.DEBUG_LOG("Watchlist state for item {}: {}", item.ratingKey, state)
@@ -310,14 +333,31 @@ class WatchlistUtilsMixin(object):
         server = pnUtil.SERVERMANAGER.getDiscoverServer()
 
         try:
-            server.query("/actions/{}".format(method), ratingKey=GUIDToRatingKey(item.guid), method="put")
-            util.DEBUG_LOG("Watchlist action {} for {} succeeded", method, item.ratingKey)
+            g = GUIDToRatingKey(item.guid)
+            tries = 0
+            wl_action_failed = False
+            while tries < 3:
+                server.query("/actions/{}".format(method), ratingKey=g, method="put")
+                is_wl = is_watchlisted(g, server)
+                if (is_wl and method == "addToWatchlist") or (not is_wl and method == "removeFromWatchlist"):
+                    break
+                util.LOG("Watchlist: Action didn't succeed, retrying ({}/3)", tries + 1)
+                util.MONITOR.waitForAbort(0.1)
+                tries += 1
+            else:
+                util.LOG("Watchlist: Action failed.")
+                wl_action_failed = True
+
+            if wl_action_failed:
+                return self.is_watchlisted
+
+            util.LOG("Watchlist action {} for {} succeeded", method, item.ratingKey)
             self.is_watchlisted = method == "addToWatchlist"
             self.setBoolProperty("is_watchlisted", method == "addToWatchlist")
             pnUtil.APP.trigger("watchlist:modified")
             return method == "addToWatchlist"
         except exceptions.BadRequest:
-            util.DEBUG_LOG("Watchlist action {} for {} failed", method, item.ratingKey)
+            util.LOG("Watchlist action {} for {} failed", method, item.ratingKey)
 
     @wl_wrap
     def addToWatchlist(self, item):

@@ -19,6 +19,11 @@ class GoHomeMixin():
 
         HOME.show()
 
+    def goHomeRoot(self, *args, **kwargs):
+        HOME.go_root = True
+        self.closeWithCommand('HOME')
+        HOME.show()
+
 
 class UtilMixin(GoHomeMixin):
     def __init__(self):

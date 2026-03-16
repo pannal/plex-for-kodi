@@ -254,7 +254,7 @@ class DropdownDialog(kodigui.BaseDialog):
             pos = self.optionsList.getManagedItemPosition(mli)
             self.optionsList.setSelectedItemByPos(pos)
             while self.optionsList and self.optionsList.getSelectedPos() != pos:
-                util.MONITOR.waitForAbort(0.01)
+                util.MONITOR.waitFor()
 
             if not self.optionsList:
                 util.DEBUG_LOG("Dropdown: something went wrong")

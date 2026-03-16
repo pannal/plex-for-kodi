@@ -6,14 +6,14 @@ from lib.properties_core import _setGlobalProperty, _setGlobalBoolProperty, _get
 MONITOR = xbmc.Monitor()
 
 
-def setGlobalProperty(key, val, wait=False, timeout=50, base='script.plex.{0}'):
+def setGlobalProperty(key, val, wait=False, timeout=500, base='script.plex.{0}'):
     _setGlobalProperty(key, val, base=base)
     if wait:
         waited = 0
         while _getGlobalProperty(key, base=base) != val and waited < timeout:
-            if MONITOR.waitForAbort(0.1):
+            if MONITOR.waitForAbort(0.01):
                 break
-            waited += 0.1
+            waited += 0.01
 
 
 def setGlobalBoolProperty(key, boolean, base='script.plex.{0}'):
@@ -33,7 +33,7 @@ class IPCTimeoutException(IPCException):
     pass
 
 
-def getGlobalProperty(key, consume=False, wait=False, interval=0.1, timeout=36000, base='script.plex.{0}'):
+def getGlobalProperty(key, consume=False, wait=False, interval=0.01, timeout=360000, base='script.plex.{0}'):
     resp = _getGlobalProperty(key, base=base)
     if wait and not resp:
         waited = 0
@@ -53,7 +53,7 @@ def getGlobalProperty(key, consume=False, wait=False, interval=0.1, timeout=3600
     return resp
 
 
-def waitForGPEmpty(key, interval=0.1, timeout=36000, base='script.plex.{0}'):
+def waitForGPEmpty(key, interval=0.01, timeout=360000, base='script.plex.{0}'):
     resp = _getGlobalProperty(key, base=base)
     if resp:
         waited = 0

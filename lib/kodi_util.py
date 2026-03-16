@@ -1,5 +1,8 @@
 # coding=utf-8
 
+import sys
+import platform
+
 # noinspection PyUnresolvedReferences
 from kodi_six import xbmc, xbmcgui, xbmcvfs, xbmcaddon
 
@@ -38,6 +41,22 @@ if not parsedBuild:
 KODI_BUILD_NUMBER = int("{0}{1:02d}{2:03d}".format(_bmajor, int(_bminor), int(_bpatch)))
 
 FROM_KODI_REPOSITORY = ADDON.getAddonInfo('name') == "PM4K for Plex"
+
+try:
+    PYTHON_VERSION = platform.python_version()
+    PYTHON_VERSION_TUPLE = tuple(map(int, platform.python_version_tuple()))
+except:
+    # assume something old
+    PYTHON_VERSION = "3.8.15"
+    PYTHON_VERSION_TUPLE = (3, 8, 15)
+
+
+# no GIL anymore?
+ENABLE_HIGH_CONCURRENCY = False
+try:
+    ENABLE_HIGH_CONCURRENCY = not sys._is_gil_enabled()
+except:
+    pass
 
 
 if KODI_VERSION_MAJOR > 18:

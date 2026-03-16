@@ -14,9 +14,9 @@ class RolesMixin(object):
 
         tries = 0
         focus = xbmc.getInfoLabel('Container({}).Position'.format(container_id))
-        while tries < 20 and focus == '':
+        while tries < util.MONITOR.waitAmount(2) and focus == '':
             focus = xbmc.getInfoLabel('Container({}).Position'.format(container_id))
-            util.MONITOR.waitForAbort(0.1)
+            util.MONITOR.waitFor()
             tries += 1
 
         try:

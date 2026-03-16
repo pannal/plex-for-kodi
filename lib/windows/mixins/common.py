@@ -41,7 +41,7 @@ class CommonMixin(object):
 
         if state:
             item.markWatched(**kw)
-            return False
+            return True
         else:
             item.markUnwatched(**kw)
-            return True
+            return False

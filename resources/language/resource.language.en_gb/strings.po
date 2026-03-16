@@ -1202,6 +1202,14 @@ msgctxt "#33201"
 msgid "Specify solid Background Color instead of using media images"
 msgstr ""
 
+msgctxt "#33202"
+msgid "Custom Background Color"
+msgstr ""
+
+msgctxt "#33203"
+msgid "Specify your own background color in AARRGGBB format"
+msgstr ""
+
 msgctxt "#33400"
 msgid "Use old compatibility profile"
 msgstr ""
@@ -1268,6 +1276,14 @@ msgstr ""
 
 msgctxt "#33604"
 msgid "When the above is enabled and no video chapters are available, simulate them by using the markers identified by the Plex Server (Intro, Credits)."
+msgstr ""
+
+msgctxt "#35001"
+msgid "Combine video & virtual chapters"
+msgstr ""
+
+msgctxt "#35002"
+msgid "Combine video & virtual chapters when both are available."
 msgstr ""
 
 msgctxt "#33605"
@@ -2271,7 +2287,7 @@ msgid "\"Use alternate seek\" wait for seek"
 msgstr ""
 
 msgctxt "#33650"
-msgid "This adjusts the delay between seek-tries on problematic platforms when \"Use alternate seek\" is enabled, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. Default: 500ms"
+msgid "This adjusts the delay between seek-tries on problematic platforms when \"Use alternate seek\" is enabled, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. Default: 100ms"
 msgstr ""
 
 msgctxt "#33651"
@@ -2821,4 +2837,148 @@ msgstr ""
 
 msgctxt "#34043"
 msgid "Album"
+msgstr ""
+
+msgctxt "#34044"
+msgid "UI wait poll rate (Hz)"
+msgstr ""
+
+msgctxt "#34045"
+msgid "When waiting for certain events to occur, wait this long. Default: 10 Hz. With a decent device try 100 Hz, it should feel snappier in certain situations."
+msgstr ""
+
+msgctxt "#34046"
+msgid "Fade theme music in/out"
+msgstr ""
+
+msgctxt "#34047"
+msgid "Cache theme music"
+msgstr ""
+
+msgctxt "#34048"
+msgid "Cache theme music locally instead of streaming it directly"
+msgstr ""
+
+msgctxt "#34049"
+msgid "Seek back on start"
+msgstr ""
+
+msgctxt "#34050"
+msgid "Issue a quick seek forward then back to the start of the video, when we start fresh (no resume point, no marker to immediately skip). Can fix A/V desync issues (e.g. CoreELEC on Ugoos with passthrough) and embedded subtitles showing late, with certain setups. Only for DirectPlay. This still requires a sensible value for \"Delay after change of refresh rate\" in Kodi (default: Off, CE/LG: On)"
+msgstr ""
+
+msgctxt "#34051"
+msgid "Movies: Play pre-rolls"
+msgstr ""
+
+msgctxt "#34052"
+msgid "Plays pre-roll clips (server-defined) before playing a movie without a resume point. User-specific."
+msgstr ""
+
+msgctxt "#34053"
+msgid "Cinema Trailers to Play Before Movies"
+msgstr ""
+
+msgctxt "#34054"
+msgid "Play pre-rolls before trailers"
+msgstr ""
+
+msgctxt "#34055"
+msgid "Official Plex clients play the trailers first, then the preroll clips. Enabling this will do the opposite. Default: On. User-specific."
+msgstr ""
+
+msgctxt "#34056"
+msgid "\"Use alternate seek\" prefer reported time"
+msgstr ""
+
+msgctxt "#34057"
+msgid "Use reported seek time instead of the current player time (usually more accurate); Default: On"
+msgstr ""
+
+msgctxt "#34058"
+msgid "\"Use alternate seek\" wait for valid player time"
+msgstr ""
+
+msgctxt "#34059"
+msgid "The player time reporting might be inaccurate on playback start. Wait for a valid player time before seeking; Default: On"
+msgstr ""
+
+msgctxt "#34060"
+msgid "Blackout screen during initial seek"
+msgstr ""
+
+msgctxt "#34061"
+msgid "Show directors in cast lists"
+msgstr ""
+
+msgctxt "#34062"
+msgid "Ensure Kodi Addon position"
+msgstr ""
+
+msgctxt "#34063"
+msgid "When not run from the Program addons section, our lastused value will not be updated. Make sure it does when the addon exits."
+msgstr ""
+
+msgctxt "#34064"
+msgid "Return to Home on Screensaver"
+msgstr ""
+
+msgctxt "#34065"
+msgid "When Kodi starts its screensaver, and we are in a library view, return to home. This saves idle energy as the library views are very heavy on the CPU even on idle due to a Kodi bug."
+msgstr ""
+
+msgctxt "#34066"
+msgid "Seamless branching LAV mode (CoreELEC U3k B9+, avdvplus, p3i)"
+msgstr ""
+
+msgctxt "#34067"
+msgid "LAV filter mode for seamless branching movies with TrueHD/JOC. Auto-applied to known movies. Default: LAV SB (4)"
+msgstr ""
+
+msgctxt "#34068"
+msgid "Off (0)"
+msgstr ""
+
+msgctxt "#34069"
+msgid "Seek/Sync (1)"
+msgstr ""
+
+msgctxt "#34070"
+msgid "Debug (3)"
+msgstr ""
+
+msgctxt "#34071"
+msgid "LAV SB (4) - Recommended"
+msgstr ""
+
+msgctxt "#34072"
+msgid "LAV Full (5)"
+msgstr ""
+
+msgctxt "#34073"
+msgid "Seamless branching fix"
+msgstr ""
+
+msgctxt "#34074"
+msgid "Automatically temporarily activate LAV Full or SB mode in CoreELEC on supported builds to alleviate audio dropouts on certain titles, if necessary. Based on \"seamless_branching.json\", can be user-amended by putting a file with the same name and structure into userdata/addon_data/script.plexmod."
+msgstr ""
+
+msgctxt "#34075"
+msgid "Resume offset adjustment"
+msgstr ""
+
+msgctxt "#34076"
+msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -3.5s"
+msgstr ""
+
+msgctxt "#34077"
+msgid "{} successfully removed from Watchlist"
+msgstr ""
+
+msgctxt "#34078"
+msgid "Seek back on start delay between seeks"
+msgstr ""
+
+msgctxt "#34079"
+msgid "How long should we wait when executing Seek back on start, after having seeked forwards temporarily, before seeking back? Setting this higher could resolve decoder initialisation issues. Default: 500ms"
 msgstr ""

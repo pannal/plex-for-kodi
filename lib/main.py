@@ -35,6 +35,7 @@ from .data_cache import dcm
 BACKGROUND = None
 quitKodi = False
 restart = False
+skipEnsureLastUsed = False
 
 
 if six.PY2:
@@ -94,6 +95,9 @@ def realExit():
 
     elif restart:
         xbmc.executebuiltin('RunScript(script.plexmod)')
+    else:
+        if not skipEnsureLastUsed and util.getSetting('ensure_lastused'):
+            updateLastUsedAddon()
 
 
 def signout():
@@ -120,6 +124,9 @@ def main(force_render=False):
         with kodigui.GlobalProperty('rendering'):
             render_templates(force=force_render)
 
+        # cleanup cache folder
+        util.cleanupCacheFolder()
+
         with util.Cron(1 / util.addonSettings.tickrate):
             BACKGROUND = background.BackgroundWindow.create(function=_main)
             if BACKGROUND.waitForOpen():
@@ -140,8 +147,23 @@ def main(force_render=False):
             pass
 
 
+def updateLastUsedAddon():
+    """
+    Runs our plugin endpoint with a stub value, so it immediately returns, then issues a Back action to back out of it.
+    This is called atExit if necessary and updates the recently used video addon list with our addon (as it's a script,
+    it would normally not get its lastused property updated when ran from service or script video endpoint)
+    :return:
+    """
+    try:
+        util.setGlobalProperty('ignore_spinner', '1', wait=True)
+        xbmc.executebuiltin("RunAddon(script.plexmod,stub)")
+        xbmc.executebuiltin('Action(back)')
+    finally:
+        util.setGlobalProperty('ignore_spinner', '')
+
+
 def _main():
-    global quitKodi, restart, exit_timer_started
+    global quitKodi, restart, exit_timer_started, skipEnsureLastUsed
 
     # uncomment to profile code #1
     #pr = cProfile.Profile()
@@ -176,6 +198,12 @@ def _main():
                     ):
                         oldAccID = plexapp.ACCOUNT.ID
                         result = userselect.start(BACKGROUND._winID)
+                        tries = 0
+                        while result == 'retry' and tries < 2:
+                            util.DEBUG_LOG("Main: User select: possibly wrong pin entered, retrying after refreshing home users ({}/2)", tries + 1)
+                            result = userselect.start(BACKGROUND._winID)
+                            tries += 1
+
                         if not result:
                             return
                         elif result == 'signout':
@@ -183,13 +211,17 @@ def _main():
                             break
                         elif result == 'signin':
                             break
-                        elif result == 'cancel' and fromSwitch:
+                        elif result in ('cancel', 'retry') and fromSwitch:
+                            if result == 'retry':
+                                util.LOG("Main: User select failed multiple times possibly due to wrong pin entry.")
                             util.DEBUG_LOG('Main: User selection canceled, reusing previous user')
                             plexapp.ACCOUNT.isAuthenticated = True
                         elif result == 'cancel':
                             return
                         if not fromSwitch:
                             util.DEBUG_LOG('Main: User selected')
+                        background.setBusy()
+                        util.MONITOR.trigger("background.activate")
 
                         # store previous account ID for fast user switch
                         if oldAccID and oldAccID != plexapp.ACCOUNT.ID:
@@ -222,7 +254,9 @@ def _main():
                         util.DEBUG_LOG('Main: STARTING WITH SERVER: {0}', selectedServer)
 
                         windowutils.HOME = home.HomeWindow.create()
+
                         if windowutils.HOME.waitForOpen(base_win_id=BACKGROUND._winID):
+                            background.setBusy(False)
                             windowutils.HOME.modal()
                         else:
                             util.LOG("Couldn't open home window, exiting")
@@ -242,7 +276,7 @@ def _main():
                             signout()
                             break
                         elif closeOption == 'switch':
-                            # store last user ID
+                            background.setBusy(True)
                             util.DEBUG_LOG('Main: Switching users...: {}', plexapp.ACCOUNT.ID)
                             plexapp.ACCOUNT.isAuthenticated = False
                             fromSwitch = True
@@ -251,8 +285,8 @@ def _main():
                                 uid = closeOption['fast_switch']
                                 util.DEBUG_LOG('Main: Fast-Switching users...: {}', uid)
                                 util.setSetting('previous_user', plexapp.ACCOUNT.ID)
-                                with busy.BusySignalContext(plexapp.util.APP, "account:response"):
-                                    if plexapp.ACCOUNT.switchHomeUser(uid) and plexapp.ACCOUNT.switchUser:
+                                with busy.BusySignalContext(plexapp.util.APP, "account:response", wait_max=10):
+                                    if plexapp.ACCOUNT.switchHomeUser(uid, silent=True) and plexapp.ACCOUNT.switchUser:
                                         util.DEBUG_LOG('Waiting for user change...')
 
                         elif closeOption == 'recompile':
@@ -263,13 +297,17 @@ def _main():
                             util.LOG("Restarting Addon")
                             restart = True
                             return
+                        elif closeOption == 'update':
+                            util.LOG("Exiting for update")
+                            skipEnsureLastUsed = True
+                            return
                     finally:
                         try:
                             kodiExiting = closeOption == "kodi_exit" or windowutils.HOME.closeOption == "kodi_exit"
                         except:
                             kodiExiting = False
 
-                        if closeOption in ("quit", "exit", "restart") and not kodiExiting:
+                        if closeOption in ("quit", "exit", "restart", "update") and not kodiExiting:
                             if not exit_timer.is_alive():
                                 util.DEBUG_LOG("Main: Starting hard exit timer of {} seconds...", util.addonSettings.maxShutdownWait)
                                 exit_timer.start()
@@ -279,8 +317,8 @@ def _main():
                         background.setShutdown()
                         gc.collect(2)
 
-                        if kodiExiting:
-                            return
+                    if kodiExiting:
+                        return
 
             else:
                 break
@@ -322,7 +360,6 @@ def _main():
             gc.collect(2)
         except SystemExit:
             util.LOG("Main: SystemExit exception caught (outer)...")
-            return
-
-        if util.KODI_VERSION_MAJOR == 18:
-            realExit()
+        else:
+            if util.KODI_VERSION_MAJOR == 18:
+                realExit()

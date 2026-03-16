@@ -8,9 +8,15 @@ TEMPLATE_CONTEXTS = {
     "indicators": {
         "base": {
             "use_scaling": False,
+            "show": True,
             "scale": {
 
             }
+        },
+        "none": {
+            "INHERIT": "base",
+            "use_unwatched": True,
+            "show": False
         },
         "classic": {
             "INHERIT": "base",

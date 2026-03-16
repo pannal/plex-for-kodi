@@ -759,6 +759,11 @@ class Hub(BaseHub):
             self._totalSize = int(ts) if ts is not None else None
         return self._totalSize
 
+    def reset(self):
+        super(Hub, self).reset()
+        if not self.more and self.totalSize and self.size < self.totalSize:
+            self.more = plexobjects.PlexValue('1')
+
     @totalSize.setter
     def totalSize(self, value):
         self._totalSize = value.asInt()

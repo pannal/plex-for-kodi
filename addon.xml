@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.0.5f"
+       version="1.3.19"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="2.26.0"/>
@@ -34,7 +34,7 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- Watchlist: Adhere to new plex.tv watchlist limit of 100 items (was: 300; unannounced)
+- for changelog see forum thread or github
         </news>
         <assets>
             <icon>icon2.png</icon>

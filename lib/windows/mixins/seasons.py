@@ -36,7 +36,15 @@ class SeasonsMixin(object):
         calculates the season progress based on how many episodes are watched and, optionally, if there's an episode
         in progress, take that into account as well
         """
-        watchedPerc = season.viewedLeafCount.asInt() / season.leafCount.asInt() * 100
+        viewed = season.viewedLeafCount.asInt()
+        has_ondeck_progress = False
+        for v in show.onDeck:
+            if v.parentRatingKey == season.ratingKey and v.viewOffset.asInt():
+                has_ondeck_progress = True
+                break
+        if has_ondeck_progress and viewed == season.leafCount.asInt():
+            viewed -= 1
+        watchedPerc = viewed / season.leafCount.asInt() * 100
         for v in show.onDeck:
             if v.parentRatingKey == season.ratingKey and v.viewOffset:
                 vPerc = int((v.viewOffset.asInt() / v.duration.asFloat()) * 100)
@@ -63,10 +71,18 @@ class SeasonsMixin(object):
             if mli:
                 mli.setProperty('index', str(idx))
                 mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/show.png')
-                mli.setProperty('unwatched.count', not season.isWatched and str(season.unViewedLeafCount) or '')
-                mli.setBoolProperty('unwatched.count.large', not season.isWatched and season.unViewedLeafCount > 999)
-                mli.setBoolProperty('watched', season.isFullyWatched)
-                if not season.isWatched and focus is None and season.index.asInt() > 0:
+                seasonWatched = season.isWatched
+                has_ondeck_progress = False
+                for v in show.onDeck:
+                    if v.parentRatingKey == season.ratingKey and v.viewOffset.asInt():
+                        has_ondeck_progress = True
+                        break
+                if has_ondeck_progress and season.viewedLeafCount == season.leafCount:
+                    seasonWatched = False
+                mli.setProperty('unwatched.count', not seasonWatched and str(season.unViewedLeafCount) or '')
+                mli.setBoolProperty('unwatched.count.large', not seasonWatched and season.unViewedLeafCount > 999)
+                mli.setBoolProperty('watched', seasonWatched)
+                if not seasonWatched and focus is None and season.index.asInt() > 0:
                     focus = idx
                     mli.setProperty('progress', util.getProgressImage(None, self.getSeasonProgress(show, season)))
                 items.append(mli)

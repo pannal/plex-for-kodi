@@ -136,6 +136,10 @@ class MediaPart(plexobjects.PlexObject):
     def __repr__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.id)
 
+    @property
+    def audioStreams(self):
+        return list(filter(lambda x: x.streamType.asInt() == plexstream.PlexStream.TYPE_AUDIO, self.streams))
+
     def selectedStream(self, stream_type):
         streams = [x for x in self.streams if stream_type == x.type]
         selected = list([x for x in streams if x.selected is True])

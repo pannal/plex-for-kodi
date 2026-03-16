@@ -154,7 +154,7 @@ class MusicPlayerWindow(currentplaylist.CurrentPlaylistWindow):
         self.processCommand(opener.handleOpen(currentplaylist.CurrentPlaylistWindow, winID=self._winID))
 
     def stopButtonClicked(self):
-        player.PLAYER.stopAndWait()
+        player.PLAYER.stopAndWait(fade=True)
         self.doClose()
 
     def updateProperties(self, **kwargs):

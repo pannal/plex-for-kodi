@@ -305,6 +305,16 @@ class MultiUAOptionsSetting(MultiOptionsSetting, UserAwareSetting):
     pass
 
 
+class UAListSetting(ListSetting, UserAwareSetting):
+    def __init__(self, ID, label, default, options, **kwargs):
+        super(UAListSetting, self).__init__(ID, label, default, **kwargs)
+        self.options = options
+
+    def set(self, val, skip_get=False):
+        val = len(self.options) - 1 - val
+        return UserAwareSetting.set(self, val, skip_get=True)
+
+
 class KCMSetting(OptionsSetting):
     key = None
 
@@ -445,6 +455,11 @@ class Settings(object):
                     T(32100, 'Skip user selection and pin entry on startup.')
                 ),
                 BoolSetting(
+                    'ensure_lastused', T(34062, 'Ensure Kodi Addon position'), True
+                ).description(
+                    T(34063, 'When not run from the Program addons section, our lastused value will not be updated. Make sure it does when the addon exits.')
+                ),
+                BoolSetting(
                     'search_use_kodi_kbd', T(32955, 'Use Kodi keyboard for searching'), False
                 ),
                 ThemeMusicSetting('theme_music', T(32480, 'Theme music'), 5),
@@ -467,8 +482,8 @@ class Settings(object):
                     (
                         (0, T(34024, 'at selected threshold percentage')),
                         (1, T(34025, 'at final credits marker position')),
-                        (2, T(34025, 'at first credits marker position')),
-                        (3, T(34026, 'earliest between threshold percent and first credits marker')),
+                        (2, T(34026, 'at first credits marker position')),
+                        (3, T(34027, 'earliest between threshold percent and first credits marker')),
                     ),
                     show_cb=lambda: plexnet.plexapp.SERVERMANAGER.selectedServer.prefs.get(
                         "LibraryVideoPlayedAtBehaviour", None) is None
@@ -481,6 +496,12 @@ class Settings(object):
                              'problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by '
                              'default for CoreELEC and LG WebOS)'
                 )),
+                BoolSetting('lav_mode_auto_switch', T(34073, 'Seamless branching fix'), True)
+                .description(T(34074, "Automatically temporarily activate LAV Full or SB mode in CoreELEC on "
+                                      "supported builds to alleviate audio dropouts on certain titles, if necessary. "
+                                      "Based on \"seamless_branching.json\", can be user-amended by putting a file "
+                                      "with the same name and structure into userdata/addon_data/script.plexmod."))
+                if util.CE_SB_LAV_SWITCH else None,
                 BoolSetting(
                     'assume_resume', T(33711, 'Always resume media'), True
                 ).description(
@@ -660,6 +681,7 @@ class Settings(object):
                     'watched_indicators', T(33022, ''),
                     "modern_2024",
                     (
+                        ('none', T(32309, 'None')),
                         ('classic', T(32987, 'Classic')),
                         ('modern', T(32985, 'Modern')),
                         ('modern_2024', T(33076, 'Modern (2024)')),
@@ -704,6 +726,9 @@ class Settings(object):
                         ('watched', T(33718, 'Watched')),
                         ('unwatched', T(33010, 'Unwatched')),
                     ]
+                ),
+                BoolUserSetting(
+                    'show_directors', T(34061, 'Show directors in cast lists'), True
                 ),
                 MultiOptionsSetting(
                     'no_episode_spoilers4', T(33006, ''),
@@ -763,6 +788,17 @@ class Settings(object):
             T(32940, 'Player UI'), (
                 BoolSetting('player_official', T(33045, 'Behave like official Plex clients'), True).description(
                     T(33046, '')),
+                BoolUserSetting('preplay_preroll', T(34051, 'Movies: Play pre-rolls'), False).description(
+                    T(34052, 'Plays pre-roll clips (server-defined) before playing a movie without a resume '
+                             'point. User-specific.')),
+                BoolUserSetting('preplay_preroll_first', T(34054, 'Play pre-rolls before trailers'), True).description(
+                    T(34055, 'Official Plex clients play the trailers first, then the preroll clips. Enabling '
+                             'this will do the opposite. Default: On. User-specific.')),
+                UAListSetting(
+                    'preplay_trailers', T(34053, 'Cinema Trailers to Play Before Movies'),
+                    5,
+                    list(map(str, list(range(6))))
+                ),
                 BoolSetting('no_osd_time_spoilers', T(33004, ''), False, backport_from="no_spoilers").description(
                     T(33005, '')),
                 MultiUAOptionsSetting(
@@ -802,6 +838,15 @@ class Settings(object):
                     )
                 ).description(T(33088, 'Only applies to video player UI')),
                 OptionsSetting(
+                    'resume_offset', T(34075, "Resume offset adjustment"), -3500,
+                    [(0, T(32481))] + [
+                        (a, T(33091).format(sec_or_ms=a if a > -1000 else "{:.1f}".format(a / 1000),
+                                            unit_s_or_ms="ms" if a > -1000 else "s")) for a in
+                        [-100] + list(range(-250, -1000, -250)) + list(range(-1000, -30000, -500))]
+                ).description(T(34076, 'When resuming media with a resume point, negatively adjust it by this '
+                                       'amount of milliseconds to avoid lost content due to keyframes/seek behaviour. '
+                                       'Default: -3.5s')),
+                OptionsSetting(
                     'resume_seek_behind', T(33089, ''), 0,
                     [(0, T(32481))] + [
                         (a, T(33091).format(sec_or_ms=a if a < 1000 else int(a / 1000),
@@ -819,6 +864,13 @@ class Settings(object):
                 ).description(T(33094, '')),
                 BoolSetting('resume_seek_behind_onlydp', T(33096, ''), True).description(
                     T(33097, '')),
+                BoolSetting('seek_back_on_start', T(34049, 'Seek back on start'), util.altSeekRecommended).description(
+                    T(34050, "Issue a quick seek forward then back to the start of the video, when we start "
+                             "fresh (no resume point, no marker to immediately skip). Can fix A/V desync issues (e.g. "
+                             "CoreELEC on Ugoos with passthrough) and embedded subtitles showing late, with certain "
+                             "setups. Only for DirectPlay. This still requires a sensible value for \"Delay after "
+                             "change of refresh rate\" in Kodi (default: Off, CE/LG: On)")),
+                BoolSetting('initial_seek_blackout', T(34060, 'Blackout screen during initial seek'), True),
                 OptionsSetting(
                     'player_stop_on_idle',
                     T(32946, 'Stop video playback on idle after'),
@@ -844,6 +896,11 @@ class Settings(object):
                 ).description(
                     T(33604, 'When the above is enabled and no video chapters are available, simulate them by using the'
                              ' markers identified by the Plex Server (Intro, Credits).')
+                ),
+                BoolUserSetting(
+                    'combined_chapters', T(35001, 'Combine video & virtual chapters'), True
+                ).description(
+                    T(35002, 'Combine video & virtual chapters when both are available.')
                 ),
                 BoolUserSetting(
                     'auto_skip_in_transcode', T(32948, 'Allow auto-skip when transcoding'), True
@@ -1002,11 +1059,17 @@ class Settings(object):
                                        "e.g. in a hotel room. Adjusts the UI to visually "
                                        "wait for item refreshes and waits for the buffer to fill when starting "
                                        "playback.")),
+                BoolSetting(
+                    'onss_library_back_home', T(34064, 'Return to Home on Screensaver'), True
+                ).description(T(34065, 'When Kodi starts its screensaver, and we are in a library view, '
+                                       'return to home. This saves idle energy as the library views are very heavy '
+                                       'on the CPU even on idle due to a Kodi bug.'),),
                 OptionsSetting(
                     'action_on_sleep',
                     T(32700, 'Action on Sleep event'),
                     'none',
                     (('none', T(32702, 'Nothing')), ('stop', T(32703, 'Stop playback')),
+                     ('home', T(34066, 'Go Home')),
                      ('quit', T(32704, 'Quit Kodi')), ('reboot', T(32426, 'Reboot')),
                      ('shutdown', T(32423, 'Shutdown')),
                      ('hibernate', T(32425, 'Hibernate')), ('suspend', T(32424, 'Suspend')),

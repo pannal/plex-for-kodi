@@ -8,6 +8,7 @@ from plexnet.video import Episode, Movie, Clip
 from lib import util
 from . import kodigui
 from . import windowutils
+from lib import seamless_branching
 
 
 def split2len(s, n):
@@ -121,12 +122,16 @@ class InfoWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
                             stream.frameRate, dovi and "\nDoVi: {}\n".format(dovi) or ""))
                     # audio
                     elif streamtype == 2:
-                        addMedia.append("Audio: {}{}, {}/{}ch@{} kBit, {} Hz\n".format(
+                        imdb_id = seamless_branching.sbm.get_imdb_id(self.video)
+                        is_sb = (seamless_branching.sbm.is_seamless_branching_movie(imdb_id, stream, force_detection=True)
+                                 and " (SB!)" or "")
+                        addMedia.append("Audio: {}{}, {}/{}ch@{} kBit, {} Hz{}\n".format(
                             stream.language,
                             " (default)" if stream.default else "",
                             stream.codec.upper(),
                             stream.channels, stream.bitrate,
-                            stream.samplingRate))
+                            stream.samplingRate,
+                            is_sb))
                     # subtitle
                     elif streamtype == 3:
                         if len(subs) > 4:

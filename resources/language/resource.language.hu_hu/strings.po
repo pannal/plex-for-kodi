@@ -1012,6 +1012,7 @@ msgctxt "#32446"
 msgid "Stereo"
 msgstr "Sztereó"
 
+#. Depending on context, this could also be translated differently. Same with all the "none"s in the list
 #: 
 msgctxt "#32447"
 msgid "None"
@@ -1110,7 +1111,7 @@ msgstr "A Kodi „lépés kihagyás” beállításainak használata"
 #: 
 msgctxt "#32466"
 msgid "Automatically seek selected position after a delay"
-msgstr "Késleltetés után automatikusan a kiválasztott pozícióra lép"
+msgstr "Késleltetés után automatikusan keresse meg a kiválasztott pozíciót"
 
 #: 
 msgctxt "#32467"
@@ -1147,6 +1148,7 @@ msgctxt "#32481"
 msgid "Off"
 msgstr "Ki"
 
+#. What is going on here?
 #: 
 msgctxt "#32482"
 msgid "%(percentage)s %%"
@@ -1170,7 +1172,7 @@ msgstr "Azonnali visszalépés az előző menü műveletével a görgetett néze
 #: 
 msgctxt "#32487"
 msgid "Seek Delay"
-msgstr "Léptetés késleltetése"
+msgstr "Keresés késleltetése"
 
 #: 
 msgctxt "#32488"
@@ -1355,7 +1357,7 @@ msgstr "Hang átkódolása AC3-ba"
 #: 
 msgctxt "#32063"
 msgid "Transcode audio to AC3 in certain conditions (useful for passthrough)."
-msgstr "A hang átkódolása AC3-ra bizonyos feltételek mellett (hasznos az érintetlen átvitelhez)."
+msgstr "A hang átkódolása AC3-ra bizonyos feltételek mellett (hasznos az érintetlen áthaladáshoz)."
 
 #: 
 msgctxt "#32065"
@@ -1444,7 +1446,7 @@ msgstr "Videófejezetek megjelenítése"
 #: 
 msgctxt "#33602"
 msgid "If available, show video chapters from the video-file instead of the timeline-big-seek-steps."
-msgstr "Ha rendelkezésre áll, az idővonal nagyléptékű ugrása helyett, mutassa a videófájlból származó fejezeteket."
+msgstr "Ha lehetséges, a videofájlból származó fejezeteket jelenítse meg az idővonal nagykeresési lépései helyett."
 
 #: 
 msgctxt "#33603"
@@ -1643,12 +1645,12 @@ msgstr "Stáblista átugrása"
 #: 
 msgctxt "#32900"
 msgid "While playing back an item and seeking on the seekbar, automatically seek to the selected position after a delay instead of having to confirm the selection."
-msgstr "Lejátszás, valamint a keresősávon történő léptetés közben, késleltetés után automatikusan a kiválasztott pozícióra ugrik a kiválasztás megerősítése helyett."
+msgstr "Egy elem lejátszása és a keresősávon való keresés közben a kiválasztott pozícióra ugrás automatikusan egy késleltetés után történik, a kiválasztás megerősítése nélkül."
 
 #: 
 msgctxt "#32901"
 msgid "Seek delay in seconds."
-msgstr "Léptetés késleltetése másodpercben."
+msgstr "Keresési késleltetés másodpercben."
 
 #: 
 msgctxt "#32902"
@@ -1658,7 +1660,7 @@ msgstr "A Kodi rendelkezik lépések kihagyása beállítással. Próbálja meg 
 #: 
 msgctxt "#32903"
 msgid "Use the above for seeking on the timeline as well."
-msgstr "Használja a fentieket az idővonalon való léptetéshez is."
+msgstr "Használja a fentieket az idővonalon való kereséshez is."
 
 #: 
 msgctxt "#32904"
@@ -2104,7 +2106,7 @@ msgstr "Nincs ismertető OSD nélkül"
 #: 
 msgctxt "#33005"
 msgid "When seeking without the OSD open, hide all time-related information from the user."
-msgstr "OSD nélküli léptetés esetében minden idővel kapcsolatos információt el kell rejteni a felhasználó elől."
+msgstr "Ha a képernyőmenü (OSD) nincs megnyitva, rejtse el a felhasználó elől az összes idővel kapcsolatos információt."
 
 #: 
 msgctxt "#33006"
@@ -2600,12 +2602,12 @@ msgstr "Csak a videolejátszó felhasználói felületére vonatkozik"
 #: 
 msgctxt "#33089"
 msgid "Automatic seek-back"
-msgstr "Automatikus visszaugrás"
+msgstr "Automatikus visszatekerés"
 
 #: 
 msgctxt "#33090"
 msgid "If your audio doesn't resume as fast as the video, or you want to catch up after a longer pause, use this to seek back after resuming from pause to compensate for the delay. Default: Off"
-msgstr "Ha a hang nem folytatódik olyan gyorsan, mint a videó, vagy ha hosszabb szünet után szeretné bepótolni a lemaradást, használja a visszaugrás funkciót a szünetről való folytatás után a késleltetés kompenzálására. Alapértelmezett: Ki"
+msgstr "Ha a hang nem folytatódik olyan gyorsan, mint a videó, vagy ha hosszabb szünet után szeretné utolérni a lejátszott részt, ezzel a funkcióval kompenzálhatja a szünet utáni visszatekerést a késleltetés kompenzálására. Alapértelmezett: Ki"
 
 #: 
 msgctxt "#33091"
@@ -2615,22 +2617,22 @@ msgstr "{sec_or_ms} {unit_s_or_ms}"
 #: 
 msgctxt "#33092"
 msgid "Seek back on pause"
-msgstr "Visszaugrás szüneteltetéskor"
+msgstr "Visszatekerés szüneteltetés közben"
 
 #: 
 msgctxt "#33093"
 msgid "Seek back after"
-msgstr "Visszaugrás"
+msgstr "Visszatekerés után"
 
 #: 
 msgctxt "#33094"
 msgid "Only seek back after having paused at least a certain amount of seconds"
-msgstr "Csak akkor ugrik vissza, ha legalább egy bizonyos számú másodpercnyi szünetet tartott"
+msgstr "Csak egy bizonyos másodperces szünet után tekerjen vissza"
 
 #: 
 msgctxt "#33095"
 msgid "Seek back on pause instead of on resume. When Transcoding you should enable this."
-msgstr "Szüneteltetés esetén visszaugrás a folytatás helyett. Átkódoláskor ezt engedélyeznie kell."
+msgstr "Visszatekerés szüneteltetéskor a folytatás helyett. Átkódoláskor ezt engedélyezni kell."
 
 #: 
 msgctxt "#33096"
@@ -2640,7 +2642,7 @@ msgstr "Csak közvetlen lejátszással"
 #: 
 msgctxt "#33097"
 msgid "Enable seek back ony when we're Direct Playing, not Transcoding."
-msgstr "Csak akkor engedélyezze a visszaugrást, ha közvetlen lejátszásról van szó, nem pedig átkódolásról."
+msgstr "Csak közvetlen lejátszáskor engedélyezze a visszatekerést, ne transzkódoláskor."
 
 #: 
 msgctxt "#33098"
@@ -2650,7 +2652,7 @@ msgstr "Ketyegésmérték (Hz)"
 #: 
 msgctxt "#33099"
 msgid "Controls how often certain ticks are performed on GUI windows and the SeekDialog/VideoPlayer and how fast certain events are handled. Can be expensive when bigger than 1 Hz (once per second), can cause quirks when lower than 1 Hz (less than once per second). Depends on the hardware. Default: 1 Hz, Max: 10 Hz (every 100 ms), Sane highest and old default: 10 Hz (every 100 ms)"
-msgstr "Szabályozza, hogy bizonyos kattintások milyen gyakran történjenek a GUI és a SeekDialog/VideoPlayer ablakokon, és milyen gyorsan kezeljen bizonyos eseményeket. Gond lehet, ha nagyobb, mint 1 Hz (másodpercenként egyszer), furcsaságokat okozhat, ha kisebb, mint 1 Hz (kevesebb, mint másodpercenként egyszer). A hardvertől függ. Alapértelmezett: 1 Hz, Max: 10 Hz (100 ms-ként), legmagasabb és régi alapértelmezett: 10 Hz (100 ms-ként)."
+msgstr "Azt szabályozza, hogy bizonyos ketyegések milyen gyakran kerüljenek végrehajtásra a grafikus felhasználói felület ablakaiban és a Kereső párbeszédpanelen/Videolejátszóban, valamint hogy bizonyos események milyen gyorsan kerüljenek kezelésre. 1 Hz-nél nagyobb (másodpercenként egyszer) érték esetén költséges lehet, 1 Hz-nél kisebb (másodpercenként kevesebb, mint egyszer) esetén pedig problémákat okozhat. Hardvertől függ. Alapértelmezett: 1 Hz, Max: 10 Hz (100 ms-onként), Normál legmagasabb és régi alapértelmezett érték: 10 Hz (100 ms-onként)."
 
 #: 
 msgctxt "#33636"
@@ -2780,12 +2782,12 @@ msgctxt "#33656"
 msgid "Only for External SRT subtitles. The PMS setting for voice activity detection has to be enabled for this to work."
 msgstr "Csak külső SRT feliratok esetében. Ahhoz, hogy ez működjön, engedélyezni kell a PMS hangaktivitás-érzékelési beállítást."
 
-#: in player quick settings UI, needs to be short
+#: 
 msgctxt "#33657"
 msgid "Enable Auto-Sync"
 msgstr "Automatikus szinkronizálás engedélyezése"
 
-#: in player quick settings UI, needs to be short
+#: 
 msgctxt "#33658"
 msgid "Disable Auto-Sync"
 msgstr "Automatikus szinkronizálás letiltása"
@@ -3199,26 +3201,26 @@ msgstr "Ha olyan főcím jelölővel találkozik, amelynek kezdőidő eltolódá
 #: 
 msgctxt "#33649"
 msgid "\"Use alternate seek\" wait for seek"
-msgstr "„Alternatív léptetés használata” várjon az léptetésre"
+msgstr "„Alternatív keresés használata” várjon a keresésre"
 
 #: 
 msgctxt "#33650"
 msgid "This adjusts the delay between seek-tries on problematic platforms when \"Use alternate seek\" is enabled, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. Default: 500ms"
-msgstr "Ez beállítja a keresési próbálkozások közötti késleltetést a problémás platformokon, amikor az „Alternatív léptetés használata” engedélyezve van, ami javítja a nem mindig működő folytatást vagy a kettős keresést. Ha folytatással/kettős kereséssel kapcsolatos problémái vannak, növelje ezt az értéket. Alapértelmezett: 500ms"
+msgstr "Ez a funkció beállítja a keresési próbálkozások közötti késleltetést a problémás platformokon, ha az „Alternatív keresés használata” engedélyezve van, ami kijavítja a nem mindig működő folytatást vagy a dupla keresést. Ha problémákat tapasztal a folytatással/dupla kereséssel, növelje ezt az értéket. Alapértelmezett: 500 ms"
 
 #: 
 msgctxt "#33667"
 msgid "Use alternate seek"
-msgstr "Alternatív léptetés használata"
+msgstr "Alternatív keresés használata"
 
 #: 
 msgctxt "#33668"
 msgid "ATTENTION: Only enable this if you have reproducible audio issues after seeking/resuming.\n"
 "\n"
 "Use an alternative seek method in videos, which can help in problematic scenarios; brings its own issues/quirks. Disabled by default (enabled by default for CoreELEC and LG WebOS)"
-msgstr "FIGYELEM: Csak akkor engedélyezze ezt, ha a léptetés/folytatás után reprodukálható hangproblémák jelentkeznek.\n"
+msgstr "FIGYELEM: Csak akkor engedélyezze ezt, ha a keresés/folytatás után hangproblémák lépnek fel.\n"
 "\n"
-"Használjon alternatív léptetési módszert a videókban, ami segíthet a problémás helyzetekben; saját problémákat/hibákat hoz. Alapértelmezés szerint letiltva (CoreELEC és LG WebOS esetén alapértelmezés szerint engedélyezve)."
+"Használjon alternatív keresési módszert a videókban, ami segíthet a problémás helyzetekben; ennek is megvannak a maga problémái/különcségei. Alapértelmezés szerint letiltva (alapértelmezés szerint engedélyezve van a CoreELEC és az LG WebOS esetében)."
 
 #: 
 msgctxt "#33720"
@@ -3491,12 +3493,12 @@ msgstr "Epizódok: Folyamatos lejátszás"
 #: 
 msgctxt "#34028"
 msgid "\"Use alternate seek\" valid seek window"
-msgstr "„Alternatív léptetés használata” érvényes keresési ablak"
+msgstr "Érvényes keresőablak „Alternatív keresés használata”"
 
 #: 
 msgctxt "#34029"
 msgid "When \"Use alternate seek\" is enabled, any seek amount outside of this threshold window will be applied, otherwise the seek attempt will be ignored. If you encounter any seek issues, play with this value (ms, default: 2000)"
-msgstr "Ha az „Alternatív léptetés használata” be van kapcsolva, akkor minden, ezen küszöbérték-ablakon kívüli ugrási érték alkalmazásra kerül, ellenkező esetben az léptetési kísérlet figyelmen kívül marad. Ha bármilyen léptetési problémát tapasztal, próbálkozzon ezzel az értékkel (ms, alapértelmezett: 2000)."
+msgstr "Ha az „Alternatív keresés használata” engedélyezve van, akkor a küszöbértéken kívüli keresési érték érvényesül, ellenkező esetben a keresési kísérlet figyelmen kívül marad. Ha bármilyen keresési problémába ütközik, próbálja meg ezt az értéket (ms, alapértelmezett: 2000)."
 
 #: 
 msgctxt "#34030"
@@ -3567,4 +3569,214 @@ msgstr "Album szerint"
 msgctxt "#34043"
 msgid "Album"
 msgstr "Album"
+
+#: 
+msgctxt "#33202"
+msgid "Custom Background Color"
+msgstr "Egyéni háttérszín"
+
+#: 
+msgctxt "#33203"
+msgid "Specify your own background color in AARRGGBB format"
+msgstr "Adja meg saját háttérszínét AARRGGBB formátumban"
+
+#: 
+msgctxt "#35001"
+msgid "Combine video & virtual chapters"
+msgstr "Videós és virtuális fejezetek kombinálása"
+
+#: 
+msgctxt "#35002"
+msgid "Combine video & virtual chapters when both are available."
+msgstr "Kombinálja a videós és virtuális fejezeteket, ha mindkettő elérhető."
+
+#: 
+msgctxt "#33650"
+msgid "This adjusts the delay between seek-tries on problematic platforms when \"Use alternate seek\" is enabled, which fixes resume not always working or double-seeking. When you have resume/double-seek issues, increase this. Default: 100ms"
+msgstr "Ez a funkció beállítja a keresési próbálkozások közötti késleltetést a problémás platformokon, ha az „Alternatív keresés használata” engedélyezve van, ami kijavítja a nem mindig működő folytatást vagy a dupla keresést. Ha problémákat tapasztal a folytatással/dupla kereséssel, növelje ezt az értéket. Alapértelmezett: 100 ms"
+
+#: 
+msgctxt "#34044"
+msgid "UI wait poll rate (Hz)"
+msgstr "UI várakozás lekérdezési gyakoriság (Hz)"
+
+#: 
+msgctxt "#34045"
+msgid "When waiting for certain events to occur, wait this long. Default: 10 Hz. With a decent device try 100 Hz, it should feel snappier in certain situations."
+msgstr "Ha bizonyos események bekövetkeztére vár, akkor várjon ennyi ideig. Alapértelmezett: 10 Hz. Megfelelő eszközzel próbálja ki a 100 Hz-es beállítást, bizonyos helyzetekben gyorsabbnak érezheti."
+
+#: 
+msgctxt "#34046"
+msgid "Fade theme music in/out"
+msgstr "A téma zenéjének fokozatos némítása/hangosítása"
+
+#: 
+msgctxt "#34047"
+msgid "Cache theme music"
+msgstr "A témához tartozó zene tárolása"
+
+#: 
+msgctxt "#34048"
+msgid "Cache theme music locally instead of streaming it directly"
+msgstr "A témához tartozó zenét helyileg tárolja, ahelyett, hogy közvetlenül streamelné"
+
+#: 
+msgctxt "#34049"
+msgid "Seek back on start"
+msgstr "Visszatekerés az elején"
+
+#: 
+msgctxt "#34050"
+msgid "Issue a quick seek forward then back to the start of the video, when we start fresh (no resume point, no marker to immediately skip). Can fix A/V desync issues (e.g. CoreELEC on Ugoos with passthrough) and embedded subtitles showing late, with certain setups. Only for DirectPlay. This still requires a sensible value for \"Delay after change of refresh rate\" in Kodi (default: Off, CE/LG: On)"
+msgstr "Gyors előretekerést, majd visszatekerést ad ki a videó elejére, amikor tiszta lappal kezdjük (nincs folytatási pont, nincs azonnali átugrási jelölő). Kijavíthatja az A/V deszinkronizációs problémákat (pl. CoreELEC Ugoos-on áthaladással) és a beágyazott feliratok késedelmes megjelenését bizonyos beállításokkal. Csak közvetlen lejátszás esetén. Ehhez továbbra is érzékeny értékre van szükség a „Frissítési gyakoriság változása utáni késleltetés” beállításához a Kodiban (alapértelmezett: Ki, CE/LG: Be)."
+
+#: 
+msgctxt "#34051"
+msgid "Movies: Play pre-rolls"
+msgstr "Filmek: Beharangozók lejátszása"
+
+#: 
+msgctxt "#34052"
+msgid "Plays pre-roll clips (server-defined) before playing a movie without a resume point. User-specific."
+msgstr "A film lejátszása előtt lejátszik egy beharangozót (a szerver által meghatározott), ha a filmnek nincs folytatási pontja. Felhasználó-specifikus."
+
+#: 
+msgctxt "#34053"
+msgid "Cinema Trailers to Play Before Movies"
+msgstr "A filmek előtt lejátszandó mozis előzetesek"
+
+#: 
+msgctxt "#34054"
+msgid "Play pre-rolls before trailers"
+msgstr "beharangozók lejátszása a filmelőzetesek előtt"
+
+#: 
+msgctxt "#34055"
+msgid "Official Plex clients play the trailers first, then the preroll clips. Enabling this will do the opposite. Default: On. User-specific."
+msgstr "A hivatalos Plex kliensek először a filmelőzeteseket, majd a beharangozó klipeket játsszák le. Ennek engedélyezése ellenkező hatást eredményez. Alapértelmezett: Be. Felhasználó-specifikus."
+
+#: 
+msgctxt "#34056"
+msgid "\"Use alternate seek\" prefer reported time"
+msgstr "„Alternatív keresés használata” – a jelentett idő előnyben részesítése"
+
+#: 
+msgctxt "#34057"
+msgid "Use reported seek time instead of the current player time (usually more accurate); Default: On"
+msgstr "A jelentett keresési idő használata az aktuális játékidő helyett (általában pontosabb); Alapértelmezett: Be"
+
+#: 
+msgctxt "#34058"
+msgid "\"Use alternate seek\" wait for valid player time"
+msgstr "„Alternatív keresés használata” - várjon az érvényes játékidőre"
+
+#: 
+msgctxt "#34059"
+msgid "The player time reporting might be inaccurate on playback start. Wait for a valid player time before seeking; Default: On"
+msgstr "A lejátszás indításakor a lejátszó időkijelzése pontatlan lehet. Várjon érvényes lejátszóidőt a keresés előtt; Alapértelmezett: Be"
+
+#: 
+msgctxt "#34060"
+msgid "Blackout screen during initial seek"
+msgstr "Elsötétült képernyő a kezdeti keresés során"
+
+#: 
+msgctxt "#34061"
+msgid "Show directors in cast lists"
+msgstr "Rendezők megjelenítése a szereplők listájában"
+
+#: 
+msgctxt "#34062"
+msgid "Ensure Kodi Addon position"
+msgstr "A kiegészítő pozíciójának biztosítása"
+
+#: 
+msgctxt "#34063"
+msgid "When not run from the Program addons section, our lastused value will not be updated. Make sure it does when the addon exits."
+msgstr "Ha nem a Program kiegészítők részéből futtatja, akkor a legutóbb használt érték nem frissül. Győződjön meg róla, hogy ez megtörténik, amikor a kiegészítő bezárul."
+
+#: 
+msgctxt "#34064"
+msgid "Return to Home on Screensaver"
+msgstr "Vissza a kezdőlapra a képernyővédőn"
+
+#: 
+msgctxt "#34065"
+msgid "When Kodi starts its screensaver, and we are in a library view, return to home. This saves idle energy as the library views are very heavy on the CPU even on idle due to a Kodi bug."
+msgstr "Amikor a Kodi elindítja a képernyővédőjét, és könyvtár nézetben vagyunk, térjünk vissza a kezdőlapra. Ezzel energiát takaríthatunk meg, mivel a könyvtárnézetek a Kodi hibája miatt még tétlen állapotban is nagyon megterhelik a CPU-t."
+
+#: 
+msgctxt "#34066"
+msgid "Seamless branching LAV mode (CoreELEC U3k B9+, avdvplus, p3i)"
+msgstr "Zökkenőmentes elágazás LAV mód (CoreELEC U3k B9+, avdvplus, p3i)"
+
+#: 
+msgctxt "#34067"
+msgid "LAV filter mode for seamless branching movies with TrueHD/JOC. Auto-applied to known movies. Default: LAV SB (4)"
+msgstr "LAV szűrő mód a TrueHD/JOC formátumú filmek zökkenőmentes elágazásához. Ismert filmekre automatikusan alkalmazva. Alapértelmezett: LAV SB (4)"
+
+#: 
+msgctxt "#34068"
+msgid "Off (0)"
+msgstr "Ki (0)"
+
+#: 
+msgctxt "#34069"
+msgid "Seek/Sync (1)"
+msgstr "Keresés/Szinkronizálás (1)"
+
+#: 
+msgctxt "#34070"
+msgid "Debug (3)"
+msgstr "Hibakeresés (3)"
+
+#: 
+msgctxt "#34071"
+msgid "LAV SB (4) - Recommended"
+msgstr "LAV SB (4) – Ajánlott"
+
+#: 
+msgctxt "#34072"
+msgid "LAV Full (5)"
+msgstr "LAV Teljes (5)"
+
+#: 
+msgctxt "#34073"
+msgid "Seamless branching fix"
+msgstr "Zökkenőmentes elágazásjavítás"
+
+#: 
+msgctxt "#34074"
+msgid "Automatically temporarily activate LAV Full or SB mode in CoreELEC on supported builds to alleviate audio dropouts on certain titles, if necessary. Based on \"seamless_branching.json\", can be user-amended by putting a file with the same name and structure into userdata/addon_data/script.plexmod."
+msgstr "Szükség esetén ideiglenesen automatikusan aktiválja a LAV Full vagy SB módot a CoreELEC-ben a támogatott verziókban, hogy enyhítse a hangkimaradásokat bizonyos címeknél. A „seamless_branching.json” fájl alapján a felhasználó módosíthatja úgy, hogy egy azonos nevű és szerkezetű fájlt helyez el a userdata/addon_data/script.plexmod mappába."
+
+#: 
+msgctxt "#34075"
+msgid "Resume offset adjustment"
+msgstr "Az eltolás beállításának folytatás"
+
+#: 
+msgctxt "#34076"
+msgid "When resuming media with a resume point, negatively adjust it by this amount of milliseconds to avoid lost content due to keyframes/seek behaviour. Default: -3.5s"
+msgstr "Amikor egy folytatási ponttal folytatja a média lejátszását, akkor negatív irányba állítsa be ezt az ezredmásodperc értéket, hogy elkerülje a kulcsképkockák/keresési viselkedés miatti tartalomvesztést. Alapértelmezett: -3,5 másodperc"
+
+#: 
+msgctxt "#34077"
+msgid "{} successfully removed from Watchlist"
+msgstr "{} sikeresen eltávolítva a figyelőlistáról"
+
+#: 
+msgctxt "#34078"
+msgid "Seek back on start delay between seeks"
+msgstr "Visszalépés a keresések közötti kezdési késleltetésnél"
+
+#: 
+msgctxt "#34079"
+msgid "How long should we wait when executing Seek back on start, after having seeked forwards temporarily, before seeking back? Setting this higher could resolve decoder initialisation issues. Default: 500ms"
+msgstr "Mennyi ideig kell várni a visszakeresés végrehajtása előtt az indításkor, miután ideiglenesen előretekertünk, mielőtt visszatekernénk? Ennek magasabbra állítása megoldhatja a dekóder inicializálási problémáit. Alapértelmezett: 500 ms"
+
+#: 
+msgctxt "#34045"
+msgid "When waiting for certain events to occur, poll this often. Default: 10 Hz. With a decent device try 100 Hz, it should feel snappier in certain situations."
+msgstr "Ha bizonyos események bekövetkeztére vár, gyakran ellenőrizze ezt. Alapértelmezett: 10 Hz. Megfelelő eszközzel próbálja ki a 100 Hz-es beállítást, bizonyos helyzetekben ez gyorsabbnak tűnhet."
 

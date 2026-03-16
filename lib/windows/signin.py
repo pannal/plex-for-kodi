@@ -6,7 +6,7 @@ from lib import util
 from . import kodigui
 
 
-class Background(kodigui.BaseWindow):
+class SignInBackground(kodigui.BaseWindow):
     xmlFile = 'script-plex-signin_background.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'

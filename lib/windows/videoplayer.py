@@ -141,6 +141,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
         self.lastItem = None
         self.earlyAbortRequested = False
         self.sessionID = None
+        self.playbackFailed = False
 
     def doClose(self, force=False):
         util.DEBUG_LOG('VideoPlayerWindow: Closing')
@@ -170,6 +171,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
         player.PLAYER.on('changed.video', self.onVideoChanged)
         player.PLAYER.on('post.play', self.postPlay)
         player.PLAYER.on('change.background', self.changeBackground)
+        player.PLAYER.on('playback.failed', self.setPlaybackFailed)
 
         self.sessionID = str(uuid.uuid4())
 
@@ -267,6 +269,9 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
             util.DEBUG_LOG('VideoPlayerWindow: Abort flag set, closing')
             self.doClose()
 
+    def setPlaybackFailed(self, *args, **kwargs):
+        self.playbackFailed = True
+
     def onClick(self, controlID):
         if not self.postPlayMode:
             return
@@ -356,6 +361,7 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
         self.hidePostPlay()
 
         player.PLAYER.dontRequeueBGM = True
+        player.PLAYER.startingVideoPlayback = True
 
         def anyOtherVPlayer():
             return any(list(filter(lambda x: x['playerid'] > 0, kodijsonrpc.rpc.Player.GetActivePlayers())))
@@ -379,8 +385,10 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
                 util.MONITOR.waitForAbort(0.5)
 
         # wait for BGM to end if it's playing or queued
-        if self.handleBGM:
+        if self.handleBGM or player.PLAYER.isPlayingAudio():
             util.DEBUG_LOG("Checking BGM")
+            if player.PLAYER.BGMTask:
+                player.PLAYER.BGMTask.cancel()
             ct = 0
             while not player.PLAYER.bgmPlaying and player.PLAYER.bgmStarting and ct < 20:
                 util.DEBUG_LOG("Waiting for BGM to start as it has been queued")
@@ -418,6 +426,8 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
         except Exception as e:
             util.LOG("Playback failed: {}", traceback.format_exc())
             self.doClose()
+        finally:
+            player.PLAYER.startingVideoPlayback = False
 
         util.DEBUG_LOG("VideoPlayerWindow: Playback initialized; returning from play()")
 
@@ -700,6 +710,8 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
                 video = self.next
                 if prev:
                     video = self.prev
+                    # when playing the previous video, move the playlist back as well
+                    self.playlist.prev()
 
                 if not video:
                     util.DEBUG_LOG('Trying to play next video with no next video available')
@@ -735,12 +747,24 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
 
 
 def play(video=None, play_queue=None, resume=False, bgm=False, **kwargs):
+    w = None
     try:
         w = VideoPlayerWindow.open(video=video, play_queue=play_queue, resume=resume, bgm=bgm, aggressive=True)
     except util.NoDataException:
         raise
     finally:
+        # codec teardown might show a spinner, wait a short while
+        util.MONITOR.waitFor(0.5)
         util.DEBUG_LOG("VideoPlayer Window exit")
+        if w.playbackFailed:
+            util.DEBUG_LOG("VideoPlayer: Playback failed, checking and waiting for open dialogs to close")
+            ct = 0
+            if xbmcgui.getCurrentWindowDialogId() > 9999:
+                util.LOG("VideoPlayer: Unexpected dialog open, waiting for it to close until closing window: {}",
+                         xbmcgui.getCurrentWindowDialogId())
+                while xbmcgui.getCurrentWindowDialogId() > 9999 and ct < util.MONITOR.waitAmount(10):
+                    util.MONITOR.waitFor()
+                    ct += 1
         player.PLAYER.off('session.ended', w.sessionEnded)
         player.PLAYER.off('videowindow.closed', w.videoWindowClosed)
         player.PLAYER.off('post.play', w.postPlay)
@@ -749,8 +773,12 @@ def play(video=None, play_queue=None, resume=False, bgm=False, **kwargs):
         player.PLAYER.off('started.video', w.onVideoStarted)
         player.PLAYER.off('changed.video', w.onVideoChanged)
         player.PLAYER.off('change.background', w.changeBackground)
+        player.PLAYER.off('playback.failed', w.setPlaybackFailed)
         player.PLAYER.reset()
+
+    if w:
         command = w.exitCommand
         del w
         util.garbageCollect()
         return command
+    return

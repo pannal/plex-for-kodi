@@ -12,6 +12,8 @@ from . import asyncadapter
 
 from . import util
 
+from .exceptions import UserSwitchForbiddenException
+
 ACCOUNT = None
 
 
@@ -395,7 +397,7 @@ class MyPlexAccount(object):
             if user.id == userId:
                 return user
 
-    def switchHomeUser(self, userId, pin=''):
+    def switchHomeUser(self, userId, pin='', silent=False):
         if userId == self.ID and self.isAuthenticated:
             return True
 
@@ -414,9 +416,11 @@ class MyPlexAccount(object):
             # build path and post to myplex to switch the user
             path = '/api/home/users/{0}/switch'.format(userId)
             req = myplexrequest.MyPlexRequest(path)
-            xml = req.postToStringWithTimeout({'pin': pin}, timeout=util.PLEXTV_TIMEOUT)
+            res = req.postToStringWithTimeout({'pin': pin}, timeout=util.PLEXTV_TIMEOUT, return_on_status_code=True)
+            if not silent and type(res) == int and res == 401:
+                raise UserSwitchForbiddenException()
             try:
-                data = ElementTree.fromstring(xml)
+                data = ElementTree.fromstring(res)
             except:
                 return False
 

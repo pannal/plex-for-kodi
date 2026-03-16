@@ -142,7 +142,7 @@ class PlayQueueFactory(object):
         return self.item.type == "artist"
 
 
-def createPlayQueueForItem(item, children=None, options=None, args=None):
+def createPlayQueueForItem(item, children=None, options=None, args=None, use_async=True, method="GET", **kwargs):
     obj = PlayQueueFactory()
 
     contentType = obj.getContentType(item)
@@ -161,7 +161,7 @@ def createPlayQueueForItem(item, children=None, options=None, args=None):
     options = PlayOptions(options or {})
 
     if obj.canCreateRemotePlayQueue():
-        return createRemotePlayQueue(item, contentType, options, args)
+        return createRemotePlayQueue(item, contentType, options, args, use_async=use_async, method=method, **kwargs)
     else:
         if obj.itemRequiresRemotePlayQueue():
             util.DEBUG_LOG("Can't create remote PQs and item does not support local PQs")
@@ -630,7 +630,7 @@ class PlayQueue(signalsmixin.SignalsMixin):
         return None
 
 
-def createRemotePlayQueue(item, contentType, options, args):
+def createRemotePlayQueue(item, contentType, options, args, use_async=True, method="GET", **kwargs):
     util.DEBUG_LOG('Creating remote playQueue request...')
     obj = PlayQueue(item.getServer(), contentType, options)
 
@@ -721,9 +721,11 @@ def createRemotePlayQueue(item, contentType, options, args):
 
     # Create the PQ request
     request = plexrequest.PlexRequest(obj.server, "/playQueues")
-
     request.addParam(not options.isPlaylist and "uri" or "playlistID", uri)
     request.addParam("type", contentType)
+    
+    for k, v in kwargs.items():
+        request.addParam(k, str(v))
     # request.addParam('X-Plex-Client-Identifier', util.INTERFACE.getGlobal('clientIdentifier'))
 
     # Add options we pass once during PQ creation
@@ -740,8 +742,12 @@ def createRemotePlayQueue(item, contentType, options, args):
     obj.addRequestOptions(request)
 
     util.DEBUG_LOG('Initial playQueue request started...')
-    context = request.createRequestContext("create", callback.Callable(obj.onResponse))
-    util.APP.startRequest(request, context, body='')
+    if use_async:
+        context = request.createRequestContext("create", callback.Callable(obj.onResponse))
+        util.APP.startRequest(request, context, body='')
+    else:
+        #xml = request.getToStringWithTimeout(timeout=util.PLEXTV_TIMEOUT)
+        return request.postWithTimeout()
 
     return obj
 

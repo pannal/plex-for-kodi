@@ -195,7 +195,14 @@ class PlexPlayer(BasePlayer):
 
                 obj.playStart = util.now() + 1800
             else:
-                obj.playStart = int(self.seekValue / 1000) - obj.startOffset
+                # adjust resume point according to settings; clamp to 0 as we might become negative here
+                adjusted_sval = self.seekValue
+                if self.seekValue > 0:
+                    adjusted_sval = max(0, self.seekValue + self.item.settings.getPreference("resume_offset", -3500))
+                    if adjusted_sval < self.seekValue:
+                        util.LOG("Adjusted resume point from {} to {} ({})", self.seekValue, adjusted_sval,
+                                 self.item.settings.getPreference("resume_offset", -3500))
+                obj.playStart = int(adjusted_sval / 1000) - obj.startOffset
 
         self.metadata = obj
 

@@ -68,7 +68,7 @@ CHECK_LOCAL = False
 LOCAL_OVER_SECURE = False
 DEBUG_REQUESTS = False
 CACHED_PLEX_URLS = {}
-REQUESTS_CACHE_EXPIRY = 168
+REQUESTS_CACHE_EXPIRY = 72
 X_PLEX_CONTAINER_SIZE = 50                          # max results to return in a single search page
 
 ACCEPT_LANGUAGE = 'en-US,en'

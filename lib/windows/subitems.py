@@ -30,6 +30,7 @@ from .mixins.watchlist import WatchlistUtilsMixin
 from .mixins.thememusic import ThemeMusicMixin
 from .mixins.roles import RolesMixin
 from .mixins.common import CommonMixin
+from .mixins.tasks import TasksMixin
 
 
 class RelatedPaginator(pagination.BaseRelatedPaginator):
@@ -38,7 +39,7 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
 
 
 class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, DeleteMediaMixin, RatingsMixin,
-                 RolesMixin, PlaybackBtnMixin, WatchlistUtilsMixin, ThemeMusicMixin, CommonMixin,
+                 RolesMixin, PlaybackBtnMixin, WatchlistUtilsMixin, ThemeMusicMixin, CommonMixin, TasksMixin,
                  playbacksettings.PlaybackSettingsMixin):
     xmlFile = 'script-plex-seasons.xml'
     path = util.ADDON.getAddonInfo('path')
@@ -78,6 +79,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         PlaybackBtnMixin.__init__(self, *args, **kwargs)
         WatchlistUtilsMixin.__init__(self)
         ThemeMusicMixin.__init__(self)
+        TasksMixin.__init__(self)
         self.mediaItem = kwargs.get('media_item')
         self.parentList = kwargs.get('parent_list')
         self.cameFrom = kwargs.get('came_from')
@@ -97,6 +99,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
     def doClose(self, **kw):
         self.relatedPaginator = None
         kodigui.ControlledWindow.doClose(self)
+        TasksMixin.doClose(self)
 
     def onFirstInit(self):
         self.focusPlayButton()
@@ -130,13 +133,15 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             self.watchlistItemAvailable(self.mediaItem, shortcut_watchlisted=self.directlyFromWatchlist)
         if not self.directlyFromWatchlist:
             self.checkIsWatchlisted(self.mediaItem)
+        else:
+            self.setBoolProperty("is_watchlisted", self.is_watchlisted)
 
         self.updateProperties()
         self.setBoolProperty("initialized", True)
-        self.fill()
-        hasPrev = self.fillExtras()
-        hasPrev = self.fillRelated(hasPrev)
-        self.fillRoles(hasPrev)
+        self.batch_simple([(self.fill, None, None),
+                           (self.fillExtras, None, None),
+                           (self.fillRelated, None, None),
+                           (self.fillRoles, None, None)])
 
     def updateProperties(self):
         self.setProperty('title', self.mediaItem.title)
@@ -184,7 +189,15 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         leafcount = self.mediaItem.leafCount.asFloat()
         if leafcount:
-            wBase = self.mediaItem.viewedLeafCount.asInt() / leafcount
+            viewed = self.mediaItem.viewedLeafCount.asInt()
+            has_ondeck_progress = False
+            for v in self.mediaItem.onDeck:
+                if v.viewOffset.asInt():
+                    has_ondeck_progress = True
+                    break
+            if has_ondeck_progress and viewed == int(leafcount):
+                viewed -= 1
+            wBase = viewed / leafcount
             for v in self.mediaItem.onDeck:
                 if v.viewOffset:
                     wBase += v.viewOffset.asInt() / v.duration.asFloat() / leafcount
@@ -431,7 +444,9 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         w = None
         if self.mediaItem.type == 'show':
             w = episodes.EpisodesWindow.open(season=mli.dataSource, show=self.mediaItem,
-                                             parent_list=self.subItemListControl, from_watchlist=self.fromWatchlist)
+                                             parent_list=self.subItemListControl, from_watchlist=self.fromWatchlist,
+                                             directly_from_watchlist=self.directlyFromWatchlist,
+                                             is_watchlisted=self.is_watchlisted)
             update = True
         elif self.mediaItem.type == 'artist':
             w = tracks.AlbumWindow.open(album=mli.dataSource, parent_list=self.subItemListControl)
@@ -651,10 +666,10 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         self.extraListControl.addItems(items)
         return True
 
-    def fillRelated(self, has_prev=False):
+    def fillRelated(self):
         if not self.relatedPaginator.leafCount:
             self.relatedListControl.reset()
-            return has_prev
+            return
 
         items = self.relatedPaginator.paginate()
 
@@ -663,14 +678,16 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         return True
 
-    def fillRoles(self, has_prev=False):
+    def fillRoles(self):
         items = []
         idx = 0
         if not self.mediaItem.roles:
             self.rolesListControl.reset()
-            return has_prev
+            return
 
-        for role in self.mediaItem.combined_roles:
+        roles = self.mediaItem.combined_roles if util.getUserSetting('show_directors', True) else self.mediaItem.roles
+
+        for role in roles:
             mli = kodigui.ManagedListItem(role.tag, role.role or util.TRANSLATED_ROLES[role.translated_role],
                                           thumbnailImage=role.thumb.asTranscodedImageURL(*self.ROLES_DIM),
                                           data_source=role)

@@ -20,3 +20,7 @@ class Unauthorized(Exception):
 
 class ServerNotOwned(Exception):
     pass
+
+
+class UserSwitchForbiddenException(Exception):
+    pass

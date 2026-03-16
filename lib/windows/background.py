@@ -20,10 +20,22 @@ class BackgroundWindow(kodigui.BaseWindow):
         kodigui.BaseWindow.__init__(self, *args, **kwargs)
         self.function = kwargs.get('function')
 
+    def _activate(self, *args, **kwargs):
+        self.activate()
+
     def onFirstInit(self):
         # try accessing our dummy control to trigger an error if our XML is broken
+        util.MONITOR.on("background.activate", self._activate)
         self.function()
         self.doClose()
+
+    def doClose(self, **kwargs):
+        try:
+            # MONITOR might be dead already
+            util.MONITOR.off("background.activate", self._activate)
+        except:
+            pass
+        super(BackgroundWindow, self).doClose(**kwargs)
 
     def onAction(self, action):
         pass

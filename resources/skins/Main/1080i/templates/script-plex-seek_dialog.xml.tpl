@@ -6,8 +6,22 @@
 {% block backgroundcolor %}{% endblock %}
 
 {% block controls %}
+<control type="group" id="804">
+    <visible>!String.IsEmpty(Window.Property(show.blackout))</visible>
+    <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
+    <control type="image">
+        <posx>0</posx>
+        <posy>0</posy>
+        <width>1920</width>
+        <height>1080</height>
+        <texture>script.plex/white-square.png</texture>
+        <colordiffuse>FF000000</colordiffuse>
+    </control>
+</control>
+
 <control type="group" id="802">
-    <visible>[!String.IsEmpty(Window.Property(show.OSD)) | Window.IsVisible(seekbar) | !String.IsEmpty(Window.Property(button.seek))] + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
+    <!-- This is the buttonless OSD -->
+    <visible>[!String.IsEmpty(Window.Property(show.OSD)) | [String.IsEmpty(Window.Property(is_plextuary)) + Window.IsVisible(seekbar)] | !String.IsEmpty(Window.Property(button.seek))] + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
     <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
     <control type="group">
         <visible>String.IsEmpty(Window.Property(is_plextuary)) + String.IsEmpty(Window.Property(settings.visible)) + [Window.IsVisible(seekbar) | Window.IsVisible(videoosd) | Player.ShowInfo]</visible>
@@ -60,7 +74,7 @@
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
             <scroll>true</scroll>
-            <scrollspeed>15</scrollspeed>
+            <scrollspeed>35</scrollspeed>
             <label>[B]$INFO[VideoPlayer.TVShowTitle][/B]$INFO[VideoPlayer.Title, &#8226; ]$INFO[VideoPlayer.Season, &#8226; Season ]$INFO[VideoPlayer.Episode, Episode ]$INFO[Window.Property(ep.year), &#8226; ]</label>
         </control>
         <control type="label">
@@ -74,7 +88,7 @@
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
             <scroll>true</scroll>
-            <scrollspeed>15</scrollspeed>
+            <scrollspeed>35</scrollspeed>
             <label>[B]$INFO[VideoPlayer.TVShowTitle][/B]$INFO[VideoPlayer.Season, &#8226; Season ]$INFO[VideoPlayer.Episode, Episode ]$INFO[Window.Property(ep.year), &#8226; ]</label>
         </control>
         <control type="label">
@@ -88,7 +102,7 @@
             <aligny>center</aligny>
             <textcolor>FFFFFFFF</textcolor>
             <scroll>true</scroll>
-            <scrollspeed>15</scrollspeed>
+            <scrollspeed>35</scrollspeed>
             <label>[B]$INFO[VideoPlayer.Title][/B]$INFO[VideoPlayer.Year, &#8226; ]</label>
         </control>
         <control type="label">
@@ -454,6 +468,7 @@
     </control>
 </control>
 <control type="group" id="801">
+    <!-- This is the OSD with buttons -->
     <visible>!String.IsEmpty(Window.Property(show.OSD)) + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
     <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
 
@@ -1089,6 +1104,7 @@
 
 <!-- SKIP MARKER BUTTON -->
 <control type="grouplist" id="790">
+    <visible>!String.IsEmpty(Window.Property(initialized))</visible>
     <right>30</right>
     <top>797</top>
     <width>1670</width>

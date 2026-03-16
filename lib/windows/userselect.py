@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from kodi_six import xbmc
 from kodi_six import xbmcgui
 from plexnet import plexapp
+from plexnet.exceptions import UserSwitchForbiddenException
 
 from lib import util
 from lib.util import T
@@ -198,13 +199,20 @@ class UserSelectWindow(kodigui.BaseWindow):
 
         from lib import plex
         with plex.CallbackEvent(plexapp.util.APP, 'account:response') as e:
-            if plexapp.ACCOUNT.switchHomeUser(user.id, pin) and plexapp.ACCOUNT.switchUser:
-                util.DEBUG_LOG('Waiting for user change...')
-            else:
-                e.close()
-                item.setProperty('pin', item.dataSource.title)
-                item.setProperty('editing.pin', '')
-                util.messageDialog(T(32427, 'Failed'), T(32926, 'Wrong pin entered!'))
+            try:
+                if plexapp.ACCOUNT.switchHomeUser(user.id, pin) and plexapp.ACCOUNT.switchUser:
+                    util.DEBUG_LOG('Waiting for user change...')
+                else:
+                    e.close()
+                    item.setProperty('pin', item.dataSource.title)
+                    item.setProperty('editing.pin', '')
+                    util.messageDialog(T(32427, 'Failed'), T(32926, 'Wrong pin entered!'))
+                    return
+            except UserSwitchForbiddenException:
+                # re-fetch users
+                plexapp.ACCOUNT.updateHomeUsers()
+                self.selected = 'retry'
+                self.doClose()
                 return
 
         self.selected = True

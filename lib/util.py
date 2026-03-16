@@ -23,38 +23,45 @@ import requests
 import plexnet.util
 
 from .kodijsonrpc import rpc
-
 from . import colors
 # noinspection PyUnresolvedReferences
 from .exceptions import NoDataException
-from .logging import log, log_error
+from .logging import log, DEBUG_LOG, LOG, ERROR, setShutdown, showNotification
 # noinspection PyUnresolvedReferences
 from .i18n import T, TRANSLATED_ROLES
 from . import aspectratio
 # noinspection PyUnresolvedReferences
 from .kodi_util import (ADDON, xbmc, xbmcvfs, xbmcaddon, xbmcgui, translatePath, KODI_VERSION_MAJOR, KODI_VERSION_MINOR,
-                        KODI_BUILD_NUMBER, FROM_KODI_REPOSITORY)
+                        KODI_BUILD_NUMBER, FROM_KODI_REPOSITORY, PYTHON_VERSION, ENABLE_HIGH_CONCURRENCY)
 from .properties import setGlobalProperty, setGlobalBoolProperty, waitForGPEmpty, waitForConsumption, getGlobalProperty
 # noinspection PyUnresolvedReferences
 from .addonsettings import addonSettings, AddonSettings
 from .advancedsettings import adv
 from .settings_util import getSetting, getUserSetting, setSetting, USER_SETTINGS, JSON_SETTINGS, DEFAULT_SETTINGS
+from .os_utils import fast_iglob
 from .monitor import MONITOR
 
 
 DEBUG = True
-_SHUTDOWN = False
 
 SKIN_PLEXTUARY = "skin.plextuary" in xbmc.getSkinDir()
 PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 68
+THEME_VERSION = 86
 
-xbmc.log('script.plexmod: Kodi {0}.{1} (build {2})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER),
+UI_INTERVAL = 1 / float(addonSettings.uiWaitRate)
+
+MONITOR.wait_interval = UI_INTERVAL
+
+xbmc.log('script.plexmod: Kodi {0}.{1} (build {2}, Python: {3}, '
+         'High concurrency possible: {4})'.format(KODI_VERSION_MAJOR, KODI_VERSION_MINOR, KODI_BUILD_NUMBER,
+                                         PYTHON_VERSION, ENABLE_HIGH_CONCURRENCY),
          xbmc.LOGINFO)
 
+xbmc.log('script.plexmod: UI wait rate is {0} ({1} Hz)'.format(UI_INTERVAL, addonSettings.uiWaitRate),
+         xbmc.LOGINFO)
 
 def getChannelMapping():
     data = rpc.Settings.GetSettings(filter={"section": "system", "category": "audio"})["settings"]
@@ -90,7 +97,7 @@ except:
 try:
     DISPLAY_RESOLUTION = [xbmcgui.getScreenWidth(), xbmcgui.getScreenHeight()]
 except:
-    log('Couldn\'t determine display resolution')
+    LOG('Couldn\'t determine display resolution')
     DISPLAY_RESOLUTION = [1920, 1080]
 
 
@@ -116,35 +123,10 @@ homeButtonMapped()
 DEBUG = addonSettings.debug
 
 
-def LOG(msg, *args, **kwargs):
-    return log(msg, *args, **kwargs)
-
-
-def DEBUG_LOG(msg, *args, **kwargs):
-    if _SHUTDOWN:
-        return
-
-    if not addonSettings.debug and not xbmc.getCondVisibility('System.GetBool(debug.showloginfo)'):
-        return
-
-    return log(msg, *args, **kwargs)
-
-
-def ERROR(txt='', hide_tb=False, notify=False, time_ms=3000):
-    short = log_error(txt, hide_tb)
-    if notify:
-        showNotification('ERROR: {0}'.format(txt or short), time_ms=time_ms)
-    return short
-
-
-def TEST(msg):
-    xbmc.log('---TEST: {0}'.format(msg), xbmc.LOGINFO)
-
-
 hasCustomBGColour = False
 if KODI_VERSION_MAJOR > 18:
-    hasCustomBGColour = not addonSettings.dynamicBackgrounds and addonSettings.backgroundColour and \
-                        addonSettings.backgroundColour != "-"
+    useSolidBackground = not addonSettings.dynamicBackgrounds and addonSettings.backgroundColour
+    hasCustomBGColour = useSolidBackground and addonSettings.backgroundColour != "-"
 
 
 def getAdvancedSettings():
@@ -159,14 +141,6 @@ def reInitAddon():
     ADDON = xbmcaddon.Addon()
     getAdvancedSettings()
     populateTimeFormat()
-
-
-def showNotification(message, time_ms=3000, icon_path=None, header=ADDON.getAddonInfo('name')):
-    try:
-        icon_path = icon_path or translatePath(ADDON.getAddonInfo('icon'))
-        xbmc.executebuiltin('Notification({0},{1},{2},{3})'.format(header, message, time_ms, icon_path))
-    except RuntimeError:  # Happens when disabling the addon
-        LOG(message)
 
 
 def videoIsPlaying():
@@ -352,7 +326,7 @@ class TextBox:
         self.win.getControl(self.CONTROL_TEXTBOX).setText(text)
 
 
-class SettingControl:
+class SettingControl(object):
     def __init__(self, setting, log_display, disable_value=''):
         self.setting = setting
         self.logDisplay = log_display
@@ -380,6 +354,10 @@ class SettingControl:
             return
         rpc.Settings.SetSettingValue(setting=self.setting, value=self._originalMode)
         DEBUG_LOG('{0}: RESTORED'.format(self.logDisplay))
+
+    @property
+    def original(self):
+        return self._originalMode
 
     @contextlib.contextmanager
     def suspend(self):
@@ -672,12 +650,41 @@ vendor = None
 model = None
 
 
+CE_U3K_SB_LAV_MIN = 20251220132748  # B9
+CE_AVD_SB_LAV_MIN = 20251221124544  # R2
+CE_P3I_EMBED_FIXED = 20260204135007 # T2
+CE_SB_LAV_SWITCH = False
+CE_NEEDS_EMBEDDED_SEEKBACK = True
+
 def getCoreELEC():
-    global platform, device, platform_version, vendor, model
+    global platform, device, platform_version, vendor, model, CE_SB_LAV_SWITCH, CE_NEEDS_EMBEDDED_SEEKBACK
     try:
         stdout = subprocess.check_output('lsb_release', shell=True).decode()
         match = re.search(r'CoreELEC', stdout)
         if match:
+            if "U3k" in stdout:
+                try:
+                    CE_SB_LAV_SWITCH = int(stdout.split("U3k_")[-1]) >= CE_U3K_SB_LAV_MIN
+                    if CE_SB_LAV_SWITCH:
+                        LOG("CoreELEC U3k build with LAV filters found. List-based fixing seamless branching possible.")
+                except:
+                    pass
+
+            elif "avdvplus" in stdout:
+                try:
+                    CE_SB_LAV_SWITCH = int(stdout.split("avdvplus_")[-1]) >= CE_AVD_SB_LAV_MIN
+                    if CE_SB_LAV_SWITCH:
+                        LOG("CoreELEC avdvplus build with LAV filters found. List-based fixing seamless branching possible.")
+                except:
+                    pass
+
+            elif "p3i_" in stdout:
+                CE_SB_LAV_SWITCH = True
+                LOG("CoreELEC p3i build with LAV filters found. List-based fixing seamless branching possible.")
+                CE_NEEDS_EMBEDDED_SEEKBACK = int(stdout.split("_")[-1]) < CE_P3I_EMBED_FIXED
+                if not CE_NEEDS_EMBEDDED_SEEKBACK:
+                    LOG("CoreELEC p3i build with built-in embedded subtitle fix found. Disabling our fix.")
+
             platform = "Linux"
             try:
                 model = subprocess.check_output(['cat', '/proc/device-tree/model']).decode().strip("\0 \n\r")
@@ -842,7 +849,7 @@ def dumpSettings():
     main_settings_dict = OrderedDict([(k,
                                        OrderedDict([(s.ID, (s.get(as_code=True), s.default))
                                                     for s in settings.Settings.SETTINGS[k][1]
-                                                    if not s.userAware])) for k in sections])
+                                                    if s is not None and not s.userAware])) for k in sections])
     main_revmap = {k: i for i in sections for k in main_settings_dict[i].keys()}
     adv_settings_dict = OrderedDict([(s, (getSetting(s, d), d)) for s, d in AddonSettings._proxiedSettings])
 
@@ -903,9 +910,20 @@ def garbageCollect():
     gc.collect(2)
 
 
+def cleanupCacheFolder():
+    try:
+        base = translatePath("special://temp")
+        for f in fast_iglob(os.path.join(base, "theme_*.mp3")):
+            fn = os.path.join(base, f)
+            DEBUG_LOG("Removing leftover cached file: {}", fn)
+            xbmcvfs.delete(fn)
+    except:
+        pass
+
+
 def shutdown():
-    global MONITOR, ADDON, T, _SHUTDOWN
-    _SHUTDOWN = True
+    global MONITOR, ADDON, T
+    setShutdown()
     del MONITOR
     del T
     del ADDON

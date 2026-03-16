@@ -125,7 +125,7 @@
                 <align>left</align>
                 <itemgap>0</itemgap>
                 <scroll>true</scroll>
-                <scrollspeed>5</scrollspeed>
+                <scrollspeed>35</scrollspeed>
                 <orientation>horizontal</orientation>
                 <usecontrolcoords>true</usecontrolcoords>
                 <control type="label">

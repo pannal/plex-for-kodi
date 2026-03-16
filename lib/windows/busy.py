@@ -38,7 +38,7 @@ class BusyClosableMsgWindow(BusyClosableWindow):
         self.setProperty("message", msg)
 
 
-def dialog(msg='LOADING', condition=None, delay=True, delay_time=0.5):
+def dialog(msg='LOADING', condition=None, delay=True, delay_time=1.5):
     def methodWrap(func):
         def inner(*args, **kwargs):
             timer = None
@@ -51,16 +51,15 @@ def dialog(msg='LOADING', condition=None, delay=True, delay_time=0.5):
             try:
                 return func(*args, **kwargs)
             finally:
-                if timer and timer.is_alive():
-                    timer.cancel()
-                    timer.join()
-                del timer
                 w.doClose()
                 try:
                     del w
                 except:
                     pass
-                util.garbageCollect()
+                if timer and timer.is_alive():
+                    timer.cancel()
+                    timer.join()
+                del timer
 
         if condition is not None:
             return condition() and inner or func
@@ -169,10 +168,10 @@ class BusySignalContext(BusyMsgContext):
 
         try:
             if not self.ignoreSignal:
-                waited = 0
-                while not self.signalReceived and waited < self.waitMax:
-                    util.MONITOR.waitForAbort(0.1)
-                    waited += 0.1
+                tries = 0
+                while not self.signalReceived and tries < util.MONITOR.waitAmount(self.waitMax):
+                    util.MONITOR.waitFor()
+                    tries += 1
         finally:
             self.signalEmitter.off(self.wfSignal, self.onSignal)
 

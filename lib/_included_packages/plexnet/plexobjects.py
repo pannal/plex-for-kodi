@@ -327,31 +327,34 @@ class PlexObject(Checks):
         self.server.query('%s/refresh' % self.key, method="put")
         self.clearCache()
 
-    def reload(self, _soft=False, skip_cache=False, **kwargs):
+    def reload(self, _soft=False, skip_cache=False, data=None, **kwargs):
         """ Reload the data for this object from PlexServer XML. """
         if _soft and self._reloaded:
             return self
 
-        try:
-            if self.get('ratingKey'):
-                data = self.server.query('/library/metadata/{0}'.format(self.ratingKey),
-                                         cachable=self.cachable and not skip_cache,
-                                         cache_ref=self.cacheRef,
-                                         params=kwargs)
-            else:
-                data = self.server.query(self.key, params=kwargs)
-            self._reloaded = True
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            util.ERROR(err=e)
-            self.initpath = self.key
-            return self
+        if not data:
+            try:
+                if self.get('ratingKey'):
+                    data = self.server.query('/library/metadata/{0}'.format(self.ratingKey),
+                                             cachable=self.cachable and not skip_cache,
+                                             cache_ref=self.cacheRef,
+                                             params=kwargs)
+                else:
+                    data = self.server.query(self.key, params=kwargs)
+                data = data[0]
+                self._reloaded = True
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                util.ERROR(err=e)
+                self.initpath = self.key
+                self.clearCache()
+                return self
 
         self.initpath = self.key
 
         try:
-            self._setData(data[0])
+            self._setData(data)
         except (IndexError, TypeError, AttributeError):
             util.DEBUG_LOG('No data on reload: {0}', self)
             return self
@@ -662,11 +665,11 @@ class ItemContainer(list):
 
 
 def listItems(server, path, libtype=None, watched=None, bytag=False, data=None, container=None, offset=None,
-              limit=None, tag_fallback=False, **kwargs):
+              limit=None, tag_fallback=False, return_data=False, **kwargs):
     not_cachable = kwargs.pop('not_cachable', False)
     data = data if data is not None else server.query(path, offset=offset, limit=limit, **kwargs)
     container = container or PlexContainer(data, path, server, path)
-    items = ItemContainer().init(container)
+    items = ItemContainer().init(container) if not return_data else []
 
     if data:
         for elem in data:
@@ -676,10 +679,14 @@ def listItems(server, path, libtype=None, watched=None, bytag=False, data=None, 
                 continue
             if watched is False and PlexValue(elem.attrib.get('viewCount', "0")).asInt() >= 1:
                 continue
-            try:
-                items.append(buildItem(server, elem, path, bytag, container, tag_fallback, not_cachable=not_cachable))
-            except exceptions.UnknownType:
-                pass
+
+            if return_data:
+                items.append(elem)
+            else:
+                try:
+                    items.append(buildItem(server, elem, path, bytag, container, tag_fallback, not_cachable=not_cachable))
+                except exceptions.UnknownType:
+                    pass
 
     return items
 

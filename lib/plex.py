@@ -435,8 +435,9 @@ class CallbackEvent(plexapp.util.CompatEvent):
 
             if timeout:
                 plexnet_util.Event.wait(self, timeout)
-        finally:
-            return self.isSet()
+        except Exception:
+            pass
+        return self.isSet()
 
     def close(self):
         self.set()
@@ -517,7 +518,7 @@ def authorize():
 
     background.setSplash(False)
 
-    back = signin.Background.create()
+    back = signin.SignInBackground.create()
 
     pre = signin.PreSignInWindow.open()
     try:
@@ -569,3 +570,5 @@ def authorize():
     finally:
         back.doClose()
         del back
+        background.setBusy()
+        util.MONITOR.trigger("background.activate")

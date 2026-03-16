@@ -2,7 +2,10 @@ from __future__ import absolute_import
 import six.moves.queue
 import heapq
 from kodi_six import xbmc
-from . import util
+from .monitor import MONITOR
+from .settings_util import getSetting
+from . import logging
+from .kodi_util import ENABLE_HIGH_CONCURRENCY
 from plexnet import threadutils
 from six.moves import range
 
@@ -59,7 +62,7 @@ class Task:
         self._canceled = True
 
     def isCanceled(self):
-        return self._canceled or util.MONITOR.abortRequested()
+        return self._canceled or MONITOR.abortRequested()
 
     def isValid(self):
         return not self.finished and not self._canceled
@@ -77,7 +80,7 @@ class MutablePriorityQueue(six.moves.queue.PriorityQueue):
             lowest = self.queue and min(self.queue) or None
         except:
             lowest = None
-            util.ERROR()
+            logging.ERROR()
         finally:
             self.mutex.release()
         return lowest
@@ -97,14 +100,14 @@ class BackgroundWorker:
         try:
             task._run()
         except:
-            util.ERROR()
+            logging.ERROR()
 
     def abort(self):
         self._abort = True
         return self
 
     def aborted(self):
-        return self._abort or util.MONITOR.abortRequested()
+        return self._abort or MONITOR.abortRequested()
 
     def start(self):
         if self._thread and self._thread.is_alive():
@@ -117,7 +120,7 @@ class BackgroundWorker:
         if self._queue.empty():
             return
 
-        util.DEBUG_LOG('BGThreader: ({0}): Active', self.name)
+        logging.DEBUG_LOG('BGThreader: ({0}): Active', self.name)
         try:
             while not self.aborted():
                 self._task = self._queue.get_nowait()
@@ -125,7 +128,7 @@ class BackgroundWorker:
                 self._queue.task_done()
                 self._task = None
         except six.moves.queue.Empty:
-            util.DEBUG_LOG('BGThreader ({0}): Idle', self.name)
+            logging.DEBUG_LOG('BGThreader ({0}): Idle', self.name)
 
     def shutdown(self):
         self.abort()
@@ -134,18 +137,18 @@ class BackgroundWorker:
             self._task.cancel()
 
         if self._thread and self._thread.is_alive():
-            util.DEBUG_LOG('BGThreader: thread ({0}): Waiting...', self.name)
+            logging.DEBUG_LOG('BGThreader: thread ({0}): Waiting...', self.name)
             self._thread.join()
-            util.DEBUG_LOG('BGThreader: thread ({0}): Done', self.name)
+            logging.DEBUG_LOG('BGThreader: thread ({0}): Done', self.name)
 
     def working(self):
         return self._thread and self._thread.is_alive()
 
     def kill(self):
         if self._thread and self._thread.is_alive():
-            util.DEBUG_LOG('BGThreader: thread ({0}): Waiting...', self.name)
+            logging.DEBUG_LOG('BGThreader: thread ({0}): Waiting...', self.name)
             self._thread.join()
-            util.DEBUG_LOG('BGThreader: thread ({0}): Done', self.name)
+            logging.DEBUG_LOG('BGThreader: thread ({0}): Done', self.name)
 
 
 class BackgroundThreader:
@@ -167,7 +170,7 @@ class BackgroundThreader:
         return self
 
     def aborted(self):
-        return self._abort or util.MONITOR.abortRequested()
+        return self._abort or MONITOR.abortRequested()
 
     def shutdown(self):
         self.abort()
@@ -254,4 +257,5 @@ class ThreaderManager:
     def kill(self):
         self.threader.kill()
 
-BGThreader = ThreaderManager(worker_count=util.getSetting('worker_count', 3))
+# clamp worker count to 3 maximum if we're below python 3.14
+BGThreader = ThreaderManager(worker_count=min(getSetting('worker_count', 3), ENABLE_HIGH_CONCURRENCY and 32 or 3))

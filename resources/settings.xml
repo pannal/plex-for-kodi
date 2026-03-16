@@ -168,12 +168,12 @@
                     <default>false</default>
                     <control type="toggle"/>
                 </setting>
-                <setting id="coreelec_resume_seek_wait" type="integer" label="33649" help="33650">
+                <setting id="coreelec_resume_seek_wait2" type="integer" label="33649" help="33650">
                     <level>0</level>
-                    <default>850</default>
+                    <default>100</default>
                     <constraints>
-                        <minimum>500</minimum>
-                        <step>50</step>
+                        <minimum>10</minimum>
+                        <step>10</step>
                         <maximum>5000</maximum>
                     </constraints>
                     <control type="slider" format="integer">
@@ -187,6 +187,42 @@
                         <minimum>500</minimum>
                         <step>100</step>
                         <maximum>15000</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
+                </setting>
+                <setting id="coreelec_seek_prefer_reported" type="boolean" label="34056" help="34057">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="coreelec_wait_player_time1" type="boolean" label="34058" help="34059">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="seamless_branching_lav_mode" type="integer" label="34066" help="34067">
+                    <level>0</level>
+                    <default>4</default>
+                    <constraints>
+                        <options>
+                            <option label="34068">0</option>
+                            <option label="34069">1</option>
+                            <option label="34070">3</option>
+                            <option label="34071">4</option>
+                            <option label="34072">5</option>
+                        </options>
+                    </constraints>
+                    <control type="list" format="integer"/>
+                </setting>
+                <setting id="seekbackonstart_delay" type="integer" label="34078" help="34079">
+                    <level>0</level>
+                    <default>500</default>
+                    <constraints>
+                        <minimum>50</minimum>
+                        <step>50</step>
+                        <maximum>10000</maximum>
                     </constraints>
                     <control type="slider" format="integer">
                         <popup>false</popup>
@@ -356,11 +392,24 @@
                 </setting>
                 <setting id="background_colour" type="string" label="33200" help="33201">
                   <level>0</level>
-                  <default>-</default> <!-- Black -->
+                  <default>ff000000</default> <!-- Black -->
 	              <control type="colorbutton" />
                   <dependencies>
                       <dependency type="enable" setting="dynamic_backgrounds">false</dependency>
                   </dependencies>
+                </setting>
+                <setting id="custom_background_colour" type="string" label="33202" help="33203">
+                  <level>0</level>
+                  <default></default>
+                  <constraints>
+                      <allowempty>true</allowempty>
+                  </constraints>
+                  <dependencies>
+                      <dependency type="enable" setting="dynamic_backgrounds">false</dependency>
+                  </dependencies>
+                  <control type="edit" format="string">
+                      <heading>33202</heading>
+                  </control>
                 </setting>
                 <setting id="background_art_blur_amount2" type="integer" label="32469">
                     <level>0</level>
@@ -439,6 +488,11 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="theme_music_fade" type="boolean" label="34046">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
             </group>
         </category>
         <category id="screensaver" label="32488">
@@ -460,6 +514,11 @@
                 <setting id="always_compile_templates" type="boolean" label="33068" help="33069">
                     <level>0</level>
                     <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="cache_theme_music" type="boolean" label="34047" help="34048">
+                    <level>0</level>
+                    <default>true</default>
                     <control type="toggle"/>
                 </setting>
                 <setting id="verify_mapped_files" type="boolean" label="33002" help="33003">
@@ -603,6 +662,18 @@
                         <popup>false</popup>
                     </control>
                 </setting>
+                <setting id="ui_wait_rate" type="number" label="34044" help="34045">
+                    <level>0</level>
+                    <default>10</default>
+                    <constraints>
+                        <minimum>10</minimum>
+                        <step>10</step>
+                        <maximum>1000</maximum>
+                    </constraints>
+                    <control type="slider" format="number">
+                        <popup>false</popup>
+                    </control>
+                </setting>
                 <setting id="worker_count" type="number" label="32981" help="32982">
                     <level>0</level>
                     <default>3</default>
@@ -617,7 +688,7 @@
                 </setting>
                 <setting id="requests_cache_expiry" type="number" label="33729">
                     <level>0</level>
-                    <default>168</default>
+                    <default>72</default>
                     <constraints>
                         <minimum>0</minimum>
                         <step>1</step>

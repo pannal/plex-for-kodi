@@ -4,7 +4,7 @@ import os
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import plexplayer, media, util as pnUtil, plexapp, plexlibrary
+from plexnet import plexplayer, media, util as pnUtil, plexapp, plexlibrary, playlist, playqueue
 
 from lib import metadata
 from lib import util
@@ -26,6 +26,7 @@ from .mixins.thememusic import ThemeMusicMixin
 from .mixins.watchlist import WatchlistUtilsMixin, removeFromWatchlistBlind
 from .mixins.roles import RolesMixin
 from .mixins.common import CommonMixin
+from .mixins.tasks import TasksMixin
 
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1, includeReviews=1)
 
@@ -36,7 +37,7 @@ class RelatedPaginator(pagination.BaseRelatedPaginator):
 
 
 class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixin, PlaybackBtnMixin, ThemeMusicMixin,
-                    RolesMixin, CommonMixin, WatchlistUtilsMixin):
+                    RolesMixin, CommonMixin, WatchlistUtilsMixin, TasksMixin):
     xmlFile = 'script-plex-pre_play.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -79,6 +80,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         kodigui.ControlledWindow.__init__(self, *args, **kwargs)
         PlaybackBtnMixin.__init__(self)
         WatchlistUtilsMixin.__init__(self)
+        TasksMixin.__init__(self)
         self.video = kwargs.get('video')
         self.parentList = kwargs.get('parent_list')
         self.fromWatchlist = kwargs.get('from_watchlist', False)
@@ -94,13 +96,13 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.initialized = False
         self.relatedPaginator = None
         self.openedWithAutoPlay = False
-        self.needs_related_divider = False
         self.fromPlayback = False
         self.useBGM = False
 
     def doClose(self, **kw):
         self.relatedPaginator = None
         kodigui.ControlledWindow.doClose(self)
+        TasksMixin.doClose(self)
 
     def onFirstInit(self):
         self.extraListControl = kodigui.ManagedControlList(self, self.EXTRA_LIST_ID, 5)
@@ -130,7 +132,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         if util.getSetting("slow_connection"):
             self.progressImageControl.setWidth(1)
             self.setProperty('remainingTime', T(32914, "Loading"))
-        self.video.reload(checkFiles=1, fromMediaChoice=self.video.mediaChoice is not None, **VIDEO_RELOAD_KW)
+        self.video.reload(checkFiles=1, fromMediaChoice=self.video.mediaChoice is not None, skip_cache=True, **VIDEO_RELOAD_KW)
         removed_from_wl = False
         if self.fromPlayback:
             removed_from_wl = self.wl_auto_remove(self.video)
@@ -145,7 +147,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         if self.fromPlayback and self.openedWithAutoPlay and not self.started:
             self.video.reload(checkFiles=1, fromMediaChoice=self.video.mediaChoice is not None, **VIDEO_RELOAD_KW)
             if self.video.isFullyWatched:
-                removeFromWatchlistBlind(self.video.guid)
+                removeFromWatchlistBlind(self.video.guid, self.video)
 
     def refreshInfo(self, from_reinit=False):
         oldFocusId = self.getFocusId()
@@ -160,7 +162,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
                 if "watched" in show_reviews and "unwatched" not in show_reviews:
                     self.fillReviews()
 
-            self.fillRelated(self.needs_related_divider)
+            self.fillRelated()
         xbmc.sleep(100)
 
         if oldFocusId == self.PLAY_BUTTON_ID:
@@ -370,11 +372,13 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.delete()
         elif choice['key'] == 'refresh':
             self.video.refresh()
+            self.video.reload(checkFiles=1, **VIDEO_RELOAD_KW)
             self.refreshInfo()
         elif choice["key"] == "cache_reset":
             try:
                 util.DEBUG_LOG('Clearing requests cache for {}...', self.video)
                 self.video.clearCache()
+                self.video.reload(checkFiles=1, **VIDEO_RELOAD_KW)
                 self.refreshInfo()
             except Exception as e:
                 util.DEBUG_LOG("Couldn't clear cache: {}", e)
@@ -533,6 +537,41 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.playBtnClicked = True
 
         self.fromPlayback = True
+
+        preRoll = util.getUserSetting('preplay_preroll', False)
+        preRollFirst = util.getUserSetting('preplay_preroll_first', True)
+        trailers = 5 - util.getUserSetting('preplay_trailers', 5)
+        # play playqueue if necessary (trailer preplay or plex told us to preplay something)
+        if not resume:
+            if preRoll or trailers:
+                pq = playqueue.createPlayQueueForItem(self.video, use_async=False, method="POST",
+                                                          extrasPrefixCount=trailers)
+
+                _items = [item for item in pq.items if item.get('type') == 'clip']
+                for item in _items:
+                    item.isExtra = True
+
+                if preRoll and preRollFirst and trailers:
+                    items = []
+                    # move prerolls to the front
+                    for item in reversed(_items):
+                        if not item.get('subtype'):
+                            # pre-roll detected
+                            items.insert(0, item)
+                    for item in _items:
+                        if item.get('subtype') == 'trailer':
+                            items.append(item)
+                else:
+                    # use server pq as is, but filter out prerolls if not wanted
+                    items = list(filter(lambda x: x.get('subtype') == "trailer", _items)) if not preRoll else _items
+
+                items.append(self.video)
+
+                pl = playlist.LocalPlaylist(items, self.video.getServer())
+                self.processCommand(
+                    videoplayer.play(play_queue=pl, bgm=self.useBGM))
+                return True
+
         self.processCommand(videoplayer.play(video=self.video, resume=resume, bgm=self.useBGM))
         return True
 
@@ -584,11 +623,10 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         self.setInfo()
         self.setBoolProperty("initialized", True)
-        hasRoles = self.fillRoles()
-        hasReviews = self.fillReviews()
-        hasExtras = self.fillExtras()
-        self.needs_related_divider = hasRoles and not hasExtras and not hasReviews
-        self.fillRelated(self.needs_related_divider)
+        self.batch_simple([(self.fillRoles, None, None),
+                           (self.fillReviews, None, None),
+                           (self.fillExtras, None, None),
+                           (self.fillRelated, None, None)])
 
     def setInfo(self, skip_bg=False):
         if not skip_bg:
@@ -634,12 +672,14 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         if self.fromWatchlist:
             self.setProperty('studios', u' / '.join([r.tag for r in self.video.studios()][:2]))
-        self.setProperty('video.res', self.video.resolutionString())
-        self.setProperty('audio.codec', self.video.audioCodecString())
-        self.setProperty('video.codec', self.video.videoCodecString())
-        self.setProperty('video.rendering', self.video.videoCodecRendering)
-        self.setProperty('audio.channels', self.video.audioChannelsString(metadata.apiTranslate))
-        self.setBoolProperty('media.multiple', len(list(filter(lambda x: x.isAccessible(), self.video.media()))) > 1)
+
+        else:
+            self.setProperty('video.res', self.video.resolutionString())
+            self.setProperty('audio.codec', self.video.audioCodecString())
+            self.setProperty('video.codec', self.video.videoCodecString())
+            self.setProperty('video.rendering', self.video.videoCodecRendering)
+            self.setProperty('audio.channels', self.video.audioChannelsString(metadata.apiTranslate))
+            self.setBoolProperty('media.multiple', len(list(filter(lambda x: x.isAccessible(), self.video.media()))) > 1)
 
         self.populateRatings(self.video, self)
 
@@ -692,7 +732,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         mli = kodigui.ManagedListItem(obj.title or '', thumbnailImage=obj.thumb.asTranscodedImageURL(*self.EXTRA_DIM), data_source=obj)
         return mli
 
-    def fillExtras(self, has_prev=False):
+    def fillExtras(self):
         items = []
         idx = 0
 
@@ -728,7 +768,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         return True
 
-    def fillRelated(self, has_prev=False):
+    def fillRelated(self):
         if not self.relatedPaginator.leafCount:
             self.relatedListControl.reset()
             return False
@@ -740,7 +780,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         return True
 
-    def fillRoles(self, has_prev=False):
+    def fillRoles(self):
         items = []
         idx = 0
 
@@ -748,7 +788,9 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.rolesListControl.reset()
             return False
 
-        for role in self.video.combined_roles:
+        roles = self.video.combined_roles if util.getUserSetting('show_directors', True) else self.video.roles
+
+        for role in roles:
             mli = kodigui.ManagedListItem(role.tag, role.role or util.TRANSLATED_ROLES[role.translated_role],
                                           thumbnailImage=role.thumb.asTranscodedImageURL(*self.ROLES_DIM),
                                           data_source=role)
@@ -763,7 +805,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.rolesListControl.addItems(items)
         return True
 
-    def fillReviews(self, has_prev=False):
+    def fillReviews(self):
         items = []
         idx = 0
 

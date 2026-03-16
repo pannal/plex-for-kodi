@@ -135,6 +135,7 @@
             <orientation>horizontal</orientation>
             <usecontrolcoords>true</usecontrolcoords>
             <control type="label">
+                <visible>String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
                 <width max="880">auto</width>
                 <height>{{ vscale(60) }}</height>
                 <font>font13</font>
@@ -142,7 +143,19 @@
                 <aligny>top</aligny>
                 <textcolor>FFFFFFFF</textcolor>
                 <scroll>true</scroll>
-                <scrollspeed>5</scrollspeed>
+                <scrollspeed>35</scrollspeed>
+                <label>$INFO[Container(400).ListItem.Property(title)]</label>
+            </control>
+            <control type="label">
+                <visible>!String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
+                <width max="700">auto</width>
+                <height>{{ vscale(60) }}</height>
+                <font>font13</font>
+                <align>left</align>
+                <aligny>top</aligny>
+                <textcolor>FFFFFFFF</textcolor>
+                <scroll>true</scroll>
+                <scrollspeed>35</scrollspeed>
                 <label>$INFO[Container(400).ListItem.Property(title)]</label>
             </control>
             <control type="button">
@@ -179,7 +192,7 @@
             <align>left</align>
             <aligny>top</aligny>
             <scroll>true</scroll>
-            <scrollspeed>5</scrollspeed>
+            <scrollspeed>25</scrollspeed>
             <textcolor>FFFFFFFF</textcolor>
             <label>$INFO[Container(400).ListItem.Property(show.title)]</label>
         </control>
@@ -383,7 +396,8 @@
         </control>
 
         <control type="image" id="250">
-            <animation effect="zoom" start="0,100" end="100,100" time="1000" center="-1,561" reversible="false" tween="circle" easing="out">WindowOpen</animation>
+            <visible>!String.IsEmpty(Window.Property(current_item.loaded))</visible>
+            <animation effect="zoom" start="0,100" end="100,100" time="1000" center="-1,561" reversible="false" tween="circle" easing="out">Visible</animation>
             <posx>-1</posx>
             <posy>{{ vscale(557) }}</posy>
             <width>1</width>

@@ -49,8 +49,10 @@ MOVE_SET = frozenset(
     )
 )
 
+NO_HUB = "__NO_HUB__"
 
 class HubsList(list):
+    identifier = NO_HUB
     def init(self):
         self.lastUpdated = time.time()
         self.invalid = False
@@ -78,6 +80,7 @@ class SectionHubsTask(backgroundthread.Task):
             hubs = HubsList(self.section.server.hubs(self.section.key, count=HUB_PAGE_SIZE,
                                                                       section_ids=self.section_keys,
                                                                       ignore_hubs=self.ignore_hubs)).init()
+            hubs.identifier = self.section.key
             if self.isCanceled():
                 return
             self.callback(self.section, hubs, reselect_pos_dict=self.reselect_pos_dict)
@@ -367,10 +370,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         'tv.moreingenre': {'index': 15, 'with_progress': True, 'do_updates': True},
         'tv.recentlyviewed': {'index': 16, 'with_progress': True, 'text2lines': True, 'do_updates': True},
         # MOVIE
-        'movie.inprogress': {'index': 0, 'with_progress': True, 'with_art': True, 'do_updates': True, 'text2lines': True},
-        'movie.recentlyreleased': {'index': 1, 'do_updates': True, 'with_progress': True, 'text2lines': True},
-        'movie.recentlyadded': {'index': 2, 'do_updates': True, 'with_progress': True, 'text2lines': True},
-        'movie.genre': {'index': 3, 'with_progress': True, 'text2lines': True, 'do_updates': True},
+        'movie.inprogress': {'index': 1, 'with_progress': True, 'do_updates': True, 'text2lines': True},
+        'movie.recentlyreleased': {'index': 2, 'do_updates': True, 'with_progress': True, 'text2lines': True},
+        'movie.recentlyadded': {'index': 3, 'do_updates': True, 'with_progress': True, 'text2lines': True},
+        'movie.genre': {'index': 4, 'with_progress': True, 'text2lines': True, 'do_updates': True},
         'movie.by.actor.or.director': {'index': 7, 'with_progress': True, 'text2lines': True, 'do_updates': True},
         'movie.topunwatched': {'index': 13, 'text2lines': True, 'do_updates': True},
         'movie.recentlyviewed': {'index': 14, 'with_progress': True, 'text2lines': True, 'do_updates': True},
@@ -420,6 +423,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         kodigui.BaseWindow.__init__(self, *args, **kwargs)
         SpoilersMixin.__init__(self, *args, **kwargs)
         self.lastSection = home_section
+        self.lastHubs = None
         self.tasks = []
         self.closeOption = None
         self.hubControls = None
@@ -525,13 +529,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.closeOption = "recompile"
         self.doClose()
 
+    def show(self, **kwargs):
+        super(HomeWindow, self).show(**kwargs)
+        if self.go_root:
+            util.DEBUG_LOG("Home: Go root requested, reinitializing")
+            self.onReInit()
+
     def onReInit(self):
         util.DEBUG_LOG("Home: On ReInit")
         if self._ignoreReInit:
             return
 
         if player.PLAYER.bgmPlaying:
-            player.PLAYER.stopAndWait()
+            player.PLAYER.stopAndWait(fade=util.addonSettings.themeMusicFade, deferred=True)
 
         self._anyItemAction = False
         if self._applyTheme:
@@ -568,6 +578,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     util.DEBUG_LOG("Focus requested on {}, which can't focus. Trying next hub", self.lastFocusID)
                     self.focusFirstValidHub(hubControlIndex)
 
+            elif self.lastFocusID == self.SECTION_LIST_ID:
+                if self.lastHubs != self.lastSection.key:
+                    self.showHubs(self.lastSection)
+
             else:
                 if self.getFocusId() != self.lastFocusID:
                     self.setFocusId(self.lastFocusID)
@@ -577,7 +591,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def checkPlexDirectHosts(self, servers, source="stored", *args, **kwargs):
         while self._checkingPD:
-            util.MONITOR.waitForAbort(0.1)
+            util.MONITOR.waitFor()
         try:
             self._checkingPD = True
             util.DEBUG_LOG("Home: checkPlexDirectHosts: {} ({})", servers, source)
@@ -827,8 +841,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._ignoreTick = True
         self.stopRetryingRequests()
 
-        # fixme: add "update" to the list of closeOptions for which we should force quit if necessary?
-        # self.closeOption = "update"
+        self.closeOption = "update"
         self.unhookSignals()
         self.doClose()
         return True
@@ -860,8 +873,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 # wait for it to be consumed
                 try:
                     util.waitForConsumption('update_response', timeout=200)
-                finally:
-                    return self.doUpdate()
+                except Exception:
+                    pass
+                return self.doUpdate()
 
     def tick(self):
         if self._shuttingDown:
@@ -891,6 +905,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 not xbmc.Player().isPlayingVideo()):
             util.DEBUG_LOG("Home: Ticking, section stale, calling showHubs(update=True)")
             self.showHubs(self.lastSection, update=True)
+            util.cleanupCacheFolder()
 
     def doClose(self, force=True):
         util.DEBUG_LOG("Home: doClose called, triggering close.windows")
@@ -900,9 +915,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         super(HomeWindow, self).doClose(force=force)
 
-    def stopRetryingRequests(self):
-        util.DEBUG_LOG("Stopping request retries")
-        plexnet.asyncadapter.STOP_RETRYING_REQUESTS = True
+    def stopRetryingRequests(self, state=True):
+        util.DEBUG_LOG("{} request retries", state and "Disabling" or "Enabling")
+        plexnet.asyncadapter.STOP_RETRYING_REQUESTS = state
 
     def shutdown(self):
         util.DEBUG_LOG("Home: shutdown called")
@@ -1234,8 +1249,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         if item.isFullyWatched:
-            guid = item.show().guid if item.TYPE in ('episode', 'season') else item.guid
-            removeFromWatchlistBlind(guid)
+            ref = item.show() if item.TYPE in ('episode', 'season') else item
+            removeFromWatchlistBlind(ref.guid, ref)
         self._updateOnDeckHubs()
 
 
@@ -1691,6 +1706,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             hub_title = plexapp.SERVERMANAGER.selectedServer.currentHubs.get(section_hub_key,
                                                                              section_hub_key)
 
+        clean_identifier = hub.getCleanHubIdentifier()
+
         select_base = 0
 
         options = []
@@ -1716,7 +1733,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             if ds.TYPE in ('episode', 'movie'):
                     #hub.hubIdentifier == "continueWatching"):
-                if hub.hubIdentifier in ("home.continue", "continueWatching", "home.ondeck"):
+                if (hub.hubIdentifier in ("home.continue", "continueWatching", "home.ondeck") or
+                        clean_identifier in ("tv.inprogress", "movie.inprogress")):
                     # allow removing items from CW
                     options.append(dropdown.SEPARATOR)
                     options.append({'key': 'remove_cw', 'display': T(33662, "Remove from Continue Watching")})
@@ -1958,7 +1976,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                         last_item_index = len(control) - 1
                         control.selectItem(last_item_index)
                         while control.getSelectedPos() != last_item_index:
-                            util.MONITOR.waitForAbort(0.1)
+                            util.MONITOR.waitFor()
 
                         if not control[last_item_index].dataSource:
                             last_item_index -= 1
@@ -2017,10 +2035,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # wait 2s at max if we're currently awaiting any hubs to reload
         # fixme: this can be done in a better way, probably
         waited = 0
-        while any(self.tasks) and waited < 20:
+        while any(self.tasks) and waited < util.MONITOR.waitAmount(2):
             if waited > 5:
                 self.showBusy(True)
-            util.MONITOR.waitForAbort(0.1)
+            util.MONITOR.waitFor()
             waited += 1
         self.showBusy(False)
 
@@ -2040,7 +2058,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not immediate:
             if not self.sectionChangeTimeout:
                 return
-            while not util.MONITOR.waitForAbort(0.1):
+            while not util.MONITOR.waitFor():
                 # timing issue
                 if not self.sectionChangeTimeout:
                     return
@@ -2056,7 +2074,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def _sectionReallyChanged(self, section):
         with self.lock:
             while self.block_section_change:
-                util.MONITOR.waitForAbort(0.1)
+                util.MONITOR.waitFor()
 
             self.setProperty('hub.focus', '')
             if util.addonSettings.dynamicBackgrounds:
@@ -2315,6 +2333,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         if not hasContent:
             self.setBoolProperty('no.content', True)
+
+        # store last visited hubslist identifier (e.g. section key or None for Home)
+        self.lastHubs = hubs.identifier
 
         lastSkip = 0
         if skip:
@@ -2577,25 +2598,24 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             util.HUB_ITEM_STATES[hub_item_state_key] = hub_item_states
 
-        if with_progress:
+        if any([with_progress, with_art, ar16x9]):
             for mli in items:
-                mli.setProperty('progress', util.getProgressImage(mli.dataSource))
-        if with_art:
-            for mli in items:
-                extra_opts = {}
-                thumb = mli.dataSource.art
-                # use episode thumbnail for in progress episodes
-                if mli.dataSource.type == 'episode' and util.addonSettings.continueUseThumb and check_spoilers:
-                    # blur them if we don't want any spoilers and the episode hasn't been fully watched
-                    if self.noResumeImages and mli.dataSource._noSpoilers:
-                        extra_opts = {"blur": util.addonSettings.episodeNoSpoilerBlur}
-                    thumb = mli.dataSource.thumb
+                if with_progress:
+                    mli.setProperty('progress', util.getProgressImage(mli.dataSource))
+                if with_art:
+                    extra_opts = {}
+                    thumb = mli.dataSource.art
+                    # use episode thumbnail for in progress episodes
+                    if mli.dataSource.type == 'episode' and util.addonSettings.continueUseThumb and check_spoilers:
+                        # blur them if we don't want any spoilers and the episode hasn't been fully watched
+                        if self.noResumeImages and mli.dataSource._noSpoilers:
+                            extra_opts = {"blur": util.addonSettings.episodeNoSpoilerBlur}
+                        thumb = mli.dataSource.thumb
 
-                mli.setThumbnailImage(thumb.asTranscodedImageURL(*self.THUMB_AR16X9_DIM, **extra_opts))
-                mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
-        if ar16x9:
-            for mli in items:
-                mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
+                    mli.setThumbnailImage(thumb.asTranscodedImageURL(*self.THUMB_AR16X9_DIM, **extra_opts))
+                    mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
+                if ar16x9:
+                    mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
 
         more = hub.more.asBool()
         if more:

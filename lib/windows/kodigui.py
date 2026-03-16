@@ -154,8 +154,8 @@ class XMLBase(object):
                                 pass
 
                         tries = 0
-                        while xbmc.Player().isPlaying() and tries < 50:
-                            util.MONITOR.waitForAbort(0.1)
+                        while xbmc.Player().isPlaying() and tries < util.MONITOR.waitAmount(5):
+                            util.MONITOR.waitFor()
                             tries += 1
                     except:
                         pass
@@ -166,22 +166,22 @@ class XMLBase(object):
                         try:
                             self._errored = True
                             self.closeWRecompileTpls()
-                        finally:
-                            return
+                        except Exception:
+                            pass
                     elif self.__class__.__name__ == "BackgroundWindow":
                         try:
                             self._errored = True
                             self.doClose()
+                        except Exception:
+                            pass
+                    else:
+                        try:
+                            self._errored = True
+                            self.doClose()
                         finally:
-                            return
-
-                    try:
-                        self._errored = True
-                        self.doClose()
-                    finally:
-                        from . import windowutils
-                        windowutils.HOME.closeWRecompileTpls()
-                        return
+                            from . import windowutils
+                            windowutils.HOME.closeWRecompileTpls()
+                    return
                 raise
         self._onInit()
 
@@ -222,10 +222,25 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
         global LAST_BG_URL
         self._winID = xbmcgui.getCurrentWindowId()
         BaseFunctions.lastWinID = self._winID
-        self.setProperty('use_solid_background', util.hasCustomBGColour and '1' or '')
-        if util.hasCustomBGColour:
+        self.setProperty('use_solid_background', util.useSolidBackground and '1' or '')
+        if util.useSolidBackground:
             bgColour = util.addonSettings.backgroundColour if util.addonSettings.backgroundColour != "-" \
                 else "ff000000"
+
+            if util.addonSettings.customBackgroundColour:
+                try:
+                    cbgColour = util.addonSettings.customBackgroundColour.strip("#").strip().lower()
+                    cbgclen = len(cbgColour)
+                    if cbgclen < 6 or cbgclen > 8:
+                        # invalid color
+                        util.LOG("Invalid custom background colour: {}".format(util.addonSettings.customBackgroundColour))
+                    else:
+                        if cbgclen == 6:
+                            cbgColour = "ff{}".format(cbgColour)
+                        bgColour = cbgColour
+                except:
+                    pass
+
             self.setProperty('background_colour', "0x%s" % bgColour.lower())
             self.setProperty('background_colour_opaque', "0x%s" % bgColour.lower())
         else:
@@ -275,18 +290,26 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
         pass
 
     def waitForOpen(self, base_win_id=None):
+        def not_open():
+            return (not base_win_id and not self.isOpen) or (base_win_id and xbmcgui.getCurrentWindowId() < base_win_id)
+
+        if not not_open():
+            util.DEBUG_LOG("Window {} opened: {}", self, self.isOpen)
+            return True
+
         tries = 0
-        while ((not base_win_id and not self.isOpen) or
-               (base_win_id and xbmcgui.getCurrentWindowId() <= base_win_id)) and tries < 120:
+        while not_open() and tries < util.MONITOR.waitAmount(120, interval=1.0):
             if tries == 0:
-                util.LOG("Couldn't open window {}, other dialog open? Retrying for 120s. ({}, {}, {})", (self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen))
+                util.LOG("Couldn't open window {}, other dialog open? Retrying for 120s. ({}, {}, {})", self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen)
             if util.MONITOR.abortRequested():
-                util.LOG("Couldn't open window {}, abort requested ({}, {}, {})", (self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen))
+                util.LOG("Couldn't open window {}, abort requested ({}, {}, {})", self, base_win_id, xbmcgui.getCurrentWindowId(), self.isOpen)
                 break
             self.show()
+            if not not_open():
+                break
             if not self.isOpen:
                 tries += 1
-                util.MONITOR.waitForAbort(1.0)
+                util.MONITOR.waitFor(1.0)
             else:
                 break
 
@@ -357,8 +380,8 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
         self._closing = False
         # can we activate?
         ct = 0
-        while xbmcgui.getCurrentWindowDialogId() > 9999 and ct < 20:
-            util.MONITOR.waitForAbort(0.1)
+        while xbmcgui.getCurrentWindowDialogId() > 9999 and ct < util.MONITOR.waitAmount(2):
+            util.MONITOR.waitFor()
             ct += 1
 
         lastWinID = BaseFunctions.lastWinID
@@ -375,15 +398,15 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
                 # Activate of window 'xxxxxx' refused because there are active modal dialogs
                 if xbmcgui.getCurrentWindowId() == lastWinID:
                     util.DEBUG_LOG('{}: not yet active, retrying', self.__class__.__name__)
-                    util.MONITOR.waitForAbort(0.1)
+                    util.MONITOR.waitFor()
 
                 ct = 0
-                while xbmcgui.getCurrentWindowId() == lastWinID and ct < 4 and not util.MONITOR.abortRequested():
+                while xbmcgui.getCurrentWindowId() == lastWinID and ct < util.MONITOR.waitAmount(2, interval=0.5) and not util.MONITOR.abortRequested():
                     ct += 1
                     # we might have run into an active dialog, which happens sometimes, so we didn't really activate the window
                     # retry
                     xbmcgui.WindowXML.show(self)
-                    util.MONITOR.waitForAbort(0.5)
+                    util.MONITOR.waitFor(0.5)
 
                 util.DEBUG_LOG("{}: activation state (ID: {}, last: {}, current: {})", self, self._winID, lastWinID, xbmcgui.getCurrentWindowId())
 
@@ -476,7 +499,7 @@ class ControlledBase:
         self.wait()
 
     def wait(self):
-        while not self._closing and not MONITOR.waitForAbort(0.1):
+        while not self._closing and not MONITOR.waitFor():
             pass
 
     def close(self):
@@ -1398,8 +1421,8 @@ class GlobalProperty():
         xbmcgui.Window(10000).setProperty('script.plex.{}'.format(self.prop), self.end or self.old)
 
 
-def waitForVisibility(control):
+def waitForVisibility(control, amount=5):
     tries = 0
-    while not xbmc.getCondVisibility('Control.IsVisible({0})'.format(control)) and tries < 50:
-        util.MONITOR.waitForAbort(0.1)
+    while not xbmc.getCondVisibility('Control.IsVisible({0})'.format(control)) and tries < util.MONITOR.waitAmount(amount):
+        util.MONITOR.waitFor()
         tries += 1

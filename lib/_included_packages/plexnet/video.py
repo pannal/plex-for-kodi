@@ -735,6 +735,9 @@ class Movie(PlayableVideo):
         self.session = self._findSession(data)
         self.transcodeSession = self._findTranscodeSession(data)
 
+    def isLibraryItem(self):
+        return True
+
     @property
     def defaultTitle(self):
         title = self.title or ''
@@ -809,11 +812,23 @@ class Show(CachableItemsMixin, Video, media.RelatedMixin, SectionOnDeckMixin):
 
     @property
     def isWatched(self):
-        return self.viewedLeafCount == self.leafCount
+        if self.viewedLeafCount == self.leafCount:
+            for v in self.onDeck:
+                if v.viewOffset.asInt():
+                    return False
+            return True
+        return False
 
     @property
     def isFullyWatched(self):
         return self.isWatched
+
+    def isLibraryItem(self):
+        return True
+
+    @property
+    def defaultTitle(self):
+        return self.title
 
     def seasons(self):
         path = self.key
@@ -827,7 +842,8 @@ class Show(CachableItemsMixin, Video, media.RelatedMixin, SectionOnDeckMixin):
     def episodes(self, watched=None, offset=None, limit=None):
         leavesKey = '/library/metadata/%s/allLeaves' % self.ratingKey
         return plexobjects.listItems(self.server, leavesKey, watched=watched, offset=offset, limit=limit,
-                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable)
+                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable,
+                                     excludeAllLeaves=1)
 
     def episode(self, title):
         path = '/library/metadata/%s/allLeaves' % self.ratingKey
@@ -894,7 +910,8 @@ class Season(CachableItemsMixin, Video):
     def episodes(self, watched=None, offset=None, limit=None):
         path = self.key
         return plexobjects.listItems(self.server, path, watched=watched, offset=offset, limit=limit,
-                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable)
+                                     cachable=self.cachable, cache_ref=self.cacheRef, not_cachable=self._not_cachable,
+                                     excludeAllLeaves=1)
 
     def episode(self, title):
         path = self.key
@@ -1010,6 +1027,9 @@ class Episode(PlayableVideo, SectionOnDeckMixin):
             self._show = plexobjects.listItems(self.server, self.grandparentKey, cachable=self.cachable,
                                                cache_ref=self.cacheRef, not_cachable=self._not_cachable)[0]
         return self._show
+
+    def isLibraryItem(self):
+        return True
 
     @property
     def genres(self):

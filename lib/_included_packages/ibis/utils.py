@@ -109,6 +109,16 @@ def isidentifier(s):
 
 
 try:
+    # Python 3.8+ uses ast.Constant for all literal values
     Constant = ast.Constant
 except AttributeError:
-    Constant = ast.Num
+    # Python 2.7-3.7 use separate types for different literals
+    # Create a tuple so isinstance() works with multiple types
+    _constant_types = [ast.Num]
+    if hasattr(ast, 'Str'):
+        _constant_types.append(ast.Str)
+    if hasattr(ast, 'Bytes'):
+        _constant_types.append(ast.Bytes)
+    if hasattr(ast, 'NameConstant'):  # True, False, None in Python 3.0-3.7
+        _constant_types.append(ast.NameConstant)
+    Constant = tuple(_constant_types)

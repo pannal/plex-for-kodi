@@ -418,6 +418,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.lastNonOptionsFocusID = None
         self.refill = False
         self.subOptionCache = {}
+        self.closing = False
 
         self.dcpjPos = 0
         self.dcpjThread = None
@@ -469,12 +470,15 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
     @busy.dialog()
     def doClose(self, **kw):
+        self.closing = True
         pnUtil.APP.off("watchlist:modified", self.setWatchlistDirty)
+        util.MONITOR.off("library.back_home", self.goHomeRoot)
         self.tasks.kill()
         kodigui.MultiWindow.doClose(self)
 
     def onFirstInit(self):
         pnUtil.APP.on("watchlist:modified", self.setWatchlistDirty)
+        util.MONITOR.on("library.back_home", self.goHomeRoot)
         if self.showPanelControl and not self.refill:
             self.showPanelControl.newControl(self)
             self.keyListControl.newControl(self)
@@ -521,7 +525,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         if self.refill:
             self.doRefill()
         if player.PLAYER.bgmPlaying:
-            player.PLAYER.stopAndWait()
+            player.PLAYER.stopAndWait(fade=util.addonSettings.themeMusicFade, deferred=True)
 
     def onAction(self, action):
         try:
@@ -623,13 +627,13 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
     def toggleWatched(self, mli, state=None, **kw):
         item = mli.dataSource
-        guid = item.show().guid if item.TYPE in ('episode', 'season') else item.guid
+        wl_ref = item.show() if item.TYPE in ('episode', 'season') else item
         watched = super(LibraryWindow, self).toggleWatched(item)
         if watched is None:
             return
 
         if watched:
-            removeFromWatchlistBlind(guid)
+            removeFromWatchlistBlind(wl_ref.guid, wl_ref)
         self.updateUnwatchedAndProgress(mli)
 
     def itemOptions(self):
@@ -643,7 +647,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         if mli.dataSource.TYPE in ('episode', 'season', 'movie', 'show'):
             options = []
             ds = mli.dataSource
-            guid = mli.dataSource.show().guid if ds.TYPE in ('episode', 'season') else ds.guid
+            wl_ref = ds.show() if ds.TYPE in ('episode', 'season') else ds
 
             if self.section.TYPE != "movies_shows":
                 # we don't want mark watched for watchlist items
@@ -696,7 +700,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                     self.toggleWatched(mli, state=False)
 
                 elif choice["key"] == "remove_from_watchlist":
-                    removeFromWatchlistBlind(guid)
+                    removeFromWatchlistBlind(wl_ref.guid, wl_ref)
                     self.doRefill()
             return True
 
@@ -1498,7 +1502,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
         # Wait for the default items to be created
         while backgroundthread.BGThreader.working() and not util.MONITOR.abortRequested():
-            util.MONITOR.waitForAbort(0.1)
+            util.MONITOR.waitFor()
 
         if jitems:
             self.keyListControl.addItems(jitems)
@@ -1668,7 +1672,7 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
             break
 
     def _chunkCallback(self, items, start):
-        if not self.showPanelControl or not items:
+        if not self.showPanelControl or not items or self.closing:
             return
 
         with self.lock:
@@ -1868,10 +1872,26 @@ class PostersWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
     CHUNK_OVERCOMMIT = 6
 
 
+class PostersCompactWindow(PostersWindow):
+    xmlFile = 'script-plex-posters-compact.xml'
+    VIEWTYPE = 'panel3'
+    MULTI_WINDOW_ID = 3
+    ROW_SIZE = 10
+    CHUNK_OVERCOMMIT = 30
+
+
 class PostersSmallWindow(PostersWindow):
     xmlFile = 'script-plex-posters-small.xml'
     VIEWTYPE = 'panel2'
     MULTI_WINDOW_ID = 1
+    ROW_SIZE = 10
+    CHUNK_OVERCOMMIT = 30
+
+
+class PostersSmallCompactWindow(PostersWindow):
+    xmlFile = 'script-plex-posters-small-compact.xml'
+    VIEWTYPE = 'panel4'
+    MULTI_WINDOW_ID = 4
     ROW_SIZE = 10
     CHUNK_OVERCOMMIT = 30
 
@@ -1900,8 +1920,10 @@ class ListViewSquareWindow(PostersWindow):
 VIEWS_POSTER = {
     'panel': PostersWindow,
     'panel2': PostersSmallWindow,
+    'panel3': PostersCompactWindow,
+    'panel4': PostersSmallCompactWindow,
     'list': ListView16x9Window,
-    'all': (PostersWindow, PostersSmallWindow, ListView16x9Window)
+    'all': (PostersWindow, PostersCompactWindow, PostersSmallWindow, PostersSmallCompactWindow, ListView16x9Window)
 }
 
 VIEWS_SQUARE = {

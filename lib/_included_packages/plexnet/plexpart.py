@@ -66,6 +66,10 @@ class PlexPart(plexobjects.PlexObject):
 
         return streams
 
+    @property
+    def audioStreams(self):
+        return list(filter(lambda x: x.streamType.asInt() == plexstream.PlexStream.TYPE_AUDIO, self.streams))
+
     # def getSelectedStreamStringOfType(self, streamType):
     #     default = None
     #     availableStreams = 0

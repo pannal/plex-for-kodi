@@ -799,4 +799,5 @@ def createPlexServerForResource(resource):
     # resource.__class__ = PlexServer
     # resource.server = resource
     # resource.session = http.Session()
+    resource.DEFER_HUBS = False
     return resource

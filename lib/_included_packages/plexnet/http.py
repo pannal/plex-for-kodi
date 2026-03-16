@@ -183,10 +183,12 @@ class HttpRequest(object):
             return ''
         return res.text.encode('utf8')
 
-    def postToStringWithTimeout(self, body=None, timeout=DEFAULT_TIMEOUT):
+    def postToStringWithTimeout(self, body=None, timeout=DEFAULT_TIMEOUT, return_on_status_code=False):
         self.method = 'POST'
         res = self.getPostWithTimeout(timeout, body)
         if not res:
+            if return_on_status_code:
+                return res.status_code
             return ''
         return res.text.encode('utf8')
 
