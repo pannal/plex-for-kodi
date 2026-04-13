@@ -3120,5 +3120,21 @@ msgctxt "#34101"
 msgid "Re-test server connection reachability every 10 minutes to detect network changes (e.g. WiFi to mobile). Useful on mobile devices. Default: Off"
 msgstr ""
 
-# Unused: 34102-35000 (899 IDs)
+msgctxt "#34102"
+msgid "Touch-friendly player"
+msgstr ""
+
+msgctxt "#34103"
+msgid "Touch-friendly player controls: drag-to-seek knob on timeline (prevents accidental seeks), tap center to play/pause, swipe to skip. Auto detects touch input at runtime."
+msgstr ""
+
+msgctxt "#34104"
+msgid "On"
+msgstr ""
+
+msgctxt "#34105"
+msgid "Off"
+msgstr ""
+
+# Unused: 34106-35000
 

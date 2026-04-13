@@ -851,6 +851,16 @@ class Settings(object):
                                        ' (which can then only be accessed using DOWN), or resume when paused. '
                                        'Only works with \'Behave like official Plex clients\' enabled.')),
                 OptionsSetting(
+                    'touch_mode', T(34102, 'Touch-friendly player'), 'auto',
+                    (
+                        ('auto', T(32030, 'Auto')),
+                        ('on', T(34104, 'On')),
+                        ('off', T(34105, 'Off'))
+                    )
+                ).description(T(34103, 'Touch-friendly player controls: drag-to-seek knob on timeline '
+                                       '(prevents accidental seeks), tap center to play/pause, swipe to skip. '
+                                       'Auto detects touch input at runtime.')),
+                OptionsSetting(
                     'video_show_playlist', T(32936, 'Show playlist button'), 'eponly',
                     (
                         ('always', T(32035, 'Always')), ('eponly', T(32938, 'Only for Episodes/Playlists')),

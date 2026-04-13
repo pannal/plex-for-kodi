@@ -3591,3 +3591,19 @@ msgstr "Server-Verbindungen regelmäßig prüfen"
 msgctxt "#34101"
 msgid "Re-test server connection reachability every 10 minutes to detect network changes (e.g. WiFi to mobile). Useful on mobile devices. Default: Off"
 msgstr "Erreichbarkeit der Server-Verbindungen alle 10 Minuten erneut prüfen, um Netzwerkänderungen zu erkennen (z.B. WLAN zu Mobilfunk). Nützlich auf mobilen Geräten. Standard: Aus"
+
+msgctxt "#34102"
+msgid "Touch-friendly player"
+msgstr "Touch-optimierter Player"
+
+msgctxt "#34103"
+msgid "Touch-friendly player controls: drag-to-seek knob on timeline (prevents accidental seeks), tap center to play/pause, swipe to skip. Auto detects touch input at runtime."
+msgstr "Touch-optimierte Steuerung: Zieh-Regler auf der Zeitleiste (verhindert versehentliches Spulen), Tippen in die Mitte für Play/Pause, Wischen zum Überspringen. Auto erkennt Touch-Eingabe zur Laufzeit."
+
+msgctxt "#34104"
+msgid "On"
+msgstr "An"
+
+msgctxt "#34105"
+msgid "Off"
+msgstr "Aus"

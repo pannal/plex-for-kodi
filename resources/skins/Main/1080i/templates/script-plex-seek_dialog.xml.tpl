@@ -259,6 +259,16 @@
             <texture>script.plex/white-square.png</texture>
             <colordiffuse>FFE5A00D</colordiffuse>
         </control>
+        <!-- Touch seek knob: taller vertical bar at current playback position, visible in touch mode -->
+        <control type="image" id="207">
+            <visible>!String.IsEmpty(Window.Property(touch.mode)) + [String.IsEmpty(Window.Property(no.osd.hide_info)) | !String.IsEmpty(Window.Property(show.OSD))]</visible>
+            <posx>0</posx>
+            <posy>{{ vscale(-12) }}</posy>
+            <width>36</width>
+            <height>{{ vscale(30) }}</height>
+            <texture>script.plex/white-square.png</texture>
+            <colordiffuse>FFE5A00D</colordiffuse>
+        </control>
     </control>
 </control>
 <control type="button" id="800">
@@ -474,7 +484,7 @@
 
     <control type="grouplist" id="400">
         <defaultcontrol>406</defaultcontrol>
-        <hitrect x="460" y="998" w="1000" h="55" />
+        <hitrect x="210" y="900" w="1500" h="180" />
         <posx>360</posx>
         <posy>{{ vscale(116) }}r</posy>
         <width>1200</width>
@@ -484,13 +494,15 @@
         <itemgap>-40</itemgap>
         <orientation>horizontal</orientation>
         <scrolltime tween="quadratic" easing="out">200</scrolltime>
+        <!-- Scale up buttons in touch mode for easier tapping -->
+        <animation effect="zoom" start="100" end="140" time="1" center="600,{{ vscale(62) }}" condition="!String.IsEmpty(Window.Property(touch.mode))">Conditional</animation>
         <usecontrolcoords>true</usecontrolcoords>
         <control type="group" id="421">
             <visible>!String.IsEmpty(Window.Property(nav.repeat))</visible>
             <width>125</width>
             <height>{{ vscale(101) }}</height>
             <control type="button" id="401">
-                <hitrect x="28" y="28" w="69" h="45" />
+                <hitrect x="0" y="0" w="125" h="101" />
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>125</width>
@@ -564,7 +576,7 @@
 
         <control type="togglebutton" id="402">
             <visible>!String.IsEmpty(Window.Property(has.playlist)) + !String.IsEmpty(Window.Property(nav.shuffle))</visible>
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>
@@ -593,7 +605,7 @@
         </control>
 
         <control type="button" id="403">
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>
@@ -608,7 +620,7 @@
 
         <control type="button" id="404">
             <visible>!String.IsEmpty(Window.Property(pq.hasprev)) + !String.IsEmpty(Window.Property(nav.prevnext))</visible>
-            <hitrect x="58" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="155" h="101" />
             <posx>30</posx>
             <posy>0</posy>
             <width>125</width>
@@ -634,7 +646,7 @@
         </control>
         <control type="button" id="405">
             <visible>!String.IsEmpty(Window.Property(nav.ffwdrwd))</visible>
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>
@@ -654,7 +666,7 @@
             <width>125</width>
             <height>{{ vscale(101) }}</height>
             <control type="button" id="406">
-                <hitrect x="28" y="28" w="69" h="45" />
+                <hitrect x="0" y="0" w="125" h="101" />
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>125</width>
@@ -712,7 +724,7 @@
         </control>
 
         <control type="button" id="407">
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>
@@ -725,7 +737,7 @@
         </control>
         <control type="button" id="408">
             <visible>!String.IsEmpty(Window.Property(nav.ffwdrwd))</visible>
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>
@@ -738,7 +750,7 @@
         </control>
         <control type="button" id="409">
             <visible>!String.IsEmpty(Window.Property(pq.hasnext)) + !String.IsEmpty(Window.Property(nav.prevnext))</visible>
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>
@@ -765,7 +777,7 @@
 
         <control type="button" id="410">
             <visible>[!String.IsEmpty(Window.Property(pq.hasnext)) | !String.IsEmpty(Window.Property(pq.hasprev))] + !String.IsEmpty(Window.Property(nav.playlist))</visible>
-            <hitrect x="58" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="155" h="101" />
             <posx>30</posx>
             <posy>0</posy>
             <width>125</width>
@@ -779,7 +791,7 @@
         <control type="button" id="430">
             <enable>false</enable>
             <visible>String.IsEmpty(Window.Property(pq.hasnext)) + String.IsEmpty(Window.Property(pq.hasprev)) + !String.IsEmpty(Window.Property(nav.playlist))</visible>
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>30</posx>
             <posy>0</posy>
             <width>125</width>
@@ -792,7 +804,7 @@
         </control>
         <control type="button" id="412">
             <visible>!String.IsEmpty(Window.Property(nav.quick_subtitles))</visible>
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>
@@ -809,7 +821,7 @@
              self.setBoolProperty('nav.vs10', xbmc.getCondVisibility('System.AddonIsEnabled(service.coreelec.settings)')) -->
         <control type="button" id="413">
             <visible>!String.IsEmpty(Window.Property(nav.vs10))</visible>
-            <hitrect x="28" y="28" w="69" h="45" />
+            <hitrect x="0" y="0" w="125" h="101" />
             <posx>0</posx>
             <posy>0</posy>
             <width>125</width>

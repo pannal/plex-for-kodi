@@ -90,6 +90,15 @@ MARKER_OFF = 500
 MARKER_CHAPTER_OVERLAP_THRES = 30000  # 30 seconds
 MARKER_END_JUMP_OFF = 1000
 
+# Touch/gesture action IDs (not exposed as xbmcgui constants, but arrive in onAction via global touchscreen.xml)
+ACTION_GESTURE_BEGIN = 501
+ACTION_GESTURE_PAN = 504
+ACTION_GESTURE_SWIPE_LEFT = 511
+ACTION_GESTURE_SWIPE_RIGHT = 521
+ACTION_GESTURE_SWIPE_UP = 531
+ACTION_GESTURE_SWIPE_DOWN = 541
+ACTION_GESTURE_END = 599
+
 
 class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownloadMixin):
     """
@@ -133,6 +142,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
     SKIP_MARKER_BUTTON_ID = 791
     NO_OSD_BUTTON_ID = 800
+    TOUCH_KNOB_ID = 207
 
     BAR_X = 0
     BAR_Y = 921
@@ -202,6 +212,18 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.no_time_no_osd_spoilers = util.getSetting('no_osd_time_spoilers')
         self.clientLikePlex = util.getSetting('player_official')
         self.fastPauseResume = self.clientLikePlex and util.getUserSetting('fast_pause_resume', []) or []
+
+        # Touch mode: auto = detect from gesture actions at runtime (no platform assumption, as e.g.
+        # Android covers both touch tablets and AndroidTV with remotes)
+        touchSetting = util.getSetting('touch_mode', 'auto')
+        if touchSetting == 'on':
+            self._touchMode = True
+        elif touchSetting == 'off':
+            self._touchMode = False
+        else:
+            self._touchMode = False  # auto: stays off until we see a gesture action
+        self._touchAutoDetect = touchSetting == 'auto'
+        self._touchDragging = False
 
         self._videoBelowOneHour = False
         self.timeFmtKodi = util.timeFormatKN
@@ -442,7 +464,13 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.selectionBox = self.getControl(203)
         self.bigSeekControl = kodigui.ManagedControlList(self, self.BIG_SEEK_LIST_ID, 12)
         self.bigSeekGroupControl = self.getControl(self.BIG_SEEK_GROUP_ID)
+        try:
+            self.touchKnobControl = self.getControl(self.TOUCH_KNOB_ID)
+        except RuntimeError:
+            self.touchKnobControl = None
         self.initialized = True
+
+        self.setBoolProperty('touch.mode', self._touchMode)
 
         button_defaults = ['subtitle_downloads', 'skip_intro', 'skip_credits'] + \
             (['video_show_vs10'] if util.CE_VS10 else [])
@@ -620,7 +648,39 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
 
             if not self._ignoreInput:
-                if action.getId() in KEY_MOVE_SET:
+                actionID = action.getId()
+
+                # Touch gesture handling
+                if ACTION_GESTURE_BEGIN <= actionID <= ACTION_GESTURE_END:
+                    if self._touchAutoDetect and not self._touchMode:
+                        self._touchMode = True
+                        self.setBoolProperty('touch.mode', True)
+                        util.DEBUG_LOG('SeekDialog: Touch mode auto-enabled from gesture action {}', actionID)
+
+                    if actionID == ACTION_GESTURE_PAN:
+                        self.onTouchPan(action)
+                        return
+                    elif actionID == ACTION_GESTURE_END:
+                        self.onTouchEnd(action)
+                        return
+                    elif actionID == ACTION_GESTURE_SWIPE_LEFT:
+                        without_osd = not self.osdVisible()
+                        if self.chapters:
+                            self.skipChapter(forward=False, without_osd=without_osd)
+                        else:
+                            self.skipBack(without_osd=without_osd, immediate=True)
+                        return
+                    elif actionID == ACTION_GESTURE_SWIPE_RIGHT:
+                        without_osd = not self.osdVisible()
+                        if self.chapters:
+                            self.skipChapter(forward=True, without_osd=without_osd)
+                        else:
+                            self.skipForward(without_osd=without_osd, immediate=True)
+                        return
+                    elif actionID == ACTION_GESTURE_BEGIN:
+                        return
+
+                if actionID in KEY_MOVE_SET:
                     self.setProperty('mouse.mode', '')
                     if not controlID:
                         self.setBigSeekShift()
@@ -631,6 +691,10 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
                 if controlID in (self.MAIN_BUTTON_ID, self.NO_OSD_BUTTON_ID):
                     if action == xbmcgui.ACTION_MOUSE_LEFT_CLICK:
+                        if self._touchMode:
+                            self.onTouchTap(action, controlID)
+                            return
+
                         if self.getProperty('mouse.mode') != '1':
                             self.setProperty('mouse.mode', '1')
 
@@ -2022,6 +2086,40 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.updateProgress(set_to_current=False)
             self.setProperty('button.seek', '1')
 
+    def onTouchTap(self, action, controlID):
+        """Handle touch taps. In touch mode, any tap = play/pause (OSD buttons handle their own clicks
+        when visible). Taps never seek — only drag does."""
+        if self._seeking:
+            self.doSeek()
+        else:
+            self.player.pause()
+
+    def onTouchPan(self, action):
+        """Handle touch pan/drag gesture for timeline seeking. Drag anywhere on screen to seek."""
+        x = self.mouseXTrans(action.getAmount1())
+
+        if not self._touchDragging:
+            self._touchDragging = True
+            self.setProperty('mouse.mode', '1')
+
+        if not (self.BAR_X <= x <= self.BAR_RIGHT):
+            x = max(self.BAR_X, min(x, self.BAR_RIGHT))
+
+        self._seeking = True
+        self._seekingWithoutOSD = not self.osdVisible()
+        self.selectedOffset = int((x - self.BAR_X) / float(self.SEEK_IMAGE_WIDTH) * self.duration)
+        self.updateProgress(set_to_current=False)
+        self.setProperty('button.seek', '1')
+
+    def onTouchEnd(self, action):
+        """Handle touch end — finalize drag-seek if active."""
+        if self._touchDragging:
+            self._touchDragging = False
+            if self._seeking:
+                self.doSeek()
+                if not self.osdVisible():
+                    self.hideOSD()
+
 
     @property
     def duration(self):
@@ -2111,6 +2209,12 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             else:
                 self.seekbarControl.setWidth(w)
                 self.positionControl.setWidth(w)
+
+        # Position touch knob at current playback position
+        if self.touchKnobControl and self._touchMode:
+            knob_w = current_w if not set_to_current else w
+            # Center the knob on the position (knob is 36px wide, offset by half)
+            self.touchKnobControl.setPosition(knob_w - 18, 0)
 
     def waitForBuffer(self):
         # current filesize in bytes
