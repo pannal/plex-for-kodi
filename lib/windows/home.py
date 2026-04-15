@@ -2660,7 +2660,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # fetch hubs we need to update
         rp = self.getCurrentHubsPositions(self.lastSection)
         tasks = [UpdateHubTask().setup(hub, self.updateHubCallback,
-                                       reselect_pos=rp.get(hub.getCleanHubIdentifier(self.lastSection.key is None)))
+                                       reselect_pos=rp.get(hub.getCleanHubIdentifier(not self.lastSection or self.lastSection.key is None)))
                  for hub in self.updateHubs.values()]
         self.tasks += tasks
         backgroundthread.BGThreader.addTasks(tasks)
@@ -3114,7 +3114,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         ds = mli.dataSource
 
         # Determine the hub's source section and catalog_id
-        is_home = self.lastSection.key is None
+        is_home = not self.lastSection or self.lastSection.key is None
         cross_source = hub.__dict__.get('_crossSectionSource')
         hub_source_key = cross_source if cross_source is not None else self.lastSection.key
         hub_is_home = hub_source_key is None
@@ -3801,7 +3801,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.setProperty('drawing', '')
 
     def getCurrentHubsPositions(self, section):
-        is_home = section.key is None
+        is_home = not section or section.key is None
         rp = {}
 
         # Iterate through hub controls to find current positions
