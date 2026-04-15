@@ -494,8 +494,6 @@
         <itemgap>-40</itemgap>
         <orientation>horizontal</orientation>
         <scrolltime tween="quadratic" easing="out">200</scrolltime>
-        <!-- Scale up buttons in touch mode for easier tapping -->
-        <animation effect="zoom" start="100" end="140" time="1" center="600,{{ vscale(62) }}" condition="!String.IsEmpty(Window.Property(touch.mode))">Conditional</animation>
         <usecontrolcoords>true</usecontrolcoords>
         <control type="group" id="421">
             <visible>!String.IsEmpty(Window.Property(nav.repeat))</visible>
