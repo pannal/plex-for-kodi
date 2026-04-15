@@ -748,7 +748,7 @@ class SeekPlayerHandler(BasePlayerHandler):
                     playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
                     got_player = True
                     currIdx = kodijsonrpc.rpc.Player.GetProperties(playerid=playerID, properties=['currentsubtitle'])[
-                        'currentsubtitle']['index']
+                        'currentsubtitle'].get('index', None)
                     if currIdx != self.player.video._current_subtitle_idx + self.subtitleStreamOffset:
                         util.LOG("Embedded Subtitle index was incorrect ({}), setting to: {}".
                                  format(currIdx, self.player.video._current_subtitle_idx + self.subtitleStreamOffset))
