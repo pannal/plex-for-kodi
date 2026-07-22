@@ -257,6 +257,10 @@ class Genre(MediaTag):
     ID = '1'
 
 
+class Rating(MediaTag):
+    TYPE = 'Rating'
+
+
 class Mood(MediaTag):
     TYPE = 'Mood'
     FILTER = 'mood'
