@@ -117,10 +117,10 @@
         </control>
 
         <control type="grouplist">
-            <visible>!String.IsEmpty(Window.Property(rating)) | !String.IsEmpty(Window.Property(rating2))</visible>
-            <posx>1560</posx>
+            <visible>!String.IsEmpty(Window.Property(rating))</visible>
+            <posx>1040</posx>
             <posy>{{ vscale(70) }}</posy>
-            <width>300</width>
+            <width>820</width>
             <height>{{ vscale(32) }}</height>
             <align>right</align>
             <itemgap>15</itemgap>
@@ -143,23 +143,25 @@
                 <textcolor>FFFFFFFF</textcolor>
                 <label>$INFO[Window.Property(rating)]</label>
             </control>
+            {% for i in range(2, 7) %}
             <control type="image">
-                <visible>!String.IsEmpty(Window.Property(rating2))</visible>
+                <visible>!String.IsEmpty(Window.Property(rating{{ i }}))</visible>
                 <posy>2</posy>
-                <width>40</width>
+                <width>63</width>
                 <height>{{ vscale(30) }}</height>
-                <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating2.image)]</texture>
+                <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Window.Property(rating{{ i }}.image)]</texture>
                 <aspectratio align="right">keep</aspectratio>
             </control>
             <control type="label">
-                <visible>!String.IsEmpty(Window.Property(rating2))</visible>
+                <visible>!String.IsEmpty(Window.Property(rating{{ i }}))</visible>
                 <width>auto</width>
                 <height>{{ vscale(30) }}</height>
                 <font>font12</font>
                 <align>left</align>
                 <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Window.Property(rating2)]</label>
+                <label>$INFO[Window.Property(rating{{ i }})]</label>
             </control>
+            {% endfor %}
         </control>
 
 

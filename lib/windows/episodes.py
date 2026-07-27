@@ -1512,6 +1512,10 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         mli.setProperty('writers',
                         writers and u'{0}{1}    {2}'.format(directors and '    ' or '', writersLabel, writers) or '')
 
+        # Re-populate from the full (reloaded) object so all available ratings
+        # show; the list-build pass only has the partial leaf (single rating).
+        self.populateRatings(video, mli, hide_ratings=self.hideSpoilers(video) and self.noRatings)
+
     def setItemAudioAndSubtitleInfo(self, video, mli):
         if util.getSetting('use_external_audio', False) and hasattr(type(video), 'discoverExternalAudioStreams'):
             video.discoverExternalAudioStreams()

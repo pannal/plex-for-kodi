@@ -1,14 +1,20 @@
 # coding=utf-8
 from lib import util
+from lib import ratings as ratings_logic
+
+# Upper bound on rating slots we clear each render (must be >= the max the
+# preplay template loops over) so stale badges from a previous item never linger.
+MAX_SLOTS = 8
 
 
 class RatingsMixin(object):
     def populateRatings(self, video, ref, hide_ratings=False):
-        def sanitize(src):
-            return src.replace("themoviedb", "tmdb").replace('://', '/')
-
         setProperty = getattr(ref, "setProperty")
-        getattr(ref, "setProperties")(('rating.stars', 'rating', 'rating.image', 'rating2', 'rating2.image'), '')
+
+        clear_names = ('rating.stars', 'rating.count', 'rating', 'rating.image')
+        for i in range(2, MAX_SLOTS + 1):
+            clear_names += ('rating{0}'.format(i), 'rating{0}.image'.format(i))
+        getattr(ref, "setProperties")(clear_names, '')
 
         if video.userRating:
             stars = str(int(round((video.userRating.asFloat() / 10) * 5)))
@@ -24,23 +30,18 @@ class RatingsMixin(object):
                 "series" not in util.getSetting("show_ratings")):
             return
 
-        audienceRating = video.audienceRating
-
-        if video.rating or audienceRating:
-            if video.rating:
-                rating = video.rating
-                if video.ratingImage.startswith('rottentomatoes:'):
-                    rating = '{0}%'.format(int(rating.asFloat() * 10))
-
-                setProperty('rating', rating)
-                if video.ratingImage:
-                    setProperty('rating.image', 'script.plex/ratings/{0}.png'.format(sanitize(video.ratingImage)))
-            if audienceRating:
-                if video.audienceRatingImage.startswith('rottentomatoes:'):
-                    audienceRating = '{0}%'.format(int(audienceRating.asFloat() * 10))
-                setProperty('rating2', audienceRating)
-                if video.audienceRatingImage:
-                    setProperty('rating2.image',
-                                'script.plex/ratings/{0}.png'.format(sanitize(video.audienceRatingImage)))
+        # Prefer the full <Rating> list; fall back to the two flattened
+        # attributes for items/servers that don't provide it.
+        entries = []
+        video_ratings = getattr(video, "ratings", None)
+        if video_ratings:
+            for r in video_ratings:
+                entries.append((str(r.image or ''), r.value))
         else:
-            setProperty('rating', video.rating)
+            if video.rating:
+                entries.append((str(video.ratingImage or ''), video.rating))
+            if video.audienceRating:
+                entries.append((str(video.audienceRatingImage or ''), video.audienceRating))
+
+        for name, value in ratings_logic.build_rating_properties(entries):
+            setProperty(name, value)
