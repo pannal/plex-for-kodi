@@ -2406,6 +2406,36 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     pass
                 return self.doUpdate()
 
+    def deeplink_responder(self):
+        if not util.getGlobalProperty("deeplink_play"):
+            return
+        data = util.getGlobalProperty("deeplink_play", consume=True)
+        if xbmc.Player().isPlayingVideo():
+            return
+
+        kwargs = json.loads(data)
+        if time.time() - kwargs.get("ts", 0) > 60:
+            return
+
+        key = kwargs.get("rating_key")
+        uuid = kwargs.get("server_uuid")
+        start_over = kwargs.get("start_over")
+
+        util.LOG("Home: Deep-link play requested for: {0}".format(key))
+
+        server = plexapp.SERVERMANAGER.selectedServer
+        if uuid:
+            server = plexapp.SERVERMANAGER.getServer(uuid)
+            if not server:
+                return
+
+        try:
+            command = opener.open(key, auto_play=True, server=server, start_over=start_over, dialog_props=self.carriedProps)
+            if command == "NODATA":
+                raise util.NoDataException
+        except util.NoDataException:
+            util.ERROR("No data - deleted or server disconnected?", notify=True, time_ms=5000)
+
     def tick(self):
         if self._shuttingDown:
             util.DEBUG_LOG("Home: Not ticking, shutdown flag set")
@@ -2414,6 +2444,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if self.movingSection:
             util.DEBUG_LOG("Home: Not ticking, currently moving a section")
             return
+
+        self.deeplink_responder()
 
         if self.is_active and self.service_responder():
             util.DEBUG_LOG("Home: Not ticking, service responder signalled positive exit")
