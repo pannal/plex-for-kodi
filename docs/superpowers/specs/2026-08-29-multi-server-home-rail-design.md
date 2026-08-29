@@ -55,10 +55,13 @@ The Plex API relies on the section's real `key` (e.g. `/library/sections/{key}/a
 
 Stored in a new **global per-account** addon setting `home.foreign_libraries.<account>` as a JSON array. Independent of which server is selected.
 
-**Runtime section identity**: new property `sectionId` on sections in `home.py`, separate from `key`:
-- Real section: `(server_uuid, section.key)`; stable serialized string `"{server_name}@{uuid}:{key}"` for dict/state use.
-- Virtual sections (Home/Watchlist/Playlists): distinct sentinel identities.
-- `PinnedTypeSection`: identity = `f"{sectionId}#{item_type}"` (mirrors `pinnedSectionKey`, `home.py:410`).
+**Runtime section identity**: a single new string property `sectionId` on sections in `home.py`, separate from `key`. It is **stable and uuid-based** — the display label `server_name` is NOT part of the identity (it can change); `server_name` is used only for rendering the suffixed title.
+- Real section: `sectionId = "{uuid}:{key}"` (e.g. `"a1b2...:1"`).
+- Placeholder (offline) section: same `sectionId` from the config record's `server_uuid` + `section_key`, even though `server=None`.
+- Virtual sections (Home/Watchlist/Playlists): distinct sentinel identities (`"home"`, `"watchlist"`, `"playlists"`), matching their scalar `key`.
+- `PinnedTypeSection`: `sectionId = f"{sectionId}#{item_type}"` (mirrors `pinnedSectionKey`, `home.py:410`).
+
+`section.key` and the wire format are untouched; `sectionId` is purely the in-memory/dict key and the sortable identity.
 
 **Pinnable**: only library-type sections (`movie`/`show`/`artist`). Home/Watchlist/Playlists are never pinnable.
 
@@ -66,15 +69,18 @@ Stored in a new **global per-account** addon setting `home.foreign_libraries.<ac
 
 1. Build base list exactly as today from `selectedServer.library.sections()` (`home.py:3901`) + Home/Watchlist/Playlists/pinned-type.
 2. **Append pinned foreign libraries** from `home.foreign_libraries.<account>`:
-   - Resolve `(server_uuid, section_key)` → live `LibrarySection` (foreign flag + suffixed title) when server known + section queryable.
-   - Otherwise render a **placeholder section** (same `sectionId`, suffixed title, `offline=True`, `server=None`) so it stays visible-but-marked. Reachability transitions re-resolve on `serverRefresh()` rebuild.
+   - Resolve `(server_uuid, section_key)` → live `LibrarySection` (foreign flag + suffixed title) when server known + section queryable. Resolution calls `server.library.sections()` and matches by `section.key` (no single-section-by-key helper exists; `plexlibrary.py:22-37`). Matches refresh the denormalized `section_title`.
+   - Otherwise render a **placeholder section** (same `sectionId`, suffixed title, `offline=True`, `server=None`) so it stays visible-but-marked. Reachability transitions re-run the resolve step on `serverRefresh()` rebuild.
 3. **Ordering**: own libraries keep the existing per-selected-server `librarySettings["order"]` sort (`home.py:3925`). Foreign items render in the **same rail, not as a separate grouped section**, appended after the selected server's libraries, ordered by their position in the global `home.foreign_libraries.<account>` array (so their relative order is consistent across selected servers). Foreign items are movable within the foreign block via the existing "Move" flow; arbitrary ordering interleaved with own libraries is out of scope because own-lib order is per-server while foreign order is global (would contradict global consistency).
 
-**Collision-safe runtime state** — repoint `section.key` → `sectionId` in `home.py`:
-- `self.sectionHubs[sectionId] = hubs` (`home.py:3763`)
-- `self.allSections[sectionId] = section` (`home.py:3908`)
-- `self.wantedSections` entries → `sectionId` (`home.py:3915`)
-- `self.lastSection` / focus comparisons → `sectionId` (`home.py:3724`, `3739`)
+**Collision-safe runtime state — migrate all section-keyed state to `sectionId`.** This is a **cross-cutting rename across the whole home window**, not a 4-line change. The following in `home.py` are keyed by bare `section.key` (or `str(section.key)`) today and MUST move to `sectionId` so foreign sections (with colliding keys like two servers' `"1"`) never clobber each other:
+- `self.sectionHubs[...]` — read/write at `858, 1325, 1569, 1733, 1804, 1977, 2006, 2011, 2206, 2244, 2425, 2853, 2880, 3754, 3763, 3812, 4087, 4131, 2880`.
+- `self.allSections[...]` — built at `3908, 3910`, read at `1754, 2117-2137, 2165, 2172, 3951-3953, 4167`.
+- `self.wantedSections` — built `3907, 3915`, consumed `3955, 2137, 2180`.
+- `self.lastSection` comparisons/focus — `858, 2218, 2425, 3724, 3739`.
+- `getRequiredSourceSections(...)` / `getCrossSectionSources(...)` produce and consume these keys (`1913, 1921, 2001, 2149, 2218`) and must be made `sectionId`-based so Home cross-section hubs merge foreign libraries correctly despite key collisions.
+
+The migration is mechanical (all keys derive from section objects; introduce `sectionId` accessors and replace `.key` with `.sectionId` at these sites), confined to `home.py`, and leaves the wire format and `section.key` untouched. Every function that accepts a section key for hub/merge lookups takes `sectionId` from then on.
 
 **Hub tasks**: unchanged — foreign sections get a `SectionHubsTask` (`home.py:3955`) and pinned foreign collections views a `PinnedTypeHubsTask` (`home.py:3960`); both already route via `section.server`.
 
@@ -89,7 +95,7 @@ Stored in a new **global per-account** addon setting `home.foreign_libraries.<ac
 
 **Persistence/lifecycle**
 - Read/written like `librarySettings` (`home.py:965-982` pattern): loaded at init, JSON to the setting on change (pin/unpin/order).
-- Denormalized `server_name`/`section_title` allow rendering when a server is unreachable at startup; live resolution refreshes them when reachable.
+- Denormalized `server_name`/`section_title` allow rendering when a server is unreachable at startup; live resolution refreshes `section_title` when reachable (via `server.library.sections()` match by `section.key`).
 - Keyed by account; lazy-prune records whose server uuid is no longer known on load.
 
 **Edge cases**
@@ -101,11 +107,12 @@ Stored in a new **global per-account** addon setting `home.foreign_libraries.<ac
 - **Playlists**: unchanged, selected-server bound (out of scope).
 
 **Testing** (pytest, `tests/`, `pytest.ini`)
-- `sectionId` generation incl. the collision case (two servers, same key → distinct identities) and pinned-type suffix.
+- `sectionId` generation incl. the collision case (two servers, same key → distinct identities) and pinned-type suffix; placeholder keeps identity from config uuid despite `server=None`.
 - Config add/remove/dedupe.
 - `showSections` foreign-append and placeholder-vs-real resolution (mock server manager).
 - Foreign-array ordered rendering (appended after own libs, in array order).
 - Offline placeholder rendering path.
+- **Cross-section hub merge with foreign libs** — the riskiest regression: replicate two servers both having section key `"1"`, verify Home cross-section hubs merge both without clobbering (covers the `allSections`/`sectionHubs`/`wantedSections`/`getRequiredSourceSections` migration).
 - Manual checklist (symlinked addon on Kodi): server-switch pin flow, unpin, offline server, same-name collisions, watchlist/home cross hubs unaffected.
 
 ## Out of scope
