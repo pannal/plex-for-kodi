@@ -63,6 +63,8 @@ Stored in a new **global per-account** addon setting `home.foreign_libraries.<ac
 
 `section.key` and the wire format are untouched; `sectionId` is purely the in-memory/dict key and the sortable identity.
 
+**Identity equality**: because `lastSection` and many rail comparisons use `==`/`is` against section objects, and a placeholder and its later-resolved live section are distinct objects with the same `sectionId`, **equality for identity purposes is defined by `sectionId`**, not object identity. Concretely: every comparison that today keys off `section.key` (focus, `lastSection`, dedupe, cross-section source matching) is rewritten to compare `sectionId`. Where a section object must be looked up from an identity, resolve through `allSections`/the foreign map by `sectionId`. This is what lets an offline placeholder drop in for a live section without breaking focus or `lastSection` across a `serverRefresh()`.
+
 **Pinnable**: only library-type sections (`movie`/`show`/`artist`). Home/Watchlist/Playlists are never pinnable.
 
 ## 2. Home-rail assembly (`showSections`, `home.py:3872`)
@@ -73,16 +75,26 @@ Stored in a new **global per-account** addon setting `home.foreign_libraries.<ac
    - Otherwise render a **placeholder section** (same `sectionId`, suffixed title, `offline=True`, `server=None`) so it stays visible-but-marked. Reachability transitions re-run the resolve step on `serverRefresh()` rebuild.
 3. **Ordering**: own libraries keep the existing per-selected-server `librarySettings["order"]` sort (`home.py:3925`). Foreign items render in the **same rail, not as a separate grouped section**, appended after the selected server's libraries, ordered by their position in the global `home.foreign_libraries.<account>` array (so their relative order is consistent across selected servers). Foreign items are movable within the foreign block via the existing "Move" flow; arbitrary ordering interleaved with own libraries is out of scope because own-lib order is per-server while foreign order is global (would contradict global consistency).
 
-**Collision-safe runtime state — migrate all section-keyed state to `sectionId`.** This is a **cross-cutting rename across the whole home window**, not a 4-line change. The following in `home.py` are keyed by bare `section.key` (or `str(section.key)`) today and MUST move to `sectionId` so foreign sections (with colliding keys like two servers' `"1"`) never clobber each other:
+**Foreign entries bypass the selected server's `librarySettings`.** The own-library loop in `showSections` hides any section whose bare key is present in the selected server's `librarySettings` with `show=false` (`home.py:3911`) and applies that bucket's `order` sort (`home.py:3925`). Foreign libraries are appended **after** that loop and are **never** evaluated against the selected server's `librarySettings` — neither for show/hide nor for order. They do not participate in, and do not write to, the per-selected-server `librarySettings` order/show buckets. (Their own persist / hide-state lives in the global foreign record; see §4.) This prevents a foreign section that shares a numeric key with a hidden or reordered own section from being wrongly hidden or re-sorted.
+
+**Collision-safe state — migrate ALL section-keyed state to `sectionId`.** This is a **cross-cutting rename across the whole home window**, not a 4-line change. Every in-memory structure *and every persisted setting* that is keyed by bare `section.key` (or `str(section.key)`) today MUST move to `sectionId` so foreign sections (with colliding keys like two servers' `"1"`) never clobber each other.
+
+In-memory state in `home.py`:
 - `self.sectionHubs[...]` — read/write at `858, 1325, 1569, 1733, 1804, 1977, 2006, 2011, 2206, 2244, 2425, 2853, 2880, 3754, 3763, 3812, 4087, 4131, 2880`.
 - `self.allSections[...]` — built at `3908, 3910`, read at `1754, 2117-2137, 2165, 2172, 3951-3953, 4167`.
 - `self.wantedSections` — built `3907, 3915`, consumed `3955, 2137, 2180`.
 - `self.lastSection` comparisons/focus — `858, 2218, 2425, 3724, 3739`.
 - `getRequiredSourceSections(...)` / `getCrossSectionSources(...)` produce and consume these keys (`1913, 1921, 2001, 2149, 2218`) and must be made `sectionId`-based so Home cross-section hubs merge foreign libraries correctly despite key collisions.
 
+Persisted settings (also keyed by bare `section.key` today, in `home.py:964-1012`):
+- `self.librarySettings` — loaded/saved via `home.settings.{server[-8:]}.{account}`, consumed for show/hide (`3911`) and order (`3925-3938`).
+- `self.hubSettings` — loaded/saved via `hub.settings.{server[-8:]}.{account}`, consumed by `getCombinedHubsForSection`/`getRequiredSourceSections`/`getEnabledHubsForSection` and the hub-management dialog (`1484-1539`, `1971-2040`).
+
+Foreign libraries **must** be keyed by `sectionId` in `hubSettings` whenever they hold custom hub config, since their bare keys collide with own-server keys inside the same per-selected-server bucket. Foreign order/show state does **not** live in the selected server's `librarySettings` at all — it lives in the global foreign record (§2 bypass), so no foreign `librarySettings` entry is written. Own-server sections keep the existing key scheme OR move to `sectionId` — the spec does not require migrating the own-key storage format, only making the stored keys collision-safe for foreign entries. However, the `find_in_section_hubs` string/int mismatch shim (`home.py:2003-2012`) is a pre-existing workaround for inconsistent `section.key` typing; the uuid-based `sectionId` keying makes it obsolete, so it is **removed** once keying is migrated (see §4, the cross-section merge test below asserts this).
+
 The migration is mechanical (all keys derive from section objects; introduce `sectionId` accessors and replace `.key` with `.sectionId` at these sites), confined to `home.py`, and leaves the wire format and `section.key` untouched. Every function that accepts a section key for hub/merge lookups takes `sectionId` from then on.
 
-**Hub tasks**: unchanged — foreign sections get a `SectionHubsTask` (`home.py:3955`) and pinned foreign collections views a `PinnedTypeHubsTask` (`home.py:3960`); both already route via `section.server`.
+**Hub tasks**: unchanged in fetching — foreign sections get a `SectionHubsTask` (`home.py:3955`) and pinned foreign collections views a `PinnedTypeHubsTask` (`home.py:3960`); both already route via `section.server`. One guard is required: `SectionHubsTask` bails when `self.section.server` is `None` (`home.py:82`), so **offline placeholders must never be scheduled for hub fetch** — they render with no hubs until the server is reachable. Hub *management* (the custom `hubSettings` dialog, Move/Disable/cross-section) applies to foreign sections via the `sectionId`-keyed `hubSettings`, so it is in scope and collision-safe (§2, §4) rather than a separate path.
 
 ## 3. Context menu & visual flagging (`sectionMenu`, `home.py:3101`)
 
@@ -94,16 +106,18 @@ The migration is mechanical (all keys derive from section objects; introduce `se
 ## 4. Persistence, edge cases, testing
 
 **Persistence/lifecycle**
-- Read/written like `librarySettings` (`home.py:965-982` pattern): loaded at init, JSON to the setting on change (pin/unpin/order).
+- Read/written like `librarySettings` (`home.py:965-982` pattern): loaded at init, JSON to the setting on change (pin/unpin/order). Own-server persist stays in the per-selected-server `home.settings.*`/`hub.settings.*` buckets. Foreign library **hub config** (when a user edits it) is stored in the selected server's `hub.settings.*` bucket **keyed by `sectionId`**, so it never collides with own-server keys in the same bucket; foreign order/show never touches `librarySettings` (it lives in the global foreign record, §2 bypass).
 - Denormalized `server_name`/`section_title` allow rendering when a server is unreachable at startup; live resolution refreshes `section_title` when reachable (via `server.library.sections()` match by `section.key`).
-- Keyed by account; lazy-prune records whose server uuid is no longer known on load.
+- **Setting name & account scope**: stored under `home.foreign_libraries.<account>` (global per-account, independent of selected server). Use the same account identifier format as the existing `home.settings.*`/`hub.settings.*` keys (i.e. match `ACCOUNT.ID` usage in `loadLibrarySettings`/`loadHubSettings`, `home.py:965,982`) so the account scope stays consistent with the rest of the addon. Lazy-prune records whose server uuid is no longer known on load.
+- **Placeholder → live transition on `serverRefresh()`**: when a previously-offline server becomes reachable, the resolve step re-runs and replaces each placeholder with its live `LibrarySection` (same `sectionId`). Because identity and all rail lookups are by `sectionId` (§1 identity-equality), the swap must remap the rail item's `data_source` in place and re-settle `lastSection`/focus by `sectionId` — not by object identity — so focus and the open section carry across the transition without a visible jump. If the server drops offline, the reverse swap renders the placeholder (kept in rail, marked unreachable).
 
 **Edge cases**
 - **Server unshared/removed**: resolves to placeholder (`offline=True`); user can unpin; not silently dropped on transient loss.
 - **Foreign hidden/hide**: hiding a foreign library = unpin (bypasses own-server hide logic).
 - **Pinned foreign collections/type-views**: work via `PinnedTypeSection` delegation + server-routed task — no new code beyond identity.
 - **Pinning an own-base entry**: dedupe by `sectionId`; no-op (already in rail). Unpin only affects foreign records.
-- **Cross-section hubs** (`hasCrossSectionHubs`): keyed by identity so foreign libs merge into the Home cross-section hub correctly despite key collisions.
+- **Cross-section hubs** (`hasCrossSectionHubs`): keyed by identity so foreign libs merge into the Home cross-section hub correctly despite key collisions. Foreign hub configuration lives in the `sectionId`-keyed `hubSettings` in the *currently selected* server's bucket — because the bucket is per-selected-server, a foreign library's custom hub config is scoped to whichever own server is selected while it is edited. This matches the existing per-server hubSettings model and is the documented behavior, not a bug.
+- **Foreign hidden-state vs selected-server `librarySettings`**: a foreign section is never hidden or re-sorted by the selected server's `librarySettings` (§2 bypass). Its hidden/unreached state is carried by the global foreign record (unpin = remove). A foreign section sharing a numeric key with a hidden own section stays visible.
 - **Playlists**: unchanged, selected-server bound (out of scope).
 
 **Testing** (pytest, `tests/`, `pytest.ini`)
@@ -113,7 +127,10 @@ The migration is mechanical (all keys derive from section objects; introduce `se
 - Foreign-array ordered rendering (appended after own libs, in array order).
 - Offline placeholder rendering path.
 - **Cross-section hub merge with foreign libs** — the riskiest regression: replicate two servers both having section key `"1"`, verify Home cross-section hubs merge both without clobbering (covers the `allSections`/`sectionHubs`/`wantedSections`/`getRequiredSourceSections` migration).
-- Manual checklist (symlinked addon on Kodi): server-switch pin flow, unpin, offline server, same-name collisions, watchlist/home cross hubs unaffected.
+- **Persisted settings keyed by `sectionId`**: foreign lib with a key colliding with an own lib stores/loads `hubSettings` under a distinct `sectionId` key without clobbering; two foreign libs on different servers with the same key also stay distinct; foreign show/order state never appears in the selected server's `librarySettings`.
+- **`find_in_section_hubs` shim removal**: after keying is migrated, assert the string/int mismatch shim (`home.py:2003-2012`) is no longer on the merge path (all lookups resolve by `sectionId`).
+- **Placeholder↔live transition**: same `sectionId` placeholder and live section resolve to the same rail identity and preserve `lastSection`/focus across a `serverRefresh()` swap; placeholder is never scheduled for hub fetch.
+- Manual checklist (symlinked addon on Kodi): server-switch pin flow, unpin, offline server (placeholder stays, gentle message), **foreign server returning online (placeholder→live in-place swap without focus jump)**, same-name collisions, **cross-server same-key sections with distinct hub settings / cross-section hubs**, watchlist/home cross hubs unaffected.
 
 ## Out of scope
 - Multiple Plex accounts.
