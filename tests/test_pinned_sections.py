@@ -518,3 +518,20 @@ class ForeignResolutionTest(KodiTestCase):
             section_title="Movies")
         pin = PinnedTypeSection(ph, "collection")
         self.assertEqual("ZZZZ:9#collection", sectionId(pin))
+
+
+class ForeignPlaceholderHubGuardTest(KodiTestCase):
+    def setUp(self):
+        super(ForeignPlaceholderHubGuardTest, self).setUp()
+        self.win = homeWindow({})
+        # a stripped HomeWindow has no hub controls to clear and no live window
+        # behind it; the busy wrapper's teardown calls setProperty('busy', '')
+        self.win.hubControls = []
+        self.win.setProperty = lambda key, value: None
+
+    def test_placeholder_never_fetches_hubs(self):
+        ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="ZZZZ", section_key="9", server_name="Away",
+            section_title="Movies")
+        self.win._showHubs(ph)
+

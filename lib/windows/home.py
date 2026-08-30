@@ -4215,6 +4215,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not update:
             self.clearHubs()
 
+        if getattr(section, 'offline', False):
+            # foreign placeholder: server is None, no hubs to fetch
+            return
+
         if not section.server.DEFER_HUBS and not plexapp.SERVERMANAGER.selectedServer.hasHubs():
             return
 
