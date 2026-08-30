@@ -21,7 +21,7 @@ from kodienv import ENV
 
 ENV.abort_requested = True
 from lib.windows import home, library  # noqa: E402
-from lib.windows.home import HomeWindow, PinnedTypeSection  # noqa: E402
+from lib.windows.home import HomeWindow, PinnedTypeSection, sectionId  # noqa: E402
 from plexnet.plexlibrary import CollectionsHub  # noqa: E402
 from lib.windows.library import LibrarySettings, realSection  # noqa: E402
 
@@ -325,3 +325,38 @@ class LibrarySettingsPerItemTypeTest(KodiTestCase):
         library.setItemType("movie")
         LibrarySettings(self.section)
         self.assertEqual("collection", library.ITEM_TYPE)
+
+
+class SectionIdentityTest(KodiTestCase):
+    def setUp(self):
+        super(SectionIdentityTest, self).setUp()
+        self.section = FakeSection()
+
+    def test_real_section_identity_is_uuid_colon_key(self):
+        server = FakeServer()
+        server.uuid = "AAAABBBB"
+        section = FakeSection(key="1", title="Movies")
+        section.server = server
+        self.assertEqual("AAAABBBB:1", sectionId(section))
+        # two servers, same key -> distinct identities
+        other = FakeSection(key="1", title="Foreign Movies")
+        other.server = FakeServer()  # uuid "SERVERUUID"
+        self.assertNotEqual(sectionId(section), sectionId(other))
+
+    def test_pinned_type_section_derives_identity_from_its_library(self):
+        pin = PinnedTypeSection(self.section, "collection")
+        self.assertEqual("SERVERUUID:3#collection", sectionId(pin))
+
+    def test_home_and_playlists_use_sentinels(self):
+        self.assertEqual("home", sectionId(home.HomeSection()))
+        self.assertEqual("playlists", sectionId(home.PlaylistsSection()))
+
+    def test_watchlist_uses_a_sentinel_despite_having_a_real_key(self):
+        section = FakeSection(key="/library/sections/watchlist", title="Watchlist")
+        section.ID = "watchlist"
+        self.assertEqual("watchlist", sectionId(section))
+
+    def test_a_section_with_an_explicit_section_id_returns_it_verbatim(self):
+        section = FakeSection(key="9", title="Movies")
+        section.sectionId = "ZZZZ:9"
+        self.assertEqual("ZZZZ:9", sectionId(section))

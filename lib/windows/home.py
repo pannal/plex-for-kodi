@@ -411,6 +411,27 @@ def pinnedSectionKey(section_key, item_type):
     return '{0}#{1}'.format(section_key, item_type)
 
 
+def sectionId(section):
+    """Collision-safe identity for a rail section, separate from its wire `key`.
+
+    Real sections are keyed by owning-server uuid + section key, so two servers with
+    the same numeric key (e.g. both '1') never collide in the same rail. Virtual
+    sections get fixed sentinels. A foreign placeholder carries its identity verbatim.
+    """
+    stored = getattr(section, 'sectionId', None)
+    if stored:
+        return stored
+    if isinstance(section, PinnedTypeSection):
+        return '{0}#{1}'.format(sectionId(section.librarySection), section.itemType)
+    if section.key is None:
+        return 'home'
+    if getattr(section, 'key', None) == 'playlists':
+        return 'playlists'
+    if getattr(section, 'ID', None) == 'watchlist':
+        return 'watchlist'
+    return '{0}:{1}'.format(section.server.uuid, section.key)
+
+
 class ServerListItem(kodigui.ManagedListItem):
     uuid = None
 
