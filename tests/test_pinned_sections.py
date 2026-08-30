@@ -569,6 +569,7 @@ class ForeignRailSectionsTest(KodiTestCase):
         self.assertEqual(1, len(sections))
         self.assertFalse(sections[0].offline)
         self.assertEqual("Live Movies - Away", sections[0].title)
+        self.assertTrue(getattr(sections[0], 'is_foreign', False))
 
     def test_record_for_the_selected_server_is_skipped(self):
         # the selected server's own libraries are already on the rail
@@ -582,4 +583,13 @@ class ForeignRailSectionsTest(KodiTestCase):
         sections = self.win.foreignRailSections(manager=manager,
                                                 selected_server_uuid="SERVERUUID")
         self.assertEqual([], sections)
+
+
+class ForeignPlaceholderRenderAttrsTest(KodiTestCase):
+    def test_placeholder_exposes_mapping_attrs(self):
+        ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="ZZZZ", section_key="9", server_name="Away",
+            section_title="Movies")
+        self.assertFalse(getattr(ph, 'mappingBroken', True))
+        self.assertFalse(getattr(ph, 'isMapped', True))
 

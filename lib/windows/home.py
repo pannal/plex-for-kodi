@@ -443,6 +443,8 @@ class ForeignLibrarySection(object):
     server = None
     key = None
     type = None
+    isMapped = False
+    mappingBroken = False
 
     def __init__(self, server_uuid, section_key, server_name, section_title):
         self.server_uuid = server_uuid
@@ -4142,7 +4144,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             elif isinstance(section, PinnedTypeSection):
                 # no icon of its own; it keeps the library's type icon
                 mli.setProperty('is.pinned.type', section.itemType)
-            elif getattr(section, 'is_foreign', False):
+            elif isinstance(section, ForeignLibrarySection) or getattr(section, 'is_foreign', None):
                 mli.setProperty('is.foreign', '1')
             if pmm.mapping:
                 # a mapping that doesn't work is an error rather than decoration, so it shows
