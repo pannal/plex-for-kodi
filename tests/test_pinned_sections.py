@@ -464,6 +464,7 @@ class FakeManager(object):
 class FakeResolvableSection(object):
     key = "1"
     title = "Live Movies"
+    offline = False
 
 
 class ForeignResolutionTest(KodiTestCase):
@@ -534,4 +535,51 @@ class ForeignPlaceholderHubGuardTest(KodiTestCase):
             server_uuid="ZZZZ", section_key="9", server_name="Away",
             section_title="Movies")
         self.win._showHubs(ph)
+
+
+class ForeignRailSectionsTest(KodiTestCase):
+    def setUp(self):
+        super(ForeignRailSectionsTest, self).setUp()
+        self.win = homeWindow({})
+        self.win._foreignLibraries = [
+            {"server_uuid": "AWAY", "section_key": "1",
+             "server_name": "Away", "section_title": "Films"},
+        ]
+
+    def test_unknown_server_yields_a_placeholder(self):
+        manager = FakeManager([])
+        sections = self.win.foreignRailSections(manager=manager,
+                                                selected_server_uuid="LOCAL")
+        self.assertEqual(1, len(sections))
+        ph = sections[0]
+        self.assertTrue(ph.offline)
+        self.assertEqual("Films - Away", ph.title)
+
+    def test_reachable_server_yields_a_live_section_with_suffixed_title(self):
+        live = FakeResolvableSection()
+        class FakeLib(object):
+            def sections(self):
+                return [live]
+        server = FakeServer()
+        server.uuid = "AWAY"  # match the record's foreign server
+        server.library = FakeLib()
+        manager = FakeManager([server])
+        sections = self.win.foreignRailSections(manager=manager,
+                                                selected_server_uuid="LOCAL")
+        self.assertEqual(1, len(sections))
+        self.assertFalse(sections[0].offline)
+        self.assertEqual("Live Movies - Away", sections[0].title)
+
+    def test_record_for_the_selected_server_is_skipped(self):
+        # the selected server's own libraries are already on the rail
+        self.win._foreignLibraries[0]["server_uuid"] = "SERVERUUID"
+        server = FakeServer()
+        class FakeLib(object):
+            def sections(self):
+                return []
+        server.library = FakeLib()
+        manager = FakeManager([server])
+        sections = self.win.foreignRailSections(manager=manager,
+                                                selected_server_uuid="SERVERUUID")
+        self.assertEqual([], sections)
 

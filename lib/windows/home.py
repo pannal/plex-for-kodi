@@ -1106,6 +1106,29 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             'section_title': record.get('section_title'),
         }), True
 
+    def foreignRailSections(self, manager=None, selected_server_uuid=None):
+        """Resolve the foreign-library config into rail-appendable sections.
+
+        Live sections get their server suffix applied to the display title, matching
+        the placeholder's suffixed title. Records for the currently selected server
+        are skipped (they're already on the rail as normal libraries). Every returned
+        section is marked is_foreign so the render loop can tag it for the UI.
+        """
+        if selected_server_uuid is None:
+            sel = plexapp.SERVERMANAGER.selectedServer
+            selected_server_uuid = sel.uuid if sel else None
+        sections = []
+        for record in self.foreignLibraries():
+            if record.get('server_uuid') == selected_server_uuid:
+                continue
+            section, offline = self.resolveForeignLibrary(record, manager=manager)
+            section.is_foreign = True
+            if not offline:
+                section.title = u'{0} - {1}'.format(
+                    section.title, record.get('server_name'))
+            sections.append(section)
+        return sections
+
     @staticmethod
     def _findServerByUuid(manager, uuid):
         if manager is None or not uuid:
@@ -4099,6 +4122,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                            and not s.server.DEFER_HUBS]
             backgroundthread.BGThreader.addTasks(self.tasks)
 
+        # foreign libraries: appended after local sorting, so they end up at the end of
+        # the rail; added here (after hub-task scheduling) so they never enter
+        # wantedSections/allSections/the pinned expansion or the hub-task lists - their
+        # hubs aren't fetched this phase
+        sections = sections + self.foreignRailSections()
+
         show_pm_indicator = util.getSetting('path_mapping_indicators')
         for section in sections:
             mli = kodigui.ManagedListItem(section.title,
@@ -4113,6 +4142,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             elif isinstance(section, PinnedTypeSection):
                 # no icon of its own; it keeps the library's type icon
                 mli.setProperty('is.pinned.type', section.itemType)
+            elif getattr(section, 'is_foreign', False):
+                mli.setProperty('is.foreign', '1')
             if pmm.mapping:
                 # a mapping that doesn't work is an error rather than decoration, so it shows
                 # even when the indicator setting is off
