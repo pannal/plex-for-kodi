@@ -1156,6 +1156,19 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return getattr(section, 'key', None)  # virtual: keep existing scalar key
         return sid  # real + pinned-type + foreign placeholder
 
+    def scheduleForeignHubFetches(self, sections):
+        """Schedule hub fetch for live foreign sections; offline placeholders never fetch."""
+        if not plexapp.SERVERMANAGER.selectedServer.hasHubs():
+            # no hub pipeline on servers without hubs; nothing to schedule
+            return
+        tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections)
+                 for s in sections
+                 if not getattr(s, 'offline', False) and s.server
+                 and not getattr(s.server, 'DEFER_HUBS', False)]
+        self.tasks += tasks
+        if tasks:
+            backgroundthread.BGThreader.addTasks(tasks)
+
     @staticmethod
     def _findServerByUuid(manager, uuid):
         if manager is None or not uuid:
@@ -4172,10 +4185,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             backgroundthread.BGThreader.addTasks(self.tasks)
 
         # foreign libraries: appended after local sorting, so they end up at the end of
-        # the rail; added here (after hub-task scheduling) so they never enter
-        # wantedSections/allSections/the pinned expansion or the hub-task lists - their
-        # hubs aren't fetched this phase
-        sections = sections + self.foreignRailSections()
+        # the rail; live foreign sections now have their hubs fetched via
+        # scheduleForeignHubFetches; offline placeholders are skipped there.
+        foreign_sections = self.foreignRailSections()
+        sections = sections + foreign_sections
+        self.scheduleForeignHubFetches(foreign_sections)
 
         show_pm_indicator = util.getSetting('path_mapping_indicators')
         for section in sections:

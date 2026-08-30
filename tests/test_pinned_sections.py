@@ -685,3 +685,34 @@ class SectionHubsCollisionTest(KodiTestCase):
         self.assertEqual(win.sectionHubs[win.cacheKeyForSection(real)][0].hubIdentifier, "a")
         self.assertEqual(win.sectionHubs[win.cacheKeyForSection(foreign)][0].hubIdentifier, "b")
 
+
+class ForeignHubSchedulingTest(KodiTestCase):
+    def test_live_foreign_section_gets_hub_task_but_offline_placeholder_does_not(self):
+        from plexnet import plexapp as _plexapp
+        from lib import backgroundthread as _BG
+
+        win = homeWindow({})
+        live = FakeSection(key="1", server_uuid="ZZZZ")
+        live.is_foreign = True
+        offline = home.ForeignLibrarySection.placeholder(
+            server_uuid="WW", section_key="2", server_name="Away", section_title="TV")
+
+        # stub the framework dependencies the helper touches
+        _fake_server = type("FS", (), {"hasHubs": lambda self: True, "uuid": "ZZZZ"})()
+        _orig_sm = getattr(_plexapp, "SERVERMANAGER", None)
+        _plexapp.SERVERMANAGER = type("SM", (), {"selectedServer": _fake_server})()
+        _orig_add = _BG.BGThreader.addTasks
+        _BG.BGThreader.addTasks = lambda tasks: None
+
+        try:
+            win.tasks = []
+            win.wantedSections = None
+            win.scheduleForeignHubFetches([live, offline])
+            scheduled = [t.section for t in win.tasks if hasattr(t, "section")]
+            self.assertIn(live, scheduled)
+            self.assertNotIn(offline, scheduled)
+        finally:
+            _BG.BGThreader.addTasks = _orig_add
+            if _orig_sm is not None:
+                _plexapp.SERVERMANAGER = _orig_sm
+
