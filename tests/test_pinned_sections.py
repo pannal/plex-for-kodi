@@ -418,3 +418,20 @@ class ForeignLibraryConfigTest(KodiTestCase):
         pruned = self.win.pruneForeignLibraries(known_servers={"AAA"})
         surviving = [r["server_uuid"] for r in pruned]
         self.assertEqual(["AAA"], surviving)
+
+    def test_unpin_with_only_one_filter_is_a_safe_noop(self):
+        # AND semantics: both server and key must match to remove
+        self.pin(server_uuid="AAA")
+        self.pin(server_uuid="BBB", name="Other")
+        self.win.unpinForeignLibrary(server_uuid="AAA")          # uuid only
+        self.win.unpinForeignLibrary(section_key="1")            # key only
+        self.assertEqual(2, len(self.win.foreignLibraries()))
+
+    def test_foreign_libraries_are_stored_under_the_account_scoped_key(self):
+        self.pin()
+        self.assertIn("home.foreign_libraries.TESTACCOUNT", ENV.settings)
+        stored = json.loads(ENV.settings["home.foreign_libraries.TESTACCOUNT"])
+        self.assertEqual([{
+            "server_uuid": "SERVERUUID", "section_key": "1",
+            "server_name": "Away", "section_title": "Movies",
+        }], stored)
