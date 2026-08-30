@@ -360,3 +360,61 @@ class SectionIdentityTest(KodiTestCase):
         section = FakeSection(key="9", title="Movies")
         section.sectionId = "ZZZZ:9"
         self.assertEqual("ZZZZ:9", sectionId(section))
+
+
+class ForeignLibraryConfigTest(KodiTestCase):
+    def setUp(self):
+        super(ForeignLibraryConfigTest, self).setUp()
+        from plexnet import plexapp as _plexapp
+        self._orig_account = _plexapp.ACCOUNT
+        _plexapp.ACCOUNT = type("FakeAccount", (), {"ID": "TESTACCOUNT"})()
+        self.win = homeWindow({})
+
+    def tearDown(self):
+        from plexnet import plexapp as _plexapp
+        _plexapp.ACCOUNT = self._orig_account
+        super(ForeignLibraryConfigTest, self).tearDown()
+
+    def pin(self, server_uuid="SERVERUUID", section_key="1", name="Away",
+            title="Movies", win=None):
+        # real saveForeignLibraries writes ENV.settings via util.setSetting;
+        # each KodiTestCase.setUp resets ENV so a test starts from a clean setting
+        win = win or self.win
+        win.pinForeignLibrary(server_uuid, section_key, name, title)
+        return win
+
+    def test_pin_creates_a_foreign_record(self):
+        self.pin()
+        self.assertEqual([{
+            "server_uuid": "SERVERUUID", "section_key": "1",
+            "server_name": "Away", "section_title": "Movies",
+        }], self.win.foreignLibraries())
+
+    def test_pinning_the_same_foreign_library_twice_dedupes(self):
+        self.pin()
+        self.pin()
+        self.assertEqual(1, len(self.win.foreignLibraries()))
+
+    def test_two_foreign_libraries_with_same_key_on_different_servers_both_stay(self):
+        self.pin(server_uuid="AAA")
+        self.pin(server_uuid="BBB", name="Other")
+        self.assertEqual(2, len(self.win.foreignLibraries()))
+
+    def test_unpin_removes_by_server_and_key(self):
+        self.pin(server_uuid="AAA")
+        self.pin(server_uuid="BBB", name="Other")
+        self.win.unpinForeignLibrary(server_uuid="AAA", section_key="1")
+        got = [r["server_uuid"] for r in self.win.foreignLibraries()]
+        self.assertEqual(["BBB"], got)
+
+    def test_unpin_for_a_missing_record_is_a_no_op(self):
+        self.pin(server_uuid="AAA")
+        self.win.unpinForeignLibrary(server_uuid="NOPE", section_key="1")
+        self.assertEqual(1, len(self.win.foreignLibraries()))
+
+    def test_prune_drops_records_for_unknown_servers(self):
+        self.pin(server_uuid="AAA")
+        self.pin(server_uuid="BBB", name="Other")
+        pruned = self.win.pruneForeignLibraries(known_servers={"AAA"})
+        surviving = [r["server_uuid"] for r in pruned]
+        self.assertEqual(["AAA"], surviving)

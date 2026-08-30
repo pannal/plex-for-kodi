@@ -999,6 +999,59 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                                                        plexapp.ACCOUNT.ID)
             util.setSetting(setting_key, json.dumps(self.librarySettings))
 
+    def foreignSettingKey(self):
+        # account scope identical to loadLibrarySettings/loadHubSettings (home.py:965,982)
+        return 'home.foreign_libraries.{}'.format(plexapp.ACCOUNT.ID)
+
+    def loadForeignLibraries(self):
+        self._foreignLibraries = []
+        try:
+            data = util.getSetting(self.foreignSettingKey(), '')
+            self._foreignLibraries = json.loads(data) if data else []
+        except ValueError:
+            util.ERROR()
+
+    def saveForeignLibraries(self):
+        util.setSetting(self.foreignSettingKey(), json.dumps(self._foreignLibraries))
+
+    def foreignLibraries(self):
+        if not getattr(self, '_foreignLibraries', None):
+            self.loadForeignLibraries()
+        return self._foreignLibraries
+
+    def pinForeignLibrary(self, server_uuid, section_key, server_name, section_title):
+        libs = self.foreignLibraries()
+        for record in libs:
+            if record.get('server_uuid') == server_uuid and record.get('section_key') == str(section_key):
+                record['server_name'] = server_name
+                record['section_title'] = section_title
+                break
+        else:
+            libs.append({
+                'server_uuid': server_uuid,
+                'section_key': str(section_key),
+                'server_name': server_name,
+                'section_title': section_title,
+            })
+        self.saveForeignLibraries()
+
+    def unpinForeignLibrary(self, server_uuid=None, section_key=None):
+        libs = self.foreignLibraries()
+        before = len(libs)
+        self._foreignLibraries = [
+            r for r in libs
+            if not ((server_uuid is not None and r.get('server_uuid') == server_uuid)
+                    and (section_key is not None and r.get('section_key') == str(section_key)))
+        ]
+        if len(self._foreignLibraries) != before:
+            self.saveForeignLibraries()
+
+    def pruneForeignLibraries(self, known_servers):
+        libs = self.foreignLibraries()
+        self._foreignLibraries = [r for r in libs if r.get('server_uuid') in known_servers]
+        self.saveForeignLibraries()
+        return self._foreignLibraries
+
     def loadHubSettings(self):
         setting_key = 'hub.settings.{}.{}'.format(plexapp.SERVERMANAGER.selectedServer.uuid[-8:], plexapp.ACCOUNT.ID)
         data = util.getSetting(setting_key, '')
