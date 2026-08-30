@@ -60,6 +60,7 @@ def homeWindow(library_settings):
     """A HomeWindow without Kodi behind it - only the pin bookkeeping is exercised."""
     win = HomeWindow.__new__(HomeWindow)
     win.librarySettings = library_settings
+    win.hubSettings = {}
     win.sectionHubs = {}
     return win
 
@@ -729,4 +730,90 @@ class OfflineSourceSkipTest(KodiTestCase):
         win.allSections[win.cacheKeyForSection(offline)] = offline
         win.fetchMissingSections([win.cacheKeyForSection(offline)])
         self.assertEqual(win.tasks, [])  # no task scheduled for offline source
+
+
+class HubConfigKeyTest(KodiTestCase):
+    def test_hub_settings_lookup_uses_foreign_sections_own_id(self):
+        win = homeWindow({})
+        own = FakeSection(key="1", server_uuid="AAA")
+        foreign = FakeSection(key="1", server_uuid="BBB")
+        # a foreign section's hub config key is its own sectionId, distinct from an
+        # own section with the same wire key
+        self.assertNotEqual(win.cacheKeyForSection(own), win.cacheKeyForSection(foreign))
+        self.assertEqual(win.cacheKeyForSection(foreign), "BBB:1")
+
+
+class SectionIdThreadTest(KodiTestCase):
+    def test_all_sections_keyed_by_section_id(self):
+        win = homeWindow({})
+        own = FakeSection(key="1", server_uuid="AAA")
+        foreign = FakeSection(key="1", server_uuid="BBB")
+        # allSections should be keyed by sectionId (cacheKeyForSection)
+        win.allSections = {}
+        win.allSections[str(win.cacheKeyForSection(own))] = own
+        win.allSections[str(win.cacheKeyForSection(foreign))] = foreign
+        self.assertIn("AAA:1", win.allSections)
+        self.assertIn("BBB:1", win.allSections)
+        self.assertNotIn("1", win.allSections)
+
+    def test_get_required_source_sections_uses_section_id(self):
+        win = homeWindow({})
+        win.hubSettings = {
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "BBB:1:continueWatching"}]}
+        }
+        # getRequiredSourceSections should accept sectionId and look up by sectionId
+        required = win.getRequiredSourceSections("BBB:1")
+        self.assertIn("BBB:1", required)
+
+    def test_get_enabled_hubs_for_section_uses_section_id(self):
+        win = homeWindow({})
+        win.hubSettings = {
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "BBB:1:continueWatching"}]}
+        }
+        enabled = win.getEnabledHubsForSection("BBB:1")
+        self.assertIn("BBB:1:continueWatching", enabled)
+
+    def test_has_cross_section_hubs_uses_section_id(self):
+        win = homeWindow({})
+        win.hubSettings = {
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "AAA:1:continueWatching"}]}
+        }
+        self.assertTrue(win.hasCrossSectionHubs("BBB:1"))
+        self.assertFalse(win.hasCrossSectionHubs("AAA:1"))
+
+    def test_fetch_missing_sections_uses_section_id_keys(self):
+        win = homeWindow({})
+        win.tasks = []
+        win.wantedSections = None
+        foreign = FakeSection(key="1", server_uuid="BBB")
+        win.allSections = {str(win.cacheKeyForSection(foreign)): foreign}
+        win.fetchMissingSections(["BBB:1"])
+        self.assertEqual(len(win.tasks), 1)
+        self.assertEqual(win.tasks[0].section, foreign)
+
+    def test_refresh_cross_section_sources_uses_section_id(self):
+        win = homeWindow({})
+        win.tasks = []
+        win.wantedSections = None
+        win.allSections = {}
+        # Source section (AAA:1) that feeds cross-section hubs
+        source_section = FakeSection(key="1", server_uuid="AAA")
+        win.allSections["AAA:1"] = source_section
+        # Target section (BBB:1) that has cross-section config
+        win.hubSettings = {
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "AAA:1:continueWatching"}]}
+        }
+        win._refreshCrossSectionSources("BBB:1")
+        # Should schedule a task for the source section (AAA:1)
+        self.assertEqual(len(win.tasks), 1)
+        self.assertEqual(win.tasks[0].section, source_section)
+
+    def test_get_combined_hubs_for_section_uses_section_id(self):
+        win = homeWindow({})
+        win.hubSettings = {}
+        foreign = FakeSection(key="1", server_uuid="BBB")
+        win.allSections = {str(win.cacheKeyForSection(foreign)): foreign}
+        win.sectionHubs = {win.cacheKeyForSection(foreign): home.HubsList([hub("test")])}
+        result = win.getCombinedHubsForSection(foreign)
+        self.assertIsNotNone(result)
 
