@@ -1025,7 +1025,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             util.setSetting(setting_key, json.dumps(self.librarySettings))
 
     def foreignSettingKey(self):
-        # account scope identical to loadLibrarySettings/loadHubSettings (home.py:965,982)
+        # account scope identical to loadLibrarySettings/loadHubSettings (home.py:1010,1118)
         return 'home.foreign_libraries.{}'.format(plexapp.ACCOUNT.ID)
 
     def loadForeignLibraries(self):
