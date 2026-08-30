@@ -759,7 +759,7 @@ class SectionIdThreadTest(KodiTestCase):
     def test_get_required_source_sections_uses_section_id(self):
         win = homeWindow({})
         win.hubSettings = {
-            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "BBB:1:continueWatching"}]}
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "BBB:1|continueWatching"}]}
         }
         # getRequiredSourceSections should accept sectionId and look up by sectionId
         required = win.getRequiredSourceSections("BBB:1")
@@ -768,15 +768,15 @@ class SectionIdThreadTest(KodiTestCase):
     def test_get_enabled_hubs_for_section_uses_section_id(self):
         win = homeWindow({})
         win.hubSettings = {
-            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "BBB:1:continueWatching"}]}
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "BBB:1|continueWatching"}]}
         }
         enabled = win.getEnabledHubsForSection("BBB:1")
-        self.assertIn("BBB:1:continueWatching", enabled)
+        self.assertIn("BBB:1|continueWatching", enabled)
 
     def test_has_cross_section_hubs_uses_section_id(self):
         win = homeWindow({})
         win.hubSettings = {
-            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "AAA:1:continueWatching"}]}
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "AAA:1|continueWatching"}]}
         }
         self.assertTrue(win.hasCrossSectionHubs("BBB:1"))
         self.assertFalse(win.hasCrossSectionHubs("AAA:1"))
@@ -801,7 +801,7 @@ class SectionIdThreadTest(KodiTestCase):
         win.allSections["AAA:1"] = source_section
         # Target section (BBB:1) that has cross-section config
         win.hubSettings = {
-            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "AAA:1:continueWatching"}]}
+            "BBB:1": {"custom": True, "hubs": [{"catalog_id": "AAA:1|continueWatching"}]}
         }
         win._refreshCrossSectionSources("BBB:1")
         # Should schedule a task for the source section (AAA:1)
@@ -816,4 +816,21 @@ class SectionIdThreadTest(KodiTestCase):
         win.sectionHubs = {win.cacheKeyForSection(foreign): home.HubsList([hub("test")])}
         result = win.getCombinedHubsForSection(foreign)
         self.assertIsNotNone(result)
+
+
+class CatalogIdRoundTripTest(KodiTestCase):
+    def test_separator_round_trip(self):
+        win = homeWindow({})
+        # real section
+        composed = win.foreignCatalogId("AAAA:1", "continueWatching")
+        src, ident = win.parseCatalogId(composed)
+        self.assertEqual(src, "AAAA:1")
+        self.assertEqual(ident, "continueWatching")
+        # pinned-type sectionId contains '#' and ':'
+        composed = win.foreignCatalogId("AAAA:1#movie", "1:all")
+        src, ident = win.parseCatalogId(composed)
+        self.assertEqual(src, "AAAA:1#movie")
+        self.assertEqual(ident, "1:all")
+        # home has no prefix
+        self.assertEqual(win.parseCatalogId("home.ondeck"), (None, "home.ondeck"))
 

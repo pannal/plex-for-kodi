@@ -288,11 +288,11 @@ class DiscoverHubsTask(backgroundthread.Task):
 
                     # Create section-specific catalog identifier
                     # Home hubs: use clean identifier (e.g., "home.continue")
-                    # Library hubs: prefix with sectionId (e.g., "SERVERUUID:1:movie.recentlyadded")
+                    # Library hubs: prefix with sectionId (e.g., "SERVERUUID:1|movie.recentlyadded")
                     if section_key is None:
                         catalog_id = clean_identifier
                     else:
-                        catalog_id = '{}:{}'.format(section_id, clean_identifier)
+                        catalog_id = HomeWindow.foreignCatalogId(section_id, clean_identifier)
 
                     # Determine native display type from hub content
                     native_display = 'poster'  # Default
@@ -1180,6 +1180,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return getattr(section, 'key', None)  # virtual: keep existing scalar key
         return sid  # real + pinned-type + foreign placeholder
 
+    @staticmethod
+    def foreignCatalogId(section_key, identifier):
+        """Compose a catalog_id embedding a section key, recovering both parts."""
+        if section_key is None:
+            return identifier
+        return u'{0}|{1}'.format(section_key, identifier)
+
+    @staticmethod
+    def parseCatalogId(catalog_id):
+        """Split a catalog_id back into (source_section_key, identifier). Home => (None, id)."""
+        if '|' in str(catalog_id):
+            src, ident = str(catalog_id).rsplit('|', 1)
+            return src, ident
+        return None, catalog_id
+
     def scheduleForeignHubFetches(self, sections):
         """Schedule hub fetch for live foreign sections; offline placeholders never fetch."""
         if not plexapp.SERVERMANAGER.selectedServer.hasHubs():
@@ -1371,7 +1386,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     if section_key is None:
                         catalog_id = clean_identifier
                     else:
-                        catalog_id = '{}:{}'.format(section_id, clean_identifier)
+                        catalog_id = HomeWindow.foreignCatalogId(section_id, clean_identifier)
 
                     # Determine native display type from hub content
                     native_display = 'poster'
@@ -1423,7 +1438,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if section_key is None:
             catalog_id = identifier
         else:
-            catalog_id = '{}:{}'.format(section_key, identifier)
+            catalog_id = self.foreignCatalogId(section_key, identifier)
 
         # Use getEnabledHubsForSection so CW mode mapping is applied consistently.
         # (e.g. config has 'continueWatching' but old mode expects 'home.continue'/'home.ondeck')
@@ -1476,7 +1491,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if section_key is None:
                 catalog_id = identifier
             else:
-                catalog_id = '{}:{}'.format(section_key, identifier)
+                catalog_id = self.foreignCatalogId(section_key, identifier)
 
             # Check user-defined order
             if catalog_id in user_order:
@@ -1554,7 +1569,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if is_home:
                     catalog_id = identifier
                 else:
-                    catalog_id = '{}:{}'.format(section_key, identifier)
+                    catalog_id = self.foreignCatalogId(section_key, identifier)
                 if catalog_id in hub_states:
                     is_enabled, hub_info = hub_states[catalog_id]
                     if is_enabled:
@@ -1963,7 +1978,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if is_home:
                 cat_id = hub_identifier
             else:
-                cat_id = '{}:{}'.format(section_key, hub_identifier)
+                cat_id = self.foreignCatalogId(section_key, hub_identifier)
 
             section_config['hubs'].append({
                 'catalog_id': cat_id,
@@ -2156,11 +2171,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         for hub_config in section_config.get('hubs', []):
             catalog_id = hub_config.get('catalog_id', '')
-            if ':' in str(catalog_id):
-                source_key = catalog_id.rsplit(':', 1)[0]
-                required.add(source_key)
-            else:
-                required.add(None)  # Home section hub
+            source_key, _ = self.parseCatalogId(catalog_id)
+            required.add(source_key)
 
         return required
 
@@ -2238,7 +2250,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if section_key is None:
                     catalog_id = clean_id
                 else:
-                    catalog_id = '{}:{}'.format(section_key, clean_id)
+                    catalog_id = self.foreignCatalogId(section_key, clean_id)
                 if catalog_id in enabled_catalog_ids:
                     hub._crossSectionSource = section_key
                     hub._catalogId = catalog_id
@@ -2263,7 +2275,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if source_key is None:
                     catalog_id = clean_id
                 else:
-                    catalog_id = '{}:{}'.format(source_key, clean_id)
+                    catalog_id = self.foreignCatalogId(source_key, clean_id)
 
                 if catalog_id not in enabled_catalog_ids:
                     continue
