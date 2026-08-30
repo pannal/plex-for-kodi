@@ -2322,7 +2322,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         for section_key in section_keys:
             section_obj = sections_by_key.get(str(section_key) if section_key else None)
 
-            if section_obj is None:
+            if section_obj is None or getattr(section_obj, 'offline', False):
                 continue
 
             already_fetching = False
@@ -2370,7 +2370,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             # Find the section object
             section_obj = self.allSections.get(str_source) if hasattr(self, 'allSections') else None
-            if section_obj is None:
+            if section_obj is None or getattr(section_obj, 'offline', False):
                 continue
 
             # Mark as refreshing so we don't double-fetch

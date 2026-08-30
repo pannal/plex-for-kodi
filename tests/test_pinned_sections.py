@@ -716,3 +716,17 @@ class ForeignHubSchedulingTest(KodiTestCase):
             if _orig_sm is not None:
                 _plexapp.SERVERMANAGER = _orig_sm
 
+
+class OfflineSourceSkipTest(KodiTestCase):
+    def test_fetch_missing_sections_skips_offline_sources(self):
+        win = homeWindow({})
+        win.tasks = []
+        win.wantedSections = None
+        win.allSections = {}
+        offline = home.ForeignLibrarySection.placeholder(
+            server_uuid="WW", section_key="2", server_name="Away", section_title="TV")
+        # source key maps to the offline placeholder in allSections
+        win.allSections[win.cacheKeyForSection(offline)] = offline
+        win.fetchMissingSections([win.cacheKeyForSection(offline)])
+        self.assertEqual(win.tasks, [])  # no task scheduled for offline source
+
