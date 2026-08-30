@@ -1138,6 +1138,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             for r in self.foreignLibraries())
 
     @staticmethod
+    def _sameRailSection(a, b):
+        """Two rail sections are the same rail item iff their sectionIds match."""
+        return sectionId(a) == sectionId(b)
+
+    @staticmethod
     def _findServerByUuid(manager, uuid):
         if manager is None or not uuid:
             return None
@@ -3149,7 +3154,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.fullyRefreshHome(section=section)
             if section is not None:
                 for mli in self.sectionList:
-                    if mli.dataSource and mli.dataSource.key == section.key:
+                    if mli.dataSource and self._sameRailSection(mli.dataSource, section):
                         self.sectionList.selectItem(mli.pos())
                         self.lastSection = mli.dataSource
             return True

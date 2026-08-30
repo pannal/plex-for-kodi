@@ -32,6 +32,9 @@ class FakeServer(object):
     uuid = "SERVERUUID"
     name = "Tower"
 
+    def __init__(self, uuid="SERVERUUID"):
+        self.uuid = uuid
+
 
 class FakeSection(object):
     """Stands in for a plexnet LibrarySection: attributes plus a query that uses its key."""
@@ -41,10 +44,10 @@ class FakeSection(object):
     DEFAULT_SORT = "titleSort"
     DEFAULT_SORT_DESC = False
 
-    def __init__(self, key="3", title="Movies"):
+    def __init__(self, key="3", title="Movies", server_uuid="SERVERUUID"):
         self.key = key
         self.title = title
-        self.server = FakeServer()
+        self.server = FakeServer(server_uuid)
 
     def all(self, *args, **kwargs):
         return "items of section {0}".format(self.key)
@@ -619,4 +622,23 @@ class ForeignPinMenuTest(KodiTestCase):
              "server_name": "Tower", "section_title": "Movies"},
         ]
         self.assertTrue(self.win.isSectionPinnedToHome(section))
+
+
+class ServerRefreshReselectTest(KodiTestCase):
+    def test_same_rail_section_matches_by_section_id(self):
+        win = homeWindow({})
+        local = FakeSection(key="1")
+        ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="ZZZZ", section_key="1", server_name="Away",
+            section_title="Movies")
+        # different servers, same key -> not the same rail item
+        self.assertFalse(win._sameRailSection(local, ph))
+        same_ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="ZZZZ", section_key="1", server_name="Away",
+            section_title="Other")
+        # same server+key, different label -> same rail item
+        self.assertTrue(win._sameRailSection(ph, same_ph))
+        # live resolved foreign section vs its placeholder -> same rail item
+        live = FakeSection(key="1", server_uuid="ZZZZ")
+        self.assertTrue(win._sameRailSection(live, ph))
 
