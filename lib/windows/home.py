@@ -1142,6 +1142,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         """Two rail sections are the same rail item iff their sectionIds match."""
         return sectionId(a) == sectionId(b)
 
+    def cacheKeyForSection(self, section):
+        """Collision-safe sectionHubs key for a section object.
+
+        Real libraries and pinned type-views key by sectionId ('uuid:key' / 'uuid:key#type'),
+        which is unique per server. Virtual sections (Home/Playlists/Watchlist) keep their
+        existing scalar keys.
+        """
+        if section is None:
+            return None  # Home
+        sid = sectionId(section)
+        if sid in ('playlists', 'watchlist', 'home'):
+            return getattr(section, 'key', None)  # virtual: keep existing scalar key
+        return sid  # real + pinned-type + foreign placeholder
+
     @staticmethod
     def _findServerByUuid(manager, uuid):
         if manager is None or not uuid:
@@ -2147,7 +2161,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         is_home = section_key is None
 
         # Get native hubs for this section
-        native_hubs = self.sectionHubs.get(section_key)
+        native_hubs = self.sectionHubs.get(self.cacheKeyForSection(section))
         if native_hubs is None:
             return None
 
@@ -2376,7 +2390,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 sorted_hubs.lastUpdated = hubs.lastUpdated
                 sorted_hubs.invalid = hubs.invalid
 
-                self.sectionHubs[section.key] = sorted_hubs
+                ck = self.cacheKeyForSection(section)
+                self.sectionHubs[ck] = sorted_hubs
 
                 # Decrement pending cross-section source counter
                 pending = getattr(self, '_pendingCrossSources', 0)
@@ -3943,7 +3958,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def sectionHubsCallback(self, section, hubs, reselect_pos_dict=None):
         with self.lock:
-            update = bool(self.sectionHubs.get(section.key))
+            ck = self.cacheKeyForSection(section)
+            update = bool(self.sectionHubs.get(ck))
             is_home = section.key is None
 
             # Sort hubs: user-defined order > server order
@@ -3952,7 +3968,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             sorted_hubs.invalid = hubs.invalid
             sorted_hubs.identifier = hubs.identifier
 
-            self.sectionHubs[section.key] = sorted_hubs
+            self.sectionHubs[ck] = sorted_hubs
             self.setBoolProperty('loading.content', False)
 
             on_home = self.lastSection and self.lastSection.key is None
@@ -4000,8 +4016,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if not section:
                     continue
 
-                checked_keys.add(section.key)
-                hubs = self.sectionHubs.get(section.key, ())
+                ck = self.cacheKeyForSection(section)
+                checked_keys.add(ck)
+                hubs = self.sectionHubs.get(ck, ())
                 if not hubs:
                     continue
 
@@ -4288,7 +4305,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if section.key is False:
             return
 
-        hubs = self.sectionHubs.get(section.key)
+        ck = self.cacheKeyForSection(section)
+        hubs = self.sectionHubs.get(ck)
         section_stale = False
 
         if hubs is None and section.server.DEFER_HUBS:
@@ -4331,8 +4349,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             rpd = self.getCurrentHubsPositions(section)
 
             if not update:
-                if section.key in self.sectionHubs:
-                    self.sectionHubs[section.key] = None
+                if ck in self.sectionHubs:
+                    self.sectionHubs[ck] = None
             if isinstance(section, PinnedTypeSection):
                 task = PinnedTypeHubsTask().setup(section, self.sectionHubsCallback, reselect_pos_dict=rpd)
             else:

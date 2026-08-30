@@ -60,6 +60,7 @@ def homeWindow(library_settings):
     """A HomeWindow without Kodi behind it - only the pin bookkeeping is exercised."""
     win = HomeWindow.__new__(HomeWindow)
     win.librarySettings = library_settings
+    win.sectionHubs = {}
     return win
 
 
@@ -641,4 +642,46 @@ class ServerRefreshReselectTest(KodiTestCase):
         # live resolved foreign section vs its placeholder -> same rail item
         live = FakeSection(key="1", server_uuid="ZZZZ")
         self.assertTrue(win._sameRailSection(live, ph))
+
+
+class _Hub(object):
+    def __init__(self, identifier, **kw):
+        self.hubIdentifier = identifier
+        for k, v in kw.items():
+            setattr(self, k, v)
+
+
+def hub(identifier, **kw):
+    return _Hub(identifier, **kw)
+
+
+class SectionHubsCollisionTest(KodiTestCase):
+    def test_cache_key_collision_safe_across_servers(self):
+        win = homeWindow({})
+        a = FakeSection(key="1", server_uuid="AAA")
+        b = FakeSection(key="1", server_uuid="BBB")
+        self.assertNotEqual(win.cacheKeyForSection(a), win.cacheKeyForSection(b))
+        self.assertEqual(win.cacheKeyForSection(a), "AAA:1")
+        ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="BBB", section_key="1", server_name="Away",
+            section_title="Movies")
+        # a live foreign section and its placeholder resolve to the same cache key
+        self.assertEqual(win.cacheKeyForSection(b), win.cacheKeyForSection(ph))
+
+    def test_virtual_sections_keep_scalar_keys(self):
+        win = homeWindow({})
+        self.assertIsNone(win.cacheKeyForSection(home.home_section))
+        self.assertEqual(win.cacheKeyForSection(home.playlists_section), "playlists")
+
+    def test_cross_server_does_not_leak_or_clobber_hub_cache(self):
+        win = homeWindow({})
+        real = FakeSection(key="1", title="My Adult Movies")
+        foreign = FakeSection(key="1", title="Movies", server_uuid="ZZZZ")
+        win.sectionHubs[win.cacheKeyForSection(real)] = home.HubsList([hub("a")])
+        # foreign section with same wire key never sees the local cache
+        self.assertIsNone(win.sectionHubs.get(win.cacheKeyForSection(foreign)))
+        # writing foreign never clobbers local
+        win.sectionHubs[win.cacheKeyForSection(foreign)] = home.HubsList([hub("b")])
+        self.assertEqual(win.sectionHubs[win.cacheKeyForSection(real)][0].hubIdentifier, "a")
+        self.assertEqual(win.sectionHubs[win.cacheKeyForSection(foreign)][0].hubIdentifier, "b")
 
