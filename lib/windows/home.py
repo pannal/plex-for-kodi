@@ -1131,6 +1131,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             sections.append(section)
         return sections
 
+    def isSectionPinnedToHome(self, section):
+        return any(
+            r.get('server_uuid') == section.server.uuid
+            and r.get('section_key') == str(section.key)
+            for r in self.foreignLibraries())
+
     @staticmethod
     def _findServerByUuid(manager, uuid):
         if manager is None or not uuid:
@@ -3362,6 +3368,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             options.append({'key': 'hide', 'display': T(33028, "Hide library")})
             options.append({'key': 'move', 'display': T(33039, "Move")})
+
+            if self.isSectionPinnedToHome(section):
+                options.append({'key': 'unpin_from_home', 'display': T(35071, "Remove from home")})
+            else:
+                options.append({'key': 'pin_to_home', 'display': T(35070, "Pin to home")})
+
             options.append(dropdown.SEPARATOR)
 
             if 'libraries' in util.getSetting('cache_requests') and section != watchlist_section:
@@ -3424,6 +3436,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     return self.lastSection
         elif choice["key"] == "move":
             self.sectionMover(item, "init")
+        elif choice["key"] == "pin_to_home":
+            self.pinForeignLibrary(
+                server_uuid=section.server.uuid,
+                section_key=section.key,
+                server_name=section.server.name or '',
+                section_title=section.title)
+            return section
+        elif choice["key"] == "unpin_from_home":
+            self.unpinForeignLibrary(
+                server_uuid=section.server.uuid,
+                section_key=section.key)
+            return section
         elif choice["key"] == "reset_order":
             if "order" in self.librarySettings:
                 del self.librarySettings["order"]

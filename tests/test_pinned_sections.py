@@ -593,3 +593,30 @@ class ForeignPlaceholderRenderAttrsTest(KodiTestCase):
         self.assertFalse(getattr(ph, 'mappingBroken', True))
         self.assertFalse(getattr(ph, 'isMapped', True))
 
+
+class ForeignPinMenuTest(KodiTestCase):
+    def setUp(self):
+        super(ForeignPinMenuTest, self).setUp()
+        self.win = homeWindow({})
+
+    def test_is_pinable_reports_when_a_section_is_not_yet_pinned(self):
+        server = FakeServer()
+        section = FakeSection()
+        section.server = server
+        self.win._foreignLibraries = [
+            {"server_uuid": "OTHER", "section_key": "9",
+             "server_name": "Away", "section_title": "Series"},
+        ]
+        self.assertFalse(self.win.isSectionPinnedToHome(section))
+
+    def test_is_pinable_reports_when_a_section_is_pinned(self):
+        server = FakeServer()
+        server.uuid = "SERVERUUID"
+        section = FakeSection(key="3")
+        section.server = server
+        self.win._foreignLibraries = [
+            {"server_uuid": "SERVERUUID", "section_key": "3",
+             "server_name": "Tower", "section_title": "Movies"},
+        ]
+        self.assertTrue(self.win.isSectionPinnedToHome(section))
+
