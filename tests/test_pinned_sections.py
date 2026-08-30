@@ -834,3 +834,46 @@ class CatalogIdRoundTripTest(KodiTestCase):
         # home has no prefix
         self.assertEqual(win.parseCatalogId("home.ondeck"), (None, "home.ondeck"))
 
+
+class PersistenceReKeyTest(KodiTestCase):
+    def setUp(self):
+        super(PersistenceReKeyTest, self).setUp()
+        from plexnet import plexapp as _plexapp
+        self._orig_sm = getattr(_plexapp, "SERVERMANAGER", None)
+        _plexapp.SERVERMANAGER = type("SM", (), {"selectedServer": FakeServer("SERVERUUID")})()
+
+    def tearDown(self):
+        from plexnet import plexapp as _plexapp
+        if self._orig_sm is not None:
+            _plexapp.SERVERMANAGER = self._orig_sm
+        super(PersistenceReKeyTest, self).tearDown()
+
+    def test_library_settings_rekeyed_on_load(self):
+        win = homeWindow({})
+        old = {
+            "1": {"show": False},                 # bare key -> sectionId "SERVERUUID:1"
+            "2": {"show": True},
+            "order": ["1", "2", "playlists"],
+            "playlists": {"show": True},
+        }
+        # NOTE: FakeServer uuid is "SERVERUUID"; selectedServer here must be a FakeServer
+        # with uuid "SERVERUUID" for the assertion below.
+        win.librarySettings = win.rekeyLibrarySettings(old)
+        self.assertEqual(win.librarySettings["SERVERUUID:1"]["show"], False)
+        self.assertEqual(win.librarySettings["SERVERUUID:2"]["show"], True)
+        self.assertEqual(win.librarySettings["order"], ["SERVERUUID:1", "SERVERUUID:2", "playlists"])
+        self.assertNotIn("1", win.librarySettings)  # old bare key gone
+
+    def test_hub_settings_rekeyed_on_load(self):
+        win = homeWindow({})
+        old = {
+            "__home__": {"custom": True, "hubs": [{"catalog_id": "home.continue"}]},
+            "1": {"custom": True, "hubs": [{"catalog_id": "1:continueWatching"}]},
+        }
+        win.hubSettings = win.rekeyHubSettings(old)
+        self.assertIn(None, win.hubSettings)
+        self.assertIn("SERVERUUID:1", win.hubSettings)
+        # catalog_id re-keyed to '|' schema
+        hubs = win.hubSettings["SERVERUUID:1"]["hubs"]
+        self.assertTrue(any(h["catalog_id"] == "SERVERUUID:1|continueWatching" for h in hubs))
+

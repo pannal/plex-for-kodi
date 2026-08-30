@@ -1043,6 +1043,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             pass
         except:
             util.ERROR()
+        self.librarySettings = self.rekeyLibrarySettings(self.librarySettings)
 
     def saveLibrarySettings(self):
         if self.librarySettings:
@@ -1208,6 +1209,56 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if tasks:
             backgroundthread.BGThreader.addTasks(tasks)
 
+    def rekeyLibrarySettings(self, settings):
+        """Re-key bare section keys in persisted librarySettings to sectionId (selected server)."""
+        if not settings:
+            return settings
+        server_uuid = plexapp.SERVERMANAGER.selectedServer.uuid
+        out = {}
+        for key, value in settings.items():
+            if key == 'order':
+                out[key] = [k if not _is_bare_key(k) else hubSectionKey(k, server_uuid)
+                             for k in value]
+            elif key == 'playlists' or key == '/library/sections/watchlist':
+                out[key] = value
+            elif _is_bare_key(key):
+                out[hubSectionKey(key, server_uuid)] = value
+            else:
+                out[key] = value
+        return out
+
+    def rekeyHubSettings(self, settings):
+        """Re-key persisted hubSettings to sectionId; re-key nested catalog_ids to '|' schema."""
+        if not settings:
+            return settings
+        server_uuid = plexapp.SERVERMANAGER.selectedServer.uuid
+        out = {}
+        for key, value in settings.items():
+            if key == '__home__':
+                nk = None
+            elif _is_bare_key(key):
+                nk = hubSectionKey(key, server_uuid)
+            else:
+                nk = key  # already sectionId-shaped (own forward-written or foreign)
+            if isinstance(value, dict) and 'hubs' in value:
+                value = dict(value)
+                value['hubs'] = [
+                    dict(h, catalog_id=self.rekeyCatalogId(h.get('catalog_id', ''), server_uuid))
+                    for h in value.get('hubs', [])
+                ]
+            out[nk] = value
+        return out
+
+    def rekeyCatalogId(self, catalog_id, server_uuid):
+        """Re-key a stored ':'-schema catalog_id to the '|' schema."""
+        if '|' in str(catalog_id):
+            return catalog_id
+        if ':' in str(catalog_id):
+            src, ident = str(catalog_id).split(':', 1)
+            if src.isdigit():
+                return u'{0}|{1}'.format(hubSectionKey(src, server_uuid), ident)
+        return catalog_id
+
     @staticmethod
     def _findServerByUuid(manager, uuid):
         if manager is None or not uuid:
@@ -1236,6 +1287,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             pass
         except:
             util.ERROR()
+        self.hubSettings = self.rekeyHubSettings(self.hubSettings)
 
     def saveHubSettings(self):
         setting_key = 'hub.settings.{}.{}'.format(plexapp.SERVERMANAGER.selectedServer.uuid[-8:],
