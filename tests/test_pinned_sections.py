@@ -435,3 +435,86 @@ class ForeignLibraryConfigTest(KodiTestCase):
             "server_uuid": "SERVERUUID", "section_key": "1",
             "server_name": "Away", "section_title": "Movies",
         }], stored)
+
+
+class ForeignLibrarySectionTest(KodiTestCase):
+    def test_placeholder_identity_comes_from_the_record_not_a_server(self):
+        ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="ZZZZ", section_key="9", server_name="Away",
+            section_title="Movies")
+        self.assertIsNone(ph.server)
+        self.assertTrue(ph.offline)
+        self.assertEqual("ZZZZ:9", sectionId(ph))
+
+    def test_placeholder_title_is_suffixed(self):
+        ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="ZZZZ", section_key="9", server_name="Away",
+            section_title="Movies")
+        self.assertEqual("Movies - Away", ph.title)
+
+
+class FakeManager(object):
+    def __init__(self, servers):
+        self.servers = servers
+
+    def getServers(self):
+        return self.servers
+
+
+class FakeResolvableSection(object):
+    key = "1"
+    title = "Live Movies"
+
+
+class ForeignResolutionTest(KodiTestCase):
+    def setUp(self):
+        super(ForeignResolutionTest, self).setUp()
+        self.win = homeWindow({})
+
+    def test_unknown_server_resolves_to_a_placeholder(self):
+        manager = FakeManager([])
+        section, offline = self.win.resolveForeignLibrary(
+            {"server_uuid": "NOPE", "section_key": "1",
+             "server_name": "Away", "section_title": "Movies"},
+            manager=manager)
+        self.assertTrue(offline)
+        self.assertIsNone(section.server)
+
+    def test_match_by_key_resolves_to_a_live_section(self):
+        live = FakeResolvableSection()
+
+        class FakeLib(object):
+            def sections(self):
+                return [live]
+
+        server = FakeServer()
+        server.library = FakeLib()
+        manager = FakeManager([server])
+        record = {"server_uuid": "SERVERUUID", "section_key": "1",
+                  "server_name": "Away", "section_title": "Movies"}
+        section, offline = self.win.resolveForeignLibrary(record, manager=manager)
+        self.assertFalse(offline)
+        self.assertIs(section, live)
+        # live match refreshes the denormalized title
+        self.assertEqual("Live Movies", record["section_title"])
+
+    def test_no_section_match_on_a_known_server_resolves_to_a_placeholder(self):
+        class FakeLib(object):
+            def sections(self):
+                return []
+        server = FakeServer()
+        server.library = FakeLib()
+        manager = FakeManager([server])
+        section, offline = self.win.resolveForeignLibrary(
+            {"server_uuid": "SERVERUUID", "section_key": "99",
+             "server_name": "Away", "section_title": "Movies"},
+            manager=manager)
+        self.assertTrue(offline)
+
+    def test_a_pin_over_a_placeholder_keeps_its_item_type_suffix(self):
+        # regression for the Task-1 code review: PinnedTypeSection must win over sectionId
+        ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="ZZZZ", section_key="9", server_name="Away",
+            section_title="Movies")
+        pin = PinnedTypeSection(ph, "collection")
+        self.assertEqual("ZZZZ:9#collection", sectionId(pin))
