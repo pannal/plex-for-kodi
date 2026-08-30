@@ -404,6 +404,7 @@ These are the deep cross-server collision seams and UI polish for the *next* pha
 - **catalog_id encoding** (home.py:2168, 2194) embeds bare `section_key`; must become sectionId to stop cross-server hub-merge collisions.
 - **`hubSettings` / `librarySettings` foreign keying** — persist/merge per server+section; `findInSectionHubs` (home.py:2141) and the `str(source_key)` string-match hacks.
 - **`sectionHubs` / `allSections` / `wantedSections` / `lastHubs` keyed lookups** — migrate to sectionId (~40 call sites).
+  - **Known bug (user-reported, deferred by decision):** hovering a *live* foreign tile (friend's "Movies", key "1") shows the hubs of my own library sharing that key ("adult movies") because `_showHubs` reads `sectionHubs[section.key]` (home.py:4291). It is **bidirectional/polluting, not just a misread**: the foreign fetch nulls `sectionHubs[section.key]` (home.py:4335) and `sectionHubsCallback` overwrites it with the foreign hubs (home.py:3955), corrupting my own library's cache so "adult movies" keeps showing the foreign hubs until a forced refresh. Offline placeholders are safe (early return at home.py:4281). Fix = key these by `sectionId()`. Not fixing here; tracked for the hub phase.
 - **`HOME:` command contract** (windowutils.py:16 `'HOME:{0}'.format(section)`) — cross-file; the emitter must send a sectionId.
 - **Hub fetching for foreign sections** (they render but fetch no hubs this phase).
 - **Offline→live transition on `serverRefresh`** and the offline marker UI.
