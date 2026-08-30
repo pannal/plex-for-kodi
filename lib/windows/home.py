@@ -3354,11 +3354,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # playlists and the watchlist are plain virtual sections without a TYPE
         pinnable = PINNABLE_TYPES.get(str(getattr(section, 'TYPE', None)), ())
-        stored = self.librarySettings.get(section.key, {}).get('pinned_types') or []
+        ck = self.cacheKeyForSection(section)
+        stored = self.librarySettings.get(ck, {}).get('pinned_types') or []
         return [t for t in stored if t in pinnable]
 
     def setSectionPinned(self, section, item_type, pinned):
-        settings = self.librarySettings.setdefault(section.key, {})
+        ck = self.cacheKeyForSection(section)
+        settings = self.librarySettings.setdefault(ck, {})
         types = [t for t in settings.get('pinned_types') or [] if t != item_type]
         if pinned:
             types.append(item_type)
@@ -3404,10 +3406,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             had_section = False
             for s in sections:
-                section_settings = self.librarySettings.get(s.key)
+                ck = self.cacheKeyForSection(s)
+                section_settings = self.librarySettings.get(ck)
                 if section_settings and not section_settings.get("show", True):
                     options.append({'key': 'show',
-                                    'section_id': s.key,
+                                    'section_id': ck,
                                     'display': T(33029, "Show library: {}").format(s.title)
                                     }
                                    )
@@ -3523,9 +3526,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.setSectionPinned(section.librarySection, section.itemType, False)
             return section.librarySection
         elif choice["key"] == "hide":
-            if section.key not in self.librarySettings:
-                self.librarySettings[section.key] = {}
-            self.librarySettings[section.key]['show'] = False
+            ck = self.cacheKeyForSection(section)
+            if ck not in self.librarySettings:
+                self.librarySettings[ck] = {}
+            self.librarySettings[ck]['show'] = False
             self.saveLibrarySettings()
             return self.sectionList[self.sectionList.prev()].dataSource
         elif choice["key"] == "show":
@@ -3855,7 +3859,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         elif action == xbmcgui.ACTION_SELECT_ITEM:
             stop_moving()
             # store section order
-            self.librarySettings["order"] = [i.dataSource.key for i in self.sectionList.items if i.dataSource]
+            self.librarySettings["order"] = [self.cacheKeyForSection(i.dataSource) for i in self.sectionList.items if i.dataSource]
             self.saveLibrarySettings()
 
     def checkSectionItem(self, force=False, action=None):
@@ -4197,7 +4201,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         for section in _sections:
             ck = self.cacheKeyForSection(section)
             self.allSections[str(ck)] = section
-            if section.key in self.librarySettings and not self.librarySettings[section.key].get("show", True):
+            if ck in self.librarySettings and not self.librarySettings[ck].get("show", True):
                 self.anyLibraryHidden = True
                 continue
             sections.append(section)
