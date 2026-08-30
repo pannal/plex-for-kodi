@@ -3369,10 +3369,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             options.append({'key': 'hide', 'display': T(33028, "Hide library")})
             options.append({'key': 'move', 'display': T(33039, "Move")})
 
-            if self.isSectionPinnedToHome(section):
-                options.append({'key': 'unpin_from_home', 'display': T(35071, "Remove from home")})
-            else:
-                options.append({'key': 'pin_to_home', 'display': T(35070, "Pin to home")})
+            if section not in (watchlist_section, playlists_section):
+                if self.isSectionPinnedToHome(section):
+                    options.append({'key': 'unpin_from_home', 'display': T(35071, "Remove from home")})
+                else:
+                    options.append({'key': 'pin_to_home', 'display': T(35070, "Pin to home")})
 
             options.append(dropdown.SEPARATOR)
 
