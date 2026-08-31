@@ -103,6 +103,41 @@ class SectionHubsTask(backgroundthread.Task):
             self.callback(self.section, hubs)
 
 
+class ResolveForeignTask(backgroundthread.Task):
+    """Resolve un-cached foreign-library records off the GUI thread.
+
+    Fills the per-sectionId resolution cache with (section, offline); live results let
+    the callback upgrade placeholders -> live and refresh the rail.
+    """
+
+    def setup(self, win, records, manager=None):
+        self.win = win
+        self.records = records
+        self.manager = manager
+        return self
+
+    def run(self):
+        if self.isCanceled() or not self.records:
+            return
+        if self._resolve_records():
+            self.win._onForeignResolved()
+
+    def _resolve_records(self):
+        upgraded = False
+        for record in self.records:
+            if self.isCanceled():
+                break
+            key = u'{0}:{1}'.format(record.get('server_uuid'), record.get('section_key'))
+            cache = getattr(self.win, '_foreignResolved', None) or {}
+            if key in cache:
+                continue  # already resolved this session
+            section, offline = self.win.resolveForeignLibrary(record, manager=self.manager)
+            if not offline:
+                upgraded = True  # placeholder -> live: caller refreshes the rail
+            self.win._foreignResolved[key] = (section, offline)
+        return upgraded
+
+
 class PinnedTypeHubsTask(backgroundthread.Task):
     """Builds the one hub a pinned item-type view shows: the library's collections."""
 
@@ -1254,6 +1289,43 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.tasks += tasks
         if tasks:
             backgroundthread.BGThreader.addTasks(tasks)
+
+    def _onForeignResolved(self):
+        """Called from ResolveForeignTask on a worker thread: swap placeholders for
+        their cached-live sections, then refresh the rail once."""
+        self._foreignResolveScheduled = False
+        if not any(not offline for _, offline in
+                   (getattr(self, '_foreignResolved', {}) or {}).values()):
+            return  # nothing went live; nothing to refresh
+        with self.lock:
+            self._reResolveForeignPlaceholdersFromCache()
+            self.serverRefresh()
+
+    def _kickForeignResolution(self):
+        """Start background resolution for foreign records not yet resolved this session."""
+        if getattr(self, '_foreignResolved', None) is None:
+            self._foreignResolved = {}
+        if getattr(self, '_foreignResolveScheduled', False):
+            return  # one in-flight resolve round is enough
+        pending = [r for r in self.foreignLibraries()
+                   if u'{0}:{1}'.format(r.get('server_uuid'), r.get('section_key'))
+                   not in self._foreignResolved]
+        if not pending:
+            return
+        self._foreignResolveScheduled = True
+        task = ResolveForeignTask().setup(self, pending)
+        self.tasks.append(task)
+        backgroundthread.BGThreader.addTask(task)
+
+    def _reResolveForeignPlaceholdersFromCache(self):
+        """Swap cached-live sections over their placeholders in allSections (no network)."""
+        cache = getattr(self, '_foreignResolved', None) or {}
+        for key, record in list(getattr(self, 'allSections', {}).items()):
+            if not isinstance(record, ForeignLibrarySection):
+                continue
+            cached = cache.get(record.sectionId)
+            if cached is not None and not cached[1]:
+                self.allSections[key] = cached[0]
 
     # --- SectionId settings migration (backward compat) -----------------------
     # Before sectionId, this addon (a released 1.13.x/1.14.x) persisted settings
@@ -4276,6 +4348,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # below so a moved foreign library keeps its saved position across restart.
         # They stay out of the cross-section hub pipeline, which only handles locals.
         foreign_sections = self.foreignRailSections()
+        self._kickForeignResolution()
         for fs in foreign_sections:
             self.allSections[self.cacheKeyForSection(fs)] = fs
 

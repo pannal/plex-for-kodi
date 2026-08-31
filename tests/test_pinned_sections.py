@@ -320,6 +320,40 @@ class ForeignResolveCacheTest(KodiTestCase):
         self.assertIs(sections[0], live)
 
 
+class ForeignResolveTaskTest(KodiTestCase):
+    def setUp(self):
+        ENV.abort_requested = False  # task cancel guard consults the monitor
+        self.win = homeWindow({})
+        self.win._foreignResolved = {}
+        self.win.allSections = {}
+        self.win.tasks = []
+
+    def test_resolution_fills_cache_with_live_section_and_flags_upgrade(self):
+        record = {"server_uuid": "AWAY", "section_key": "2",
+                  "server_name": "Away", "section_title": "Series"}
+        live = FakeSection(key="2", server_uuid="AWAY")
+        class FakeLib(object):
+            def sections(self):
+                return [live]
+        server = FakeServer()
+        server.uuid = "AWAY"
+        server.library = FakeLib()
+        manager = FakeManager([server])
+        task = home.ResolveForeignTask().setup(self.win, [record], manager=manager)
+        upgraded = task._resolve_records()
+        self.assertTrue(upgraded)
+        self.assertIs(self.win._foreignResolved["AWAY:2"][0], live)
+
+    def test_offline_record_is_cached_but_not_flagged_upgrade(self):
+        record = {"server_uuid": "AWAY", "section_key": "2",
+                  "server_name": "Away", "section_title": "Series"}
+        manager = FakeManager([])  # server unknown -> placeholder, offline
+        task = home.ResolveForeignTask().setup(self.win, [record], manager=manager)
+        upgraded = task._resolve_records()
+        self.assertFalse(upgraded)
+        self.assertTrue(self.win._foreignResolved["AWAY:2"][1])  # offline True
+
+
 class LibrarySettingsPerItemTypeTest(KodiTestCase):
     """
     Sort and filters are stored per (section, item type).
