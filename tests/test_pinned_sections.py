@@ -345,14 +345,16 @@ class ForeignResolveTaskTest(KodiTestCase):
         self.assertTrue(upgraded)
         self.assertIs(self.win._foreignResolved["AWAY:2"][0], live)
 
-    def test_offline_record_is_cached_but_not_flagged_upgrade(self):
+    def test_offline_record_is_not_cached_and_not_flagged_upgrade(self):
         record = {"server_uuid": "AWAY", "section_key": "2",
                   "server_name": "Away", "section_title": "Series"}
         manager = FakeManager([])  # server unknown -> placeholder, offline
         task = home.ResolveForeignTask().setup(self.win, [record], manager=manager)
         upgraded = task._resolve_records()
         self.assertFalse(upgraded)
-        self.assertTrue(self.win._foreignResolved["AWAY:2"][1])  # offline True
+        # offline is a transient false-negative (server may not be connected yet) and
+        # must not be cached terminally, else the placeholder never re-resolves
+        self.assertNotIn("AWAY:2", self.win._foreignResolved)
 
 
 class ForeignReResolveCacheTest(KodiTestCase):
@@ -395,6 +397,9 @@ class ForeignReResolveCacheTest(KodiTestCase):
             home_mod.plexapp.SERVERMANAGER = old
         self.assertTrue(upgraded)
         self.assertIs(win.allSections["AWAY:2"], live)
+        # live result must also land in the cache, else foreignRailSections (which
+        # reads the cache, not allSections) keeps serving the placeholder forever
+        self.assertIs(win._foreignResolved["AWAY:2"][0], live)
 
 
 class LibrarySettingsPerItemTypeTest(KodiTestCase):

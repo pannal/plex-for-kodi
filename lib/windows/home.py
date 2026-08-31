@@ -119,10 +119,13 @@ class ResolveForeignTask(backgroundthread.Task):
     def run(self):
         if self.isCanceled() or not self.records:
             return
-        if self._resolve_records():
-            self.win._onForeignResolved()
+        self._resolve_records()
+        self.win._onForeignResolved()
 
     def _resolve_records(self):
+        """Resolve un-cached records into the cache. Only LIVE results are cached: an
+        offline result (server not connected yet, a false-negative at startup) is left
+        uncached so a later pass re-resolves and can upgrade the placeholder."""
         upgraded = False
         for record in self.records:
             if self.isCanceled():
@@ -130,11 +133,12 @@ class ResolveForeignTask(backgroundthread.Task):
             key = u'{0}:{1}'.format(record.get('server_uuid'), record.get('section_key'))
             cache = getattr(self.win, '_foreignResolved', None) or {}
             if key in cache:
-                continue  # already resolved this session
+                continue  # already resolved (live) this session
             section, offline = self.win.resolveForeignLibrary(record, manager=self.manager)
-            if not offline:
-                upgraded = True  # placeholder -> live: caller refreshes the rail
+            if offline:
+                continue  # don't cache a transient false-negative; retry next pass
             self.win._foreignResolved[key] = (section, offline)
+            upgraded = True
         return upgraded
 
 
@@ -5116,7 +5120,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         reachable after startup). Returns True if any placeholder went live.
         """
         upgraded = False
-        cache = getattr(self, '_foreignResolved', None) or {}
+        cache = getattr(self, '_foreignResolved', None)
+        if cache is None:
+            cache = {}
         for key, record in list(getattr(self, 'allSections', {}).items()):
             if not isinstance(record, ForeignLibrarySection):
                 continue
@@ -5134,6 +5140,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     'section_title': record.section_title,
                 })
                 if not offline:
+                    cache[record.sectionId] = (resolved, False)  # keep cache in sync
                     self.allSections[key] = resolved
                     upgraded = True
         return upgraded
