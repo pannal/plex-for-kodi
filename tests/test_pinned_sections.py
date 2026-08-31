@@ -361,6 +361,17 @@ class ForeignResolveCacheTest(KodiTestCase):
                                                 selected_server_uuid="SERVERUUID")
         self.assertIs(sections[0], live)
 
+    def test_live_foreign_title_does_not_accumulate_server_name(self):
+        # the cached section is reused across passes; formatting must be idempotent
+        # (raw title + '- server' every time, never '- server - server - ...')
+        live = FakeSection(key="2", server_uuid="AWAY")
+        live.is_foreign = True
+        self.win._foreignResolved["AWAY:2"] = (live, False)
+        for _ in range(3):
+            sections = self.win.foreignRailSections(manager=FakeServer("AWAY"),
+                                                    selected_server_uuid="SERVERUUID")
+            self.assertEqual("Series - Away", sections[0].title)
+
 
 class ForeignResolveTaskTest(KodiTestCase):
     def setUp(self):
@@ -739,6 +750,7 @@ class ForeignRailSectionsTest(KodiTestCase):
 
     def test_reachable_server_yields_a_live_section_with_suffixed_title(self):
         live = FakeResolvableSection()
+        self.win._foreignLibraries[0]["section_title"] = "Live Movies"  # resolve syncs this
         self.win._foreignResolved = {"AWAY:1": (live, False)}
         sections = self.win.foreignRailSections(manager=FakeManager([]),
                                                 selected_server_uuid="LOCAL")

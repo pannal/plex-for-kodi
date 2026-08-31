@@ -1219,8 +1219,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     }), True)
             section.is_foreign = True
             if not offline:
+                # format from the raw stored title every pass; the cached section's
+                # title stays raw so re-resolving never appends '- server' twice
                 section.title = u'{0} - {1}'.format(
-                    section.title, record.get('server_name'))
+                    record.get('section_title') or section.title,
+                    record.get('server_name'))
             sections.append(section)
         return sections
 
