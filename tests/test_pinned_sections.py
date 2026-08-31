@@ -47,6 +47,7 @@ class FakeSection(object):
     def __init__(self, key="3", title="Movies", server_uuid="SERVERUUID"):
         self.key = key
         self.title = title
+        self.server_uuid = server_uuid
         self.server = FakeServer(server_uuid)
 
     def all(self, *args, **kwargs):
@@ -352,6 +353,48 @@ class ForeignResolveTaskTest(KodiTestCase):
         upgraded = task._resolve_records()
         self.assertFalse(upgraded)
         self.assertTrue(self.win._foreignResolved["AWAY:2"][1])  # offline True
+
+
+class ForeignReResolveCacheTest(KodiTestCase):
+    def test_re_resolve_uses_cached_live_result(self):
+        win = homeWindow({})
+        live = FakeSection(key="2", server_uuid="AWAY")
+        win._foreignResolved = {"AWAY:2": (live, False)}
+        win.allSections = {"AWAY:2": home.ForeignLibrarySection.placeholder(
+            server_uuid="AWAY", section_key="2", server_name="Away",
+            section_title="Series")}
+        upgraded = win._reResolveForeignPlaceholders("AWAY")
+        self.assertTrue(upgraded)
+        self.assertIs(win.allSections["AWAY:2"], live)
+
+    def test_re_resolve_falls_back_to_network_for_uncached(self):
+        win = homeWindow({})
+        win._foreignResolved = {}
+        live = FakeSection(key="2", server_uuid="AWAY")
+        server = FakeServer()
+        server.uuid = "AWAY"
+        class FakeLib(object):
+            def sections(self):
+                return [live]
+        server.library = FakeLib()
+        class RealLibServer(object):
+            def __init__(self, uuid, library):
+                self.uuid = uuid
+                self.library = library
+        real = RealLibServer("AWAY", server.library)
+        manager = FakeManager([real])
+        win.allSections = {"AWAY:2": home.ForeignLibrarySection.placeholder(
+            server_uuid="AWAY", section_key="2", server_name="Away",
+            section_title="Series")}
+        import lib.windows.home as home_mod
+        old = home_mod.plexapp.SERVERMANAGER
+        home_mod.plexapp.SERVERMANAGER = manager
+        try:
+            upgraded = win._reResolveForeignPlaceholders("AWAY")
+        finally:
+            home_mod.plexapp.SERVERMANAGER = old
+        self.assertTrue(upgraded)
+        self.assertIs(win.allSections["AWAY:2"], live)
 
 
 class LibrarySettingsPerItemTypeTest(KodiTestCase):

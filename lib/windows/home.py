@@ -1291,14 +1291,15 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             backgroundthread.BGThreader.addTasks(tasks)
 
     def _onForeignResolved(self):
-        """Called from ResolveForeignTask on a worker thread: swap placeholders for
-        their cached-live sections, then refresh the rail once."""
+        """Called from ResolveForeignTask on a worker thread: upgrade placeholders and
+        refresh the rail once."""
         self._foreignResolveScheduled = False
         if not any(not offline for _, offline in
                    (getattr(self, '_foreignResolved', {}) or {}).values()):
             return  # nothing went live; nothing to refresh
         with self.lock:
-            self._reResolveForeignPlaceholdersFromCache()
+            for server_uuid in {r.get('server_uuid') for r in self.foreignLibraries()}:
+                self._reResolveForeignPlaceholders(server_uuid)
             self.serverRefresh()
 
     def _kickForeignResolution(self):
@@ -1316,16 +1317,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         task = ResolveForeignTask().setup(self, pending)
         self.tasks.append(task)
         backgroundthread.BGThreader.addTask(task)
-
-    def _reResolveForeignPlaceholdersFromCache(self):
-        """Swap cached-live sections over their placeholders in allSections (no network)."""
-        cache = getattr(self, '_foreignResolved', None) or {}
-        for key, record in list(getattr(self, 'allSections', {}).items()):
-            if not isinstance(record, ForeignLibrarySection):
-                continue
-            cached = cache.get(record.sectionId)
-            if cached is not None and not cached[1]:
-                self.allSections[key] = cached[0]
 
     # --- SectionId settings migration (backward compat) -----------------------
     # Before sectionId, this addon (a released 1.13.x/1.14.x) persisted settings
@@ -5118,21 +5109,33 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.onNewServer()
 
     def _reResolveForeignPlaceholders(self, server_uuid):
+        """Upgrade placeholders for `server_uuid` to their live section.
+
+        Uses the resolution cache when available (no network); falls back to a network
+        resolve for records not resolved this session (e.g. a server that became
+        reachable after startup). Returns True if any placeholder went live.
+        """
         upgraded = False
-        for key, record in list(self.allSections.items()):
+        cache = getattr(self, '_foreignResolved', None) or {}
+        for key, record in list(getattr(self, 'allSections', {}).items()):
             if not isinstance(record, ForeignLibrarySection):
                 continue
             if record.server_uuid != server_uuid:
                 continue
-            resolved, offline = self.resolveForeignLibrary({
-                'server_uuid': record.server_uuid,
-                'section_key': record.section_key,
-                'server_name': record.server_name,
-                'section_title': record.section_title,
-            })
-            if not offline:
-                self.allSections[key] = resolved
+            cached = cache.get(record.sectionId)
+            if cached is not None and not cached[1]:
+                self.allSections[key] = cached[0]  # reuse cached live, no network
                 upgraded = True
+            else:
+                resolved, offline = self.resolveForeignLibrary({
+                    'server_uuid': record.server_uuid,
+                    'section_key': record.section_key,
+                    'server_name': record.server_name,
+                    'section_title': record.section_title,
+                })
+                if not offline:
+                    self.allSections[key] = resolved
+                    upgraded = True
         return upgraded
 
     def onReachableServer(self, server=None, **kwargs):
