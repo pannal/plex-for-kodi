@@ -4998,7 +4998,28 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def onRemoveServer(self, **kwargs):
         self.onNewServer()
 
+    def _reResolveForeignPlaceholders(self, server_uuid):
+        upgraded = False
+        for key, record in list(self.allSections.items()):
+            if not isinstance(record, ForeignLibrarySection):
+                continue
+            if record.server_uuid != server_uuid:
+                continue
+            resolved, offline = self.resolveForeignLibrary({
+                'server_uuid': record.server_uuid,
+                'section_key': record.section_key,
+                'server_name': record.server_name,
+                'section_title': record.section_title,
+            })
+            if not offline:
+                self.allSections[key] = resolved
+                upgraded = True
+        return upgraded
+
     def onReachableServer(self, server=None, **kwargs):
+        if server is not None and self._reResolveForeignPlaceholders(server.uuid):
+            self.serverRefresh()
+            return
         for mli in self.serverList:
             if mli.uuid == server.uuid:
                 mli.unHookSignals()

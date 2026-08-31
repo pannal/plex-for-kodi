@@ -835,6 +835,74 @@ class CatalogIdRoundTripTest(KodiTestCase):
         self.assertEqual(win.parseCatalogId("home.ondeck"), (None, "home.ondeck"))
 
 
+class ForeignPlaceholderReResolveTest(KodiTestCase):
+    def setUp(self):
+        super(ForeignPlaceholderReResolveTest, self).setUp()
+        self.win = homeWindow({})
+        self.win.allSections = {}
+        self.ph = home.ForeignLibrarySection.placeholder(
+            server_uuid="BBB", section_key="1", server_name="Away",
+            section_title="Movies")
+        self.win.allSections[str(self.win.cacheKeyForSection(self.ph))] = self.ph
+        self.win.serverList = []  # guard: onReachableServer loops this when no placeholder path
+
+    def test_reResolve_returns_false_for_unrelated_server(self):
+        self.assertFalse(self.win._reResolveForeignPlaceholders("AAA"))
+
+    def test_reResolve_returns_true_for_matching_server(self):
+        live = FakeResolvableSection()
+        manager = FakeManager([FakeServer(uuid="BBB")])
+
+        def fake_resolve(record, manager=None):
+            return live, False
+
+        self.win.resolveForeignLibrary = fake_resolve
+        self.assertTrue(self.win._reResolveForeignPlaceholders("BBB"))
+
+    def test_reResolve_replaces_placeholder_in_allSections(self):
+        live = FakeResolvableSection()
+        manager = FakeManager([FakeServer(uuid="BBB")])
+
+        def fake_resolve(record, manager=None):
+            return live, False
+
+        self.win.resolveForeignLibrary = fake_resolve
+        key = str(self.win.cacheKeyForSection(self.ph))
+        self.win._reResolveForeignPlaceholders("BBB")
+        self.assertIs(live, self.win.allSections[key])
+        self.assertFalse(self.win.allSections[key].offline)
+
+    def test_onReachableServer_triggers_refresh_for_placeholder_server(self):
+        refresh_called = []
+
+        def fake_refresh(section=None):
+            refresh_called.append(True)
+
+        self.win.serverRefresh = fake_refresh
+        live = FakeResolvableSection()
+
+        def fake_resolve(record, manager=None):
+            return live, False
+
+        self.win.resolveForeignLibrary = fake_resolve
+        server = FakeServer(uuid="BBB")
+        self.win.onReachableServer(server=server)
+        self.assertEqual(1, len(refresh_called))
+
+    def test_onReachableServer_does_not_refresh_for_unrelated_server(self):
+        refresh_called = []
+
+        def fake_refresh(section=None):
+            refresh_called.append(True)
+
+        self.win.serverRefresh = fake_refresh
+        # prevent fallthrough into showServers which needs self.lock
+        self.win.onNewServer = lambda **kw: None
+        server = FakeServer(uuid="AAA")
+        self.win.onReachableServer(server=server)
+        self.assertEqual(0, len(refresh_called))
+
+
 class PersistenceReKeyTest(KodiTestCase):
     def setUp(self):
         super(PersistenceReKeyTest, self).setUp()
