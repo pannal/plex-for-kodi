@@ -1150,12 +1150,6 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     self.librarySettings['order'].remove(sid)
                     self.saveLibrarySettings()
 
-    def pruneForeignLibraries(self, known_servers):
-        libs = self.foreignLibraries()
-        self._foreignLibraries = [r for r in libs if r.get('server_uuid') in known_servers]
-        self.saveForeignLibraries()
-        return self._foreignLibraries
-
     def resolveForeignLibrary(self, record, manager=None):
         """Resolve a foreign config record to a live section or an offline placeholder.
 

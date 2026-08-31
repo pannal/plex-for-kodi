@@ -605,13 +605,6 @@ class ForeignLibraryConfigTest(KodiTestCase):
         self.win.unpinForeignLibrary(server_uuid="NOPE", section_key="1")
         self.assertEqual(1, len(self.win.foreignLibraries()))
 
-    def test_prune_drops_records_for_unknown_servers(self):
-        self.pin(server_uuid="AAA")
-        self.pin(server_uuid="BBB", name="Other")
-        pruned = self.win.pruneForeignLibraries(known_servers={"AAA"})
-        surviving = [r["server_uuid"] for r in pruned]
-        self.assertEqual(["AAA"], surviving)
-
     def test_unpin_with_only_one_filter_is_a_safe_noop(self):
         # AND semantics: both server and key must match to remove
         self.pin(server_uuid="AAA")
