@@ -1141,19 +1141,35 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def foreignRailSections(self, manager=None, selected_server_uuid=None):
         """Resolve the foreign-library config into rail-appendable sections.
 
-        Live sections get their server suffix applied to the display title, matching
-        the placeholder's suffixed title. Records for the currently selected server
-        are skipped (they're already on the rail as normal libraries). Every returned
-        section is marked is_foreign so the render loop can tag it for the UI.
+        Serves from the per-sectionId resolution cache; un-cached records (not yet
+        resolved this session) render as offline placeholders so the GUI thread never
+        blocks on a foreign server's network call. Resolution happens off-thread via
+        ResolveForeignTask and upgrades placeholders to live in place.
         """
         if selected_server_uuid is None:
             sel = plexapp.SERVERMANAGER.selectedServer
             selected_server_uuid = sel.uuid if sel else None
+
+        def record_key(record):
+            return u'{0}:{1}'.format(record.get('server_uuid'), record.get('section_key'))
+
         sections = []
         for record in self.foreignLibraries():
             if record.get('server_uuid') == selected_server_uuid:
                 continue
-            section, offline = self.resolveForeignLibrary(record, manager=manager)
+            cache = getattr(self, '_foreignResolved', None) or {}
+            resolved = cache.get(record_key(record))
+            if resolved is not None:
+                section, offline = resolved
+            else:
+                # not resolved this session: show placeholder now, resolve in background
+                section, offline = (
+                    ForeignLibrarySection.placeholder(**{
+                        'server_uuid': record.get('server_uuid'),
+                        'section_key': record.get('section_key'),
+                        'server_name': record.get('server_name'),
+                        'section_title': record.get('section_title'),
+                    }), True)
             section.is_foreign = True
             if not offline:
                 section.title = u'{0} - {1}'.format(

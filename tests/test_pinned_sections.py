@@ -293,6 +293,33 @@ class ForeignRailOrderTest(KodiTestCase):
         self.assertEqual(["1", "5", "2"], self.keys(got))
 
 
+class ForeignResolveCacheTest(KodiTestCase):
+    def setUp(self):
+        self.win = homeWindow({})
+        self.win._foreignLibraries = [
+            {"server_uuid": "AWAY", "section_key": "2",
+             "server_name": "Away", "section_title": "Series"},
+        ]
+        self.win._foreignResolved = {}
+        self.win.tasks = []
+
+    def test_uncached_foreign_renders_a_placeholder_without_network(self):
+        # no cache entry yet -> placeholder (offline), no server, no blocking resolve
+        sections = self.win.foreignRailSections(manager=FakeServer("AWAY"),
+                                                selected_server_uuid="SERVERUUID")
+        self.assertEqual(1, len(sections))
+        self.assertTrue(getattr(sections[0], 'offline', False))
+        self.assertIsNone(sections[0].server)
+
+    def test_cached_live_foreign_is_served_from_cache(self):
+        live = FakeSection(key="2", server_uuid="AWAY")
+        live.is_foreign = True
+        self.win._foreignResolved["AWAY:2"] = (live, False)
+        sections = self.win.foreignRailSections(manager=FakeServer("AWAY"),
+                                                selected_server_uuid="SERVERUUID")
+        self.assertIs(sections[0], live)
+
+
 class LibrarySettingsPerItemTypeTest(KodiTestCase):
     """
     Sort and filters are stored per (section, item type).
@@ -589,14 +616,8 @@ class ForeignRailSectionsTest(KodiTestCase):
 
     def test_reachable_server_yields_a_live_section_with_suffixed_title(self):
         live = FakeResolvableSection()
-        class FakeLib(object):
-            def sections(self):
-                return [live]
-        server = FakeServer()
-        server.uuid = "AWAY"  # match the record's foreign server
-        server.library = FakeLib()
-        manager = FakeManager([server])
-        sections = self.win.foreignRailSections(manager=manager,
+        self.win._foreignResolved = {"AWAY:1": (live, False)}
+        sections = self.win.foreignRailSections(manager=FakeManager([]),
                                                 selected_server_uuid="LOCAL")
         self.assertEqual(1, len(sections))
         self.assertFalse(sections[0].offline)
