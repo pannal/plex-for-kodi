@@ -1167,6 +1167,31 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             and r.get('section_key') == str(section.key)
             for r in self.foreignLibraries())
 
+    def _orderRailSections(self, sections, foreign_sections, order):
+        """Order locals plus foreign into the rail render order.
+
+        Locals and pins follow the saved `order`. A foreign library that was moved keeps
+        the slot its sectionId holds in `order`; one never moved (absent from `order`)
+        goes to the end of the rail. Before this, foreign libraries were always appended
+        last, so a moved one snapped back to the end after a restart.
+        """
+
+        def orderPos(s):
+            ck = self.cacheKeyForSection(s)
+            if ck in order:
+                return order.index(ck), 0
+            if isinstance(s, PinnedTypeSection):
+                lib_ck = self.cacheKeyForSection(s.librarySection)
+                if lib_ck in order:
+                    # pinned after the order was stored: follow its library instead of
+                    # ending up in front of everything
+                    return order.index(lib_ck), 1
+            if getattr(s, 'is_foreign', False):
+                return len(order), 0  # never-ordered foreign: end of rail
+            return -1, 0
+
+        return sorted(sections + foreign_sections, key=orderPos)
+
     @staticmethod
     def _sameRailSection(a, b):
         """Two rail sections are the same rail item iff their sectionIds match."""
@@ -4231,23 +4256,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 pinned.append(PinnedTypeSection(section, item_type))
         sections = pinned
 
-        # sort libraries
+        # foreign libraries resolved once (network); merged into the rail render order
+        # below so a moved foreign library keeps its saved position across restart.
+        # They stay out of the cross-section hub pipeline, which only handles locals.
+        foreign_sections = self.foreignRailSections()
+        for fs in foreign_sections:
+            self.allSections[self.cacheKeyForSection(fs)] = fs
+
+        hub_sections = list(sections)
+
+        # sort libraries (locals + foreign merge for render order)
         if "order" in self.librarySettings:
-            order = self.librarySettings["order"]
-
-            def orderPos(s):
-                ck = self.cacheKeyForSection(s)
-                if ck in order:
-                    return order.index(ck), 0
-                if isinstance(s, PinnedTypeSection):
-                    lib_ck = self.cacheKeyForSection(s.librarySection)
-                    if lib_ck in order:
-                        # pinned after the order was stored: follow its library instead of
-                        # ending up in front of everything
-                        return order.index(lib_ck), 1
-                return -1, 0
-
-            sections = sorted(sections, key=orderPos)
+            sections = self._orderRailSections(
+                sections, foreign_sections, self.librarySettings["order"])
+        else:
+            sections = sections + foreign_sections
 
         # speedup if we don't have any hidden libraries
         if not self.anyLibraryHidden:
@@ -4256,7 +4279,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if plexapp.SERVERMANAGER.selectedServer.hasHubs():
             # Include hidden sections that are needed for cross-section hubs.
             # Pinned item-type views share their library's hubs, so they're never fetched.
-            fetch_sections = [s for s in sections if not isinstance(s, PinnedTypeSection)]
+            fetch_sections = [s for s in hub_sections if not isinstance(s, PinnedTypeSection)]
             required_sources = self.getRequiredSourceSections(None)  # Home's required sources
             for source_key in required_sources:
                 if source_key and source_key in self.allSections:
@@ -4269,19 +4292,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             # are not hub sources for anything, so they're counted nowhere and fetched apart.
             self._pendingLibrarySections = len([s for s in fetch_sections if not s.server.DEFER_HUBS])
             self.tasks += [PinnedTypeHubsTask().setup(s, self.sectionHubsCallback)
-                           for s in sections if isinstance(s, PinnedTypeSection)
+                           for s in hub_sections if isinstance(s, PinnedTypeSection)
                            and not s.server.DEFER_HUBS]
             backgroundthread.BGThreader.addTasks(self.tasks)
 
-        # foreign libraries: appended after local sorting, so they end up at the end of
-        # the rail; live foreign sections now have their hubs fetched via
-        # scheduleForeignHubFetches; offline placeholders are skipped there.
-        foreign_sections = self.foreignRailSections()
-        # Populate allSections with foreign sections keyed by their cacheKeyForSection
-        for fs in foreign_sections:
-            fck = self.cacheKeyForSection(fs)
-            self.allSections[fck] = fs
-        sections = sections + foreign_sections
         self.scheduleForeignHubFetches(foreign_sections)
 
         show_pm_indicator = util.getSetting('path_mapping_indicators')

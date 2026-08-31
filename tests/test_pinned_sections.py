@@ -266,6 +266,33 @@ class PinnedSectionOrderTest(KodiTestCase):
                          self.orderedKeys(["5", "3"], [movies, shows]))
 
 
+class ForeignRailOrderTest(KodiTestCase):
+    """A moved foreign library keeps its saved slot; an untouched one stays at the end."""
+
+    def setUp(self):
+        self.win = homeWindow({})
+        self.movies = FakeSection(key="1")
+        self.shows = FakeSection(key="5", server_uuid="SERVERUUID", title="TV")
+        self.foreign = FakeSection(key="2", server_uuid="AWAY")
+        self.foreign.is_foreign = True
+
+    def keys(self, sections):
+        return [s.key for s in sections]
+
+    def test_moved_foreign_keeps_its_saved_position(self):
+        # saved order records the foreign library mid-rail (user moved it there)
+        got = self.win._orderRailSections(
+            [self.movies, self.shows], [self.foreign],
+            ["SERVERUUID:1", "AWAY:2", "SERVERUUID:5"])
+        self.assertEqual(["1", "2", "5"], self.keys(got))
+
+    def test_never_ordered_foreign_goes_to_the_end(self):
+        got = self.win._orderRailSections(
+            [self.movies, self.shows], [self.foreign],
+            ["SERVERUUID:1", "SERVERUUID:5"])
+        self.assertEqual(["1", "5", "2"], self.keys(got))
+
+
 class LibrarySettingsPerItemTypeTest(KodiTestCase):
     """
     Sort and filters are stored per (section, item type).
