@@ -294,6 +294,47 @@ class ForeignRailOrderTest(KodiTestCase):
         self.assertEqual(["1", "5", "2"], self.keys(got))
 
 
+class ForeignUnpinOrderTest(KodiTestCase):
+    """Unpinning a foreign library clears its saved rail slot, so re-pinning starts
+    at the end instead of resurrecting its old position."""
+
+    def setUp(self):
+        self.win = homeWindow({})
+        # this test exercises the in-memory order-slot mutation, not Kodi settings
+        # persistence (which needs account/server context the bare window lacks)
+        self.win.saveForeignLibraries = lambda: None
+        self.win.saveLibrarySettings = lambda: None
+
+    def test_unpin_drops_the_saved_order_slot(self):
+        self.win._foreignLibraries = [
+            {"server_uuid": "AWAY", "section_key": "2",
+             "server_name": "Away", "section_title": "Series"},
+        ]
+        self.win.librarySettings = {"order": ["SERVERUUID:1", "AWAY:2", "SERVERUUID:5"]}
+        self.win.unpinForeignLibrary(server_uuid="AWAY", section_key="2")
+        self.assertEqual([], self.win._foreignLibraries)
+        self.assertNotIn("AWAY:2", self.win.librarySettings["order"])
+
+    def test_unpin_leaves_other_saved_slots_untouched(self):
+        self.win._foreignLibraries = [
+            {"server_uuid": "AWAY", "section_key": "2",
+             "server_name": "Away", "section_title": "Series"},
+        ]
+        self.win.librarySettings = {"order": ["SERVERUUID:1", "AWAY:2", "SERVERUUID:5"]}
+        self.win.unpinForeignLibrary(server_uuid="AWAY", section_key="2")
+        self.assertEqual(["SERVERUUID:1", "SERVERUUID:5"],
+                         self.win.librarySettings["order"])
+
+    def test_unpin_without_order_does_not_crash(self):
+        self.win._foreignLibraries = [
+            {"server_uuid": "AWAY", "section_key": "2",
+             "server_name": "Away", "section_title": "Series"},
+        ]
+        self.win.librarySettings = {}
+        self.win.unpinForeignLibrary(server_uuid="AWAY", section_key="2")
+        self.assertEqual([], self.win._foreignLibraries)
+
+
 class ForeignResolveCacheTest(KodiTestCase):
     def setUp(self):
         self.win = homeWindow({})

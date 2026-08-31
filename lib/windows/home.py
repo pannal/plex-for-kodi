@@ -1141,6 +1141,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         ]
         if len(self._foreignLibraries) != before:
             self.saveForeignLibraries()
+            if server_uuid is not None and section_key is not None:
+                # drop the unpinned library's saved rail slot so re-pinning starts
+                # from the end instead of resurrecting its old position
+                sid = u'{0}:{1}'.format(server_uuid, str(section_key))
+                order = self.librarySettings.get('order')
+                if order and sid in order:
+                    self.librarySettings['order'].remove(sid)
+                    self.saveLibrarySettings()
 
     def pruneForeignLibraries(self, known_servers):
         libs = self.foreignLibraries()
