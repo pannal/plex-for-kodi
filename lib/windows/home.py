@@ -4200,7 +4200,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.allSections = {}  # All libraries including hidden, for cross-section hub fetching
         for section in _sections:
             ck = self.cacheKeyForSection(section)
-            self.allSections[str(ck)] = section
+            self.allSections[ck] = section
             if ck in self.librarySettings and not self.librarySettings[ck].get("show", True):
                 self.anyLibraryHidden = True
                 continue
@@ -4264,7 +4264,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # Populate allSections with foreign sections keyed by their cacheKeyForSection
         for fs in foreign_sections:
             fck = self.cacheKeyForSection(fs)
-            self.allSections[str(fck)] = fs
+            self.allSections[fck] = fs
         sections = sections + foreign_sections
         self.scheduleForeignHubFetches(foreign_sections)
 

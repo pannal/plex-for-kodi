@@ -945,3 +945,25 @@ class PersistenceReKeyTest(KodiTestCase):
         hubs = win.hubSettings["SERVERUUID:1"]["hubs"]
         self.assertTrue(any(h["catalog_id"] == "SERVERUUID:1|continueWatching" for h in hubs))
 
+    def test_library_settings_rekey_is_idempotent(self):
+        win = homeWindow({})
+        already_rekeyed = {
+            "SERVERUUID:1": {"show": False},
+            "SERVERUUID:2": {"show": True},
+            "order": ["SERVERUUID:1", "SERVERUUID:2", "playlists"],
+            "playlists": {"show": True},
+        }
+        first = win.rekeyLibrarySettings(already_rekeyed)
+        second = win.rekeyLibrarySettings(first)
+        self.assertEqual(second, first)
+
+    def test_hub_settings_rekey_is_idempotent(self):
+        win = homeWindow({})
+        already_rekeyed = {
+            None: {"custom": True, "hubs": [{"catalog_id": "home.continue"}]},
+            "SERVERUUID:1": {"custom": True, "hubs": [{"catalog_id": "SERVERUUID:1|continueWatching"}]},
+        }
+        first = win.rekeyHubSettings(already_rekeyed)
+        second = win.rekeyHubSettings(first)
+        self.assertEqual(second, first)
+
