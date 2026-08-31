@@ -1293,11 +1293,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def _onForeignResolved(self):
         """Called from ResolveForeignTask on a worker thread: upgrade placeholders and
         refresh the rail once."""
-        self._foreignResolveScheduled = False
-        if not any(not offline for _, offline in
-                   (getattr(self, '_foreignResolved', {}) or {}).values()):
-            return  # nothing went live; nothing to refresh
         with self.lock:
+            self._foreignResolveScheduled = False
+            if not any(not offline for _, offline in
+                       (getattr(self, '_foreignResolved', {}) or {}).values()):
+                return  # nothing went live; nothing to refresh
             for server_uuid in {r.get('server_uuid') for r in self.foreignLibraries()}:
                 self._reResolveForeignPlaceholders(server_uuid)
             self.serverRefresh()
