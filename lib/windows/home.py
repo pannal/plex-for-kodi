@@ -434,10 +434,12 @@ def sectionId(section):
 
 
 def hubSectionKey(section_key, server_uuid):
-    """Compose a persisted sectionId key for a (bare) section key owned by `server_uuid`.
+    """Compose a persisted sectionId key from its parts: '{uuid}:{key}'.
 
-    Home is None. Only used during on-disk re-key of bare own-server keys; already
-    sectionId-shaped keys ('uuid:key') are never passed here.
+    Same output shape as sectionId() but from raw persisted parts (a bare key + the
+    owning server's uuid) rather than a live section object. Only used during the
+    on-disk sectionId settings migration (see rekeyLibrarySettings/rekeyHubSettings).
+    Home is None. Already sectionId-shaped keys are never passed here.
     """
     if section_key is None:
         return None
@@ -447,8 +449,11 @@ def hubSectionKey(section_key, server_uuid):
 def _is_bare_key(key):
     """True when a persisted settings key is a bare section wire key (needs re-key).
 
-    Bare keys are integer strings with no ':' separator. sectionId keys ('uuid:key') and
-    sentinel strings ('playlists', '/library/sections/watchlist', '__home__') are distinct.
+    Used by the sectionId settings migration (rekeyLibrarySettings/rekeyHubSettings):
+    a bare key ('1') has no server, so under multi-server it is ambiguous and must be
+    re-keyed to 'uuid:1'. Bare keys are integer strings with no ':' separator.
+    sectionId keys ('uuid:key') and sentinel strings ('playlists',
+    '/library/sections/watchlist', '__home__') are distinct and pass through untouched.
     """
     if key is None:
         return False
@@ -1208,6 +1213,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.tasks += tasks
         if tasks:
             backgroundthread.BGThreader.addTasks(tasks)
+
+    # --- SectionId settings migration (backward compat) -----------------------
+    # Before sectionId, this addon (a released 1.13.x/1.14.x) persisted settings
+    # against *bare* library wire keys ('1') and *colon* catalog_ids ('1:Movies').
+    # Multi-server means two servers can share a wire key, so the rail now keys by
+    # sectionId ('uuid:key') instead. These three re-key methods migrate already-
+    # saved settings to the new sectionId shape the first time they load, so existing
+    # users' hidden-state, ordering, and hub edits survive the upgrade instead of
+    # silently resetting. They run once, are idempotent, and never touch foreign
+    # or already-sectionId-shaped data. Top-level helpers: hubSectionKey /
+    # parseCatalogId. Kept intentionally; do not delete without a data-migration plan.
 
     def rekeyLibrarySettings(self, settings):
         """Re-key bare section keys in persisted librarySettings to sectionId (selected server)."""
