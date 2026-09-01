@@ -103,6 +103,45 @@ class SectionHubsTask(backgroundthread.Task):
             self.callback(self.section, hubs)
 
 
+class ResolveForeignTask(backgroundthread.Task):
+    """Resolve un-cached foreign-library records off the GUI thread.
+
+    Fills the per-sectionId resolution cache with (section, offline); live results let
+    the callback upgrade placeholders -> live and refresh the rail.
+    """
+
+    def setup(self, win, records, manager=None):
+        self.win = win
+        self.records = records
+        self.manager = manager
+        return self
+
+    def run(self):
+        if self.isCanceled() or not self.records:
+            return
+        self._resolve_records()
+        self.win._onForeignResolved()
+
+    def _resolve_records(self):
+        """Resolve un-cached records into the cache. Only LIVE results are cached: an
+        offline result (server not connected yet, a false-negative at startup) is left
+        uncached so a later pass re-resolves and can upgrade the placeholder."""
+        upgraded = False
+        for record in self.records:
+            if self.isCanceled():
+                break
+            key = u'{0}:{1}'.format(record.get('server_uuid'), record.get('section_key'))
+            cache = getattr(self.win, '_foreignResolved', None) or {}
+            if key in cache:
+                continue  # already resolved (live) this session
+            section, offline = self.win.resolveForeignLibrary(record, manager=self.manager)
+            if offline:
+                continue  # don't cache a transient false-negative; retry next pass
+            self.win._foreignResolved[key] = (section, offline)
+            upgraded = True
+        return upgraded
+
+
 class PinnedTypeHubsTask(backgroundthread.Task):
     """Builds the one hub a pinned item-type view shows: the library's collections."""
 
@@ -276,6 +315,7 @@ class DiscoverHubsTask(backgroundthread.Task):
 
             try:
                 section_key = section.key
+                section_id = sectionId(section)
                 section_type = getattr(section, 'type', 'unknown')
                 section_title = getattr(section, 'title', T(32411, 'Unknown'))
 
@@ -287,11 +327,11 @@ class DiscoverHubsTask(backgroundthread.Task):
 
                     # Create section-specific catalog identifier
                     # Home hubs: use clean identifier (e.g., "home.continue")
-                    # Library hubs: prefix with section key (e.g., "1:movie.recentlyadded")
+                    # Library hubs: prefix with sectionId (e.g., "SERVERUUID:1|movie.recentlyadded")
                     if section_key is None:
                         catalog_id = clean_identifier
                     else:
-                        catalog_id = '{}:{}'.format(section_key, clean_identifier)
+                        catalog_id = HomeWindow.foreignCatalogId(section_id, clean_identifier)
 
                     # Determine native display type from hub content
                     native_display = 'poster'  # Default
@@ -314,7 +354,7 @@ class DiscoverHubsTask(backgroundthread.Task):
                             'identifier': str(clean_identifier),
                             'title': str(hub_title),
                             'hubIdentifier': str(hub.hubIdentifier),
-                            'source_section_key': section_key,
+                            'source_section_key': section_id,
                             'source_section_title': str(section_title) if section_title else T(32411, 'Unknown'),
                             'source_section_type': str(section_type) if section_type else 'unknown',
                             'native_display': native_display,
@@ -409,6 +449,82 @@ class PinnedTypeSection(object):
 
 def pinnedSectionKey(section_key, item_type):
     return '{0}#{1}'.format(section_key, item_type)
+
+
+def sectionId(section):
+    """Collision-safe identity for a rail section, separate from its wire `key`.
+
+    Real sections are keyed by owning-server uuid + section key, so two servers with
+    the same numeric key (e.g. both '1') never collide in the same rail. Virtual
+    sections get fixed sentinels. A foreign placeholder carries its identity verbatim.
+    """
+    if isinstance(section, PinnedTypeSection):
+        return '{0}#{1}'.format(sectionId(section.librarySection), section.itemType)
+    stored = getattr(section, 'sectionId', None)
+    if stored:
+        return stored
+    if section.key is None:
+        return 'home'
+    if getattr(section, 'key', None) == 'playlists':
+        return 'playlists'
+    if getattr(section, 'ID', None) == 'watchlist':
+        return 'watchlist'
+    return '{0}:{1}'.format(section.server.uuid, section.key)
+
+
+def hubSectionKey(section_key, server_uuid):
+    """Compose a persisted sectionId key from its parts: '{uuid}:{key}'.
+
+    Same output shape as sectionId() but from raw persisted parts (a bare key + the
+    owning server's uuid) rather than a live section object. Only used during the
+    on-disk sectionId settings migration (see rekeyLibrarySettings/rekeyHubSettings).
+    Home is None. Already sectionId-shaped keys are never passed here.
+    """
+    if section_key is None:
+        return None
+    return u'{0}:{1}'.format(server_uuid, section_key)
+
+
+def _is_bare_key(key):
+    """True when a persisted settings key is a bare section wire key (needs re-key).
+
+    Used by the sectionId settings migration (rekeyLibrarySettings/rekeyHubSettings):
+    a bare key ('1') has no server, so under multi-server it is ambiguous and must be
+    re-keyed to 'uuid:1'. Bare keys are integer strings with no ':' separator.
+    sectionId keys ('uuid:key') and sentinel strings ('playlists',
+    '/library/sections/watchlist', '__home__') are distinct and pass through untouched.
+    """
+    if key is None:
+        return False
+    s = str(key)
+    return s.lstrip('-').isdigit() and ':' not in s
+
+
+class ForeignLibrarySection(object):
+    """Stand-in for a foreign library whose server is unknown or unreachable.
+
+    Carries the config record's denormalized labels and an explicit sectionId, so it
+    renders in the rail (suffixed title) and keeps the same identity even with server
+    None. Resolves to a live LibrarySection when the server is reachable.
+    """
+    offline = True
+    server = None
+    key = None
+    type = None
+    isMapped = False
+    mappingBroken = False
+
+    def __init__(self, server_uuid, section_key, server_name, section_title):
+        self.server_uuid = server_uuid
+        self.section_key = str(section_key)
+        self.server_name = server_name
+        self.section_title = section_title
+        self.title = u'{0} - {1}'.format(section_title, server_name)
+        self.sectionId = u'{0}:{1}'.format(server_uuid, self.section_key)
+
+    @classmethod
+    def placeholder(cls, **kwargs):
+        return cls(**kwargs)
 
 
 class ServerListItem(kodigui.ManagedListItem):
@@ -855,7 +971,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self._odHubsDirty = False
             # If section is stale, do a full section refresh instead of individual
             # hub updates. Running both causes race conditions and index errors.
-            hubs = self.sectionHubs.get(self.lastSection.key) if self.lastSection else None
+            hubs = self.sectionHubs.get(self.cacheKeyForSection(self.lastSection)) if self.lastSection else None
             if hubs is not None and time.time() - hubs.lastUpdated > HUBS_REFRESH_INTERVAL:
                 util.DEBUG_LOG('UpdateOnDeckHubs: Section stale, doing full refresh instead')
                 self.showHubs(self.lastSection, update=True)
@@ -971,12 +1087,315 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             pass
         except:
             util.ERROR()
+        self.librarySettings = self.rekeyLibrarySettings(self.librarySettings)
 
     def saveLibrarySettings(self):
         if self.librarySettings:
             setting_key = 'home.settings.{}.{}'.format(plexapp.SERVERMANAGER.selectedServer.uuid[-8:],
                                                        plexapp.ACCOUNT.ID)
             util.setSetting(setting_key, json.dumps(self.librarySettings))
+
+    def foreignSettingKey(self):
+        # account scope identical to loadLibrarySettings/loadHubSettings (home.py:1010,1118)
+        return 'home.foreign_libraries.{}'.format(plexapp.ACCOUNT.ID)
+
+    def loadForeignLibraries(self):
+        self._foreignLibraries = []
+        try:
+            data = util.getSetting(self.foreignSettingKey(), '')
+            self._foreignLibraries = json.loads(data) if data else []
+        except ValueError:
+            util.ERROR()
+
+    def saveForeignLibraries(self):
+        util.setSetting(self.foreignSettingKey(), json.dumps(self._foreignLibraries))
+
+    def foreignLibraries(self):
+        if not getattr(self, '_foreignLibraries', None):
+            self.loadForeignLibraries()
+        return self._foreignLibraries
+
+    def pinForeignLibrary(self, server_uuid, section_key, server_name, section_title):
+        libs = self.foreignLibraries()
+        for record in libs:
+            if record.get('server_uuid') == server_uuid and record.get('section_key') == str(section_key):
+                record['server_name'] = server_name
+                record['section_title'] = section_title
+                break
+        else:
+            libs.append({
+                'server_uuid': server_uuid,
+                'section_key': str(section_key),
+                'server_name': server_name,
+                'section_title': section_title,
+            })
+        self.saveForeignLibraries()
+
+    def unpinForeignLibrary(self, server_uuid=None, section_key=None):
+        libs = self.foreignLibraries()
+        before = len(libs)
+        self._foreignLibraries = [
+            r for r in libs
+            if not ((server_uuid is not None and r.get('server_uuid') == server_uuid)
+                    and (section_key is not None and r.get('section_key') == str(section_key)))
+        ]
+        if len(self._foreignLibraries) != before:
+            self.saveForeignLibraries()
+            if server_uuid is not None and section_key is not None:
+                # drop the unpinned library's saved rail slot so re-pinning starts
+                # from the end instead of resurrecting its old position
+                sid = u'{0}:{1}'.format(server_uuid, str(section_key))
+                order = self.librarySettings.get('order')
+                if order and sid in order:
+                    self.librarySettings['order'].remove(sid)
+                    self.saveLibrarySettings()
+
+    def resolveForeignLibrary(self, record, manager=None):
+        """Resolve a foreign config record to a live section or an offline placeholder.
+
+        Returns (section, offline). Live sections refresh the record's denormalized title.
+        """
+        if manager is None:
+            manager = plexapp.SERVERMANAGER
+        server = self._findServerByUuid(manager, record.get('server_uuid'))
+        if server is None:
+            return ForeignLibrarySection.placeholder(**{
+                'server_uuid': record.get('server_uuid'),
+                'section_key': record.get('section_key'),
+                'server_name': record.get('server_name'),
+                'section_title': record.get('section_title'),
+            }), True
+        try:
+            for section in server.library.sections():
+                if str(section.key) == str(record.get('section_key')):
+                    record['section_title'] = section.title
+                    return section, False
+        except Exception:
+            util.ERROR()
+        return ForeignLibrarySection.placeholder(**{
+            'server_uuid': record.get('server_uuid'),
+            'section_key': record.get('section_key'),
+            'server_name': record.get('server_name'),
+            'section_title': record.get('section_title'),
+        }), True
+
+    def foreignRailSections(self, manager=None, selected_server_uuid=None):
+        """Resolve the foreign-library config into rail-appendable sections.
+
+        Serves from the per-sectionId resolution cache; un-cached records (not yet
+        resolved this session) render as offline placeholders so the GUI thread never
+        blocks on a foreign server's network call. Resolution happens off-thread via
+        ResolveForeignTask and upgrades placeholders to live in place.
+        """
+        if selected_server_uuid is None:
+            sel = plexapp.SERVERMANAGER.selectedServer
+            selected_server_uuid = sel.uuid if sel else None
+
+        def record_key(record):
+            return u'{0}:{1}'.format(record.get('server_uuid'), record.get('section_key'))
+
+        sections = []
+        for record in self.foreignLibraries():
+            if record.get('server_uuid') == selected_server_uuid:
+                continue
+            cache = getattr(self, '_foreignResolved', None) or {}
+            resolved = cache.get(record_key(record))
+            if resolved is not None:
+                section, offline = resolved
+            else:
+                # not resolved this session: show placeholder now, resolve in background
+                section, offline = (
+                    ForeignLibrarySection.placeholder(**{
+                        'server_uuid': record.get('server_uuid'),
+                        'section_key': record.get('section_key'),
+                        'server_name': record.get('server_name'),
+                        'section_title': record.get('section_title'),
+                    }), True)
+            section.is_foreign = True
+            if not offline:
+                # format from the raw stored title every pass; the cached section's
+                # title stays raw so re-resolving never appends '- server' twice
+                section.title = u'{0} - {1}'.format(
+                    record.get('section_title') or section.title,
+                    record.get('server_name'))
+            sections.append(section)
+        return sections
+
+    def isSectionPinnedToHome(self, section):
+        return any(
+            r.get('server_uuid') == section.server.uuid
+            and r.get('section_key') == str(section.key)
+            for r in self.foreignLibraries())
+
+    def _orderRailSections(self, sections, foreign_sections, order):
+        """Order locals plus foreign into the rail render order.
+
+        Locals and pins follow the saved `order`. A foreign library that was moved keeps
+        the slot its sectionId holds in `order`; one never moved (absent from `order`)
+        goes to the end of the rail. Before this, foreign libraries were always appended
+        last, so a moved one snapped back to the end after a restart.
+        """
+
+        def orderPos(s):
+            ck = self.cacheKeyForSection(s)
+            if ck in order:
+                return order.index(ck), 0
+            if isinstance(s, PinnedTypeSection):
+                lib_ck = self.cacheKeyForSection(s.librarySection)
+                if lib_ck in order:
+                    # pinned after the order was stored: follow its library instead of
+                    # ending up in front of everything
+                    return order.index(lib_ck), 1
+            if getattr(s, 'is_foreign', False):
+                return len(order), 0  # never-ordered foreign: end of rail
+            return -1, 0
+
+        return sorted(sections + foreign_sections, key=orderPos)
+
+    @staticmethod
+    def _sameRailSection(a, b):
+        """Two rail sections are the same rail item iff their sectionIds match."""
+        return sectionId(a) == sectionId(b)
+
+    def cacheKeyForSection(self, section):
+        """Collision-safe sectionHubs key for a section object.
+
+        Real libraries and pinned type-views key by sectionId ('uuid:key' / 'uuid:key#type'),
+        which is unique per server. Virtual sections (Home/Playlists/Watchlist) keep their
+        existing scalar keys.
+        """
+        if section is None:
+            return None  # Home
+        sid = sectionId(section)
+        if sid in ('playlists', 'watchlist', 'home'):
+            return getattr(section, 'key', None)  # virtual: keep existing scalar key
+        return sid  # real + pinned-type + foreign placeholder
+
+    @staticmethod
+    def foreignCatalogId(section_key, identifier):
+        """Compose a catalog_id embedding a section key, recovering both parts."""
+        if section_key is None:
+            return identifier
+        return u'{0}|{1}'.format(section_key, identifier)
+
+    @staticmethod
+    def parseCatalogId(catalog_id):
+        """Split a catalog_id back into (source_section_key, identifier). Home => (None, id)."""
+        if '|' in str(catalog_id):
+            src, ident = str(catalog_id).rsplit('|', 1)
+            return src, ident
+        return None, catalog_id
+
+    def scheduleForeignHubFetches(self, sections):
+        """Schedule hub fetch for live foreign sections; offline placeholders never fetch."""
+        if not plexapp.SERVERMANAGER.selectedServer.hasHubs():
+            # no hub pipeline on servers without hubs; nothing to schedule
+            return
+        tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections)
+                 for s in sections
+                 if not getattr(s, 'offline', False) and s.server
+                 and not getattr(s.server, 'DEFER_HUBS', False)]
+        self.tasks += tasks
+        if tasks:
+            backgroundthread.BGThreader.addTasks(tasks)
+
+    def _onForeignResolved(self):
+        """Called from ResolveForeignTask on a worker thread: upgrade placeholders and
+        refresh the rail once."""
+        with self.lock:
+            self._foreignResolveScheduled = False
+            if not any(not offline for _, offline in
+                       (getattr(self, '_foreignResolved', {}) or {}).values()):
+                return  # nothing went live; nothing to refresh
+            for server_uuid in {r.get('server_uuid') for r in self.foreignLibraries()}:
+                self._reResolveForeignPlaceholders(server_uuid)
+            self.serverRefresh()
+
+    def _kickForeignResolution(self):
+        """Start background resolution for foreign records not yet resolved this session."""
+        if getattr(self, '_foreignResolved', None) is None:
+            self._foreignResolved = {}
+        if getattr(self, '_foreignResolveScheduled', False):
+            return  # one in-flight resolve round is enough
+        pending = [r for r in self.foreignLibraries()
+                   if u'{0}:{1}'.format(r.get('server_uuid'), r.get('section_key'))
+                   not in self._foreignResolved]
+        if not pending:
+            return
+        self._foreignResolveScheduled = True
+        task = ResolveForeignTask().setup(self, pending)
+        self.tasks.append(task)
+        backgroundthread.BGThreader.addTask(task)
+
+    # --- SectionId settings migration (backward compat) -----------------------
+    # Before sectionId, this addon (a released 1.13.x/1.14.x) persisted settings
+    # against *bare* library wire keys ('1') and *colon* catalog_ids ('1:Movies').
+    # Multi-server means two servers can share a wire key, so the rail now keys by
+    # sectionId ('uuid:key') instead. These three re-key methods migrate already-
+    # saved settings to the new sectionId shape the first time they load, so existing
+    # users' hidden-state, ordering, and hub edits survive the upgrade instead of
+    # silently resetting. They run once, are idempotent, and never touch foreign
+    # or already-sectionId-shaped data. Top-level helpers: hubSectionKey /
+    # parseCatalogId. Kept intentionally; do not delete without a data-migration plan.
+
+    def rekeyLibrarySettings(self, settings):
+        """Re-key bare section keys in persisted librarySettings to sectionId (selected server)."""
+        if not settings:
+            return settings
+        server_uuid = plexapp.SERVERMANAGER.selectedServer.uuid
+        out = {}
+        for key, value in settings.items():
+            if key == 'order':
+                out[key] = [k if not _is_bare_key(k) else hubSectionKey(k, server_uuid)
+                             for k in value]
+            elif key == 'playlists' or key == '/library/sections/watchlist':
+                out[key] = value
+            elif _is_bare_key(key):
+                out[hubSectionKey(key, server_uuid)] = value
+            else:
+                out[key] = value
+        return out
+
+    def rekeyHubSettings(self, settings):
+        """Re-key persisted hubSettings to sectionId; re-key nested catalog_ids to '|' schema."""
+        if not settings:
+            return settings
+        server_uuid = plexapp.SERVERMANAGER.selectedServer.uuid
+        out = {}
+        for key, value in settings.items():
+            if key == '__home__':
+                nk = None
+            elif _is_bare_key(key):
+                nk = hubSectionKey(key, server_uuid)
+            else:
+                nk = key  # already sectionId-shaped (own forward-written or foreign)
+            if isinstance(value, dict) and 'hubs' in value:
+                value = dict(value)
+                value['hubs'] = [
+                    dict(h, catalog_id=self.rekeyCatalogId(h.get('catalog_id', ''), server_uuid))
+                    for h in value.get('hubs', [])
+                ]
+            out[nk] = value
+        return out
+
+    def rekeyCatalogId(self, catalog_id, server_uuid):
+        """Re-key a stored ':'-schema catalog_id to the '|' schema."""
+        if '|' in str(catalog_id):
+            return catalog_id
+        if ':' in str(catalog_id):
+            src, ident = str(catalog_id).split(':', 1)
+            if src.isdigit():
+                return u'{0}|{1}'.format(hubSectionKey(src, server_uuid), ident)
+        return catalog_id
+
+    @staticmethod
+    def _findServerByUuid(manager, uuid):
+        if manager is None or not uuid:
+            return None
+        for server in manager.getServers():
+            if getattr(server, 'uuid', None) == uuid:
+                return server
+        return None
 
     def loadHubSettings(self):
         setting_key = 'hub.settings.{}.{}'.format(plexapp.SERVERMANAGER.selectedServer.uuid[-8:], plexapp.ACCOUNT.ID)
@@ -997,6 +1416,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             pass
         except:
             util.ERROR()
+        self.hubSettings = self.rekeyHubSettings(self.hubSettings)
 
     def saveHubSettings(self):
         setting_key = 'hub.settings.{}.{}'.format(plexapp.SERVERMANAGER.selectedServer.uuid[-8:],
@@ -1133,6 +1553,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         for section in sections_to_query:
             try:
                 section_key = section.key
+                section_id = sectionId(section)
                 section_type = getattr(section, 'type', 'unknown')
                 section_title = getattr(section, 'title', T(32411, 'Unknown'))
 
@@ -1146,7 +1567,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     if section_key is None:
                         catalog_id = clean_identifier
                     else:
-                        catalog_id = '{}:{}'.format(section_key, clean_identifier)
+                        catalog_id = HomeWindow.foreignCatalogId(section_id, clean_identifier)
 
                     # Determine native display type from hub content
                     native_display = 'poster'
@@ -1165,7 +1586,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                             'identifier': str(clean_identifier),
                             'title': str(hub_title),
                             'hubIdentifier': str(hub.hubIdentifier),
-                            'source_section_key': section_key,
+                            'source_section_key': section_id,
                             'source_section_title': str(section_title) if section_title else T(32411, 'Unknown'),
                             'source_section_type': str(section_type) if section_type else 'unknown',
                             'native_display': native_display,
@@ -1198,7 +1619,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if section_key is None:
             catalog_id = identifier
         else:
-            catalog_id = '{}:{}'.format(section_key, identifier)
+            catalog_id = self.foreignCatalogId(section_key, identifier)
 
         # Use getEnabledHubsForSection so CW mode mapping is applied consistently.
         # (e.g. config has 'continueWatching' but old mode expects 'home.continue'/'home.ondeck')
@@ -1251,7 +1672,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if section_key is None:
                 catalog_id = identifier
             else:
-                catalog_id = '{}:{}'.format(section_key, identifier)
+                catalog_id = self.foreignCatalogId(section_key, identifier)
 
             # Check user-defined order
             if catalog_id in user_order:
@@ -1264,7 +1685,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def _buildHubSettingsOptions(self, section_key, section_title):
         """Build the list of option dicts for the hub settings dialog."""
-        config_key = str(section_key) if section_key is not None else None
+        config_key = section_key
         section_config = self.hubSettings.get(config_key, {}) if self.hubSettings else {}
         has_custom_config = section_config.get('custom', False)
         configured_hubs = section_config.get('hubs', []) if has_custom_config else []
@@ -1282,8 +1703,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     # Home section - all native Plex Home hubs are enabled by default
                     is_enabled = (hub_source_key is None)
                 else:
-                    # Library section - native hubs enabled by default (compare as strings)
-                    is_enabled = (str(hub_source_key) == str(section_key) if hub_source_key is not None else False)
+                    # Library section - native hubs enabled by default (compare sectionIds)
+                    is_enabled = (hub_source_key == section_key if hub_source_key is not None else False)
             hub_states[catalog_id] = (is_enabled, hub_info)
 
         # Helper to create option entry
@@ -1329,7 +1750,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if is_home:
                     catalog_id = identifier
                 else:
-                    catalog_id = '{}:{}'.format(section_key, identifier)
+                    catalog_id = self.foreignCatalogId(section_key, identifier)
                 if catalog_id in hub_states:
                     is_enabled, hub_info = hub_states[catalog_id]
                     if is_enabled:
@@ -1377,9 +1798,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def showHubSettingsDialog(self, section):
         """Show dialog to manage hubs for the given section."""
 
-        # Store the section key for use in the toggle callback
+        # Store the sectionId (cacheKeyForSection) for use in the toggle callback
         # (self.lastSection might not be reliable during dialog interaction)
-        self._managingHubsForSection = section.key
+        self._managingHubsForSection = self.cacheKeyForSection(section)
         self._hubsSettingsChanged = False  # Track if any hubs were toggled
 
         # Lazy discovery - only fetch hubs when user actually opens Manage Hubs
@@ -1389,12 +1810,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if not self.availableHubs:
                 return
 
-        section_key = section.key  # None for Home
+        section_key = self.cacheKeyForSection(section)  # None for Home
         section_title = section.title if hasattr(section, 'title') else 'Home'
         self._managingHubsForSectionTitle = section_title
 
-        # Normalize key for config lookup
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
 
         # Get current hub configuration for this section
         section_config = self.hubSettings.get(config_key, {}) if self.hubSettings else {}
@@ -1497,7 +1918,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # Handle Reset to Defaults - rebuild list in place
         if choice.get('key') == 'reset_hubs':
-            section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
+            section_key = getattr(self, '_managingHubsForSection', self.cacheKeyForSection(self.lastSection))
             section_title = getattr(self, '_managingHubsForSectionTitle', '')
             self.resetSectionHubs(section_key)
             self._hubsSettingsChanged = True
@@ -1508,8 +1929,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         catalog_id = choice.get('catalog_id', choice.get('identifier'))
-        # Use the stored section key from when the dialog was opened
-        section_key = getattr(self, '_managingHubsForSection', self.lastSection.key)
+        # Use the stored sectionId from when the dialog was opened
+        section_key = getattr(self, '_managingHubsForSection', self.cacheKeyForSection(self.lastSection))
         is_currently_enabled = choice.get('enabled', False)
 
         # If hub is currently enabled, show Move/Disable sub-menu
@@ -1543,8 +1964,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             new_enabled = True
 
 
-        # Normalize key for storage consistency
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
 
         # Update hubSettings
         if not self.hubSettings:
@@ -1654,7 +2075,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.hubSettings or from_visual_pos == to_visual_pos:
             return
 
-        config_key = str(section_key) if section_key is not None else None
+        config_key = section_key
         section_config = self.hubSettings.get(config_key)
         if not section_config or not section_config.get('custom'):
             return
@@ -1691,7 +2112,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.hubSettings:
             return
 
-        config_key = str(section_key) if section_key is not None else None
+        config_key = section_key
         section_config = self.hubSettings.get(config_key)
         if not section_config or not section_config.get('custom'):
             return
@@ -1714,8 +2135,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.hubSettings:
             self.hubSettings = {}
 
-        # Normalize key - use string for consistency (None stays None for Home)
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
 
         if config_key in self.hubSettings and self.hubSettings[config_key].get('custom'):
             return False  # Already has custom config
@@ -1738,7 +2159,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             if is_home:
                 cat_id = hub_identifier
             else:
-                cat_id = '{}:{}'.format(section_key, hub_identifier)
+                cat_id = self.foreignCatalogId(section_key, hub_identifier)
 
             section_config['hubs'].append({
                 'catalog_id': cat_id,
@@ -1751,7 +2172,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 source_title = T(32332, 'Home')
                 source_type = 'home'
                 if section_key is not None:
-                    source_section = self.allSections.get(str(section_key))
+                    source_section = self.allSections.get(section_key)
                     if source_section:
                         source_title = str(source_section.title)
                         source_type = str(source_section.type)
@@ -1774,8 +2195,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def _canMoveHub(self, catalog_id, section_key):
         """Check if a hub can move up or down in the order."""
-        # Normalize key for lookup
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
 
         if self.hubSettings:
             section_config = self.hubSettings.get(config_key)
@@ -1810,8 +2231,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.hubSettings:
             return
 
-        # Normalize key for lookup
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
         section_config = self.hubSettings.get(config_key)
         if not section_config or not section_config.get('custom'):
             return
@@ -1845,8 +2266,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def _refreshHubSettingsDialog(self, optionsList, section_key):
         """Refresh the hub settings dropdown to reflect new order."""
-        # Normalize key for lookup
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
         # Get the current hub configuration
         section_config = self.hubSettings.get(config_key, {}) if self.hubSettings else {}
         has_custom_config = section_config.get('custom', False)
@@ -1879,7 +2300,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     is_enabled = (hub_source_key is None)
                 else:
                     # Library section - native hubs enabled by default
-                    is_enabled = (str(hub_source_key) == str(section_key) if hub_source_key is not None else False)
+                    is_enabled = (hub_source_key == section_key if hub_source_key is not None else False)
 
             # Update enabled state
             ds['enabled'] = is_enabled
@@ -1902,8 +2323,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def resetSectionHubs(self, section_key):
         """Reset hub configuration for a section to defaults."""
-        # Normalize key to string (hubSettings uses string keys)
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
         if self.hubSettings and config_key in self.hubSettings:
             del self.hubSettings[config_key]
             self.saveHubSettings()
@@ -1911,10 +2332,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def hasCrossSectionHubs(self, section_key):
         """Check if a section has any cross-section hubs configured."""
         required = self.getRequiredSourceSections(section_key)
-        str_key = str(section_key) if section_key is not None else None
         for source in required:
-            str_source = str(source) if source is not None else None
-            if str_source != str_key:
+            if source != section_key:
                 return True
         return False
 
@@ -1925,19 +2344,16 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.hubSettings:
             return required
 
-        # Normalize key to string (hubSettings uses string keys)
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
         section_config = self.hubSettings.get(config_key)
         if not section_config or not section_config.get('custom'):
             return required
 
         for hub_config in section_config.get('hubs', []):
             catalog_id = hub_config.get('catalog_id', '')
-            if ':' in str(catalog_id):
-                source_key = catalog_id.split(':')[0]
-                required.add(source_key)
-            else:
-                required.add(None)  # Home section hub
+            source_key, _ = self.parseCatalogId(catalog_id)
+            required.add(source_key)
 
         return required
 
@@ -1946,8 +2362,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.hubSettings:
             return None
 
-        # Normalize key to string (hubSettings uses string keys)
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
         section_config = self.hubSettings.get(config_key)
         if not section_config or not section_config.get('custom'):
             return None
@@ -1970,7 +2386,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def getCombinedHubsForSection(self, section, include_cross_section=True):
         """Get combined list of hubs for a section, including cross-section hubs if enabled."""
-        section_key = section.key
+        section_key = self.cacheKeyForSection(section)
         is_home = section_key is None
 
         # Get native hubs for this section
@@ -1982,8 +2398,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not include_cross_section:
             return native_hubs
 
-        # Normalize key to string (hubSettings uses string keys)
-        config_key = str(section_key) if section_key is not None else None
+        # section_key is already a sectionId string (or None for Home)
+        config_key = section_key
         section_config = None
         if self.hubSettings:
             section_config = self.hubSettings.get(config_key)
@@ -2000,23 +2416,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         # Get required source sections
         required_sources = self.getRequiredSourceSections(section_key)
 
-        # Helper to find section in sectionHubs (handles string/int key mismatch)
-        def find_in_section_hubs(key):
-            if key in self.sectionHubs:
-                return self.sectionHubs[key]
-            # Try string version of key
-            str_key = str(key) if key is not None else None
-            for cached_key in self.sectionHubs:
-                if str(cached_key) == str_key:
-                    return self.sectionHubs[cached_key]
-            return None
-
         # Check if all required source sections are cached
         missing_sources = []
         for source_key in required_sources:
-            str_section_key = str(section_key) if section_key is not None else None
-            str_source_key = str(source_key) if source_key is not None else None
-            if str_source_key != str_section_key and find_in_section_hubs(source_key) is None:
+            if source_key != section_key and self.sectionHubs.get(source_key) is None:
                 missing_sources.append(source_key)
 
         if missing_sources:
@@ -2028,7 +2431,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if section_key is None:
                     catalog_id = clean_id
                 else:
-                    catalog_id = '{}:{}'.format(section_key, clean_id)
+                    catalog_id = self.foreignCatalogId(section_key, clean_id)
                 if catalog_id in enabled_catalog_ids:
                     hub._crossSectionSource = section_key
                     hub._catalogId = catalog_id
@@ -2043,10 +2446,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         combined = []
         seen_identifiers = set()
 
-
         for source_key in required_sources:
-            source_hubs = find_in_section_hubs(source_key) or []
-            source_is_home = source_key is None or str(source_key) == 'None'
+            source_hubs = self.sectionHubs.get(source_key) or []
+            source_is_home = source_key is None
 
             for hub in source_hubs:
                 clean_id = hub.getCleanHubIdentifier(is_home=source_is_home)
@@ -2054,7 +2456,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if source_key is None:
                     catalog_id = clean_id
                 else:
-                    catalog_id = '{}:{}'.format(source_key, clean_id)
+                    catalog_id = self.foreignCatalogId(source_key, clean_id)
 
                 if catalog_id not in enabled_catalog_ids:
                     continue
@@ -2111,7 +2513,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if hasattr(self, 'sectionList') and self.sectionList:
             for mli in self.sectionList:
                 if mli.dataSource and hasattr(mli.dataSource, 'key'):
-                    sections_by_key[str(mli.dataSource.key)] = mli.dataSource
+                    sections_by_key[self.cacheKeyForSection(mli.dataSource)] = mli.dataSource
 
         # Also include hidden libraries so cross-section hubs can still be fetched
         if hasattr(self, 'allSections'):
@@ -2120,14 +2522,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     sections_by_key[key] = section_obj
 
         for section_key in section_keys:
-            section_obj = sections_by_key.get(str(section_key) if section_key else None)
+            section_obj = sections_by_key.get(section_key)
 
-            if section_obj is None:
+            if section_obj is None or getattr(section_obj, 'offline', False):
                 continue
 
             already_fetching = False
             for task in self.tasks:
-                if hasattr(task, 'section') and str(task.section.key) == str(section_key):
+                if hasattr(task, 'section') and self.cacheKeyForSection(task.section) == section_key:
                     already_fetching = True
                     break
 
@@ -2150,27 +2552,21 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not required_sources:
             return
 
-        str_section_key = str(section_key) if section_key is not None else None
         tasks_to_add = []
 
         for source_key in required_sources:
-            str_source = str(source_key) if source_key is not None else None
-            if str_source == str_section_key:
+            if source_key == section_key:
                 continue  # Skip the section itself — already being refreshed
 
             # Check if source section hubs are stale
-            source_hubs = None
-            for cached_key in self.sectionHubs:
-                if str(cached_key) == str_source:
-                    source_hubs = self.sectionHubs[cached_key]
-                    break
+            source_hubs = self.sectionHubs.get(source_key)
 
             if source_hubs is not None and time.time() - source_hubs.lastUpdated <= HUBS_REFRESH_INTERVAL:
                 continue  # Source is still fresh
 
             # Find the section object
-            section_obj = self.allSections.get(str_source) if hasattr(self, 'allSections') else None
-            if section_obj is None:
+            section_obj = self.allSections.get(source_key) if hasattr(self, 'allSections') else None
+            if section_obj is None or getattr(section_obj, 'offline', False):
                 continue
 
             # Mark as refreshing so we don't double-fetch
@@ -2179,7 +2575,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             task = SectionHubsTask().setup(section_obj, self.crossSectionHubsCallback, self.wantedSections)
             self.tasks.append(task)
-            tasks_to_add.append((task, str_source))
+            tasks_to_add.append((task, source_key))
 
         # Set counter BEFORE adding tasks to BGThreader — a fast-completing task
         # could call crossSectionHubsCallback before we set the counter, leaving
@@ -2199,11 +2595,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             with self.lock:
                 is_home = section.key is None
 
-                sorted_hubs = HubsList(self.sortHubsByUserOrder(hubs, is_home=is_home, section_key=section.key))
+                sorted_hubs = HubsList(self.sortHubsByUserOrder(hubs, is_home=is_home, section_key=self.cacheKeyForSection(section)))
                 sorted_hubs.lastUpdated = hubs.lastUpdated
                 sorted_hubs.invalid = hubs.invalid
 
-                self.sectionHubs[section.key] = sorted_hubs
+                ck = self.cacheKeyForSection(section)
+                self.sectionHubs[ck] = sorted_hubs
 
                 # Decrement pending cross-section source counter
                 pending = getattr(self, '_pendingCrossSources', 0)
@@ -2215,10 +2612,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     should_redisplay = False
 
                     # Check if this section is required for custom config
-                    required = self.getRequiredSourceSections(self.lastSection.key)
-                    str_section_key = str(section.key) if section.key is not None else None
-                    required_as_str = {str(k) if k is not None else None for k in required}
-                    if str_section_key in required_as_str:
+                    required = self.getRequiredSourceSections(self.cacheKeyForSection(self.lastSection))
+                    str_section_key = self.cacheKeyForSection(section)
+                    if str_section_key in required:
                         should_redisplay = True
 
                     # Also redisplay if we're on Home with default settings (no custom config)
@@ -2232,7 +2628,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     # Fallback: Also redisplay if the current section has custom hub config
                     # This ensures cross-section hubs are shown even if required_sources check fails
                     if not should_redisplay and self.lastSection.key is not None:
-                        config_key = str(self.lastSection.key)
+                        config_key = self.cacheKeyForSection(self.lastSection)
                         section_config = self.hubSettings.get(config_key) if self.hubSettings else None
                         if section_config and section_config.get('custom'):
                             should_redisplay = True
@@ -2422,7 +2818,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.lastSection or self._ignoreTick:
             return
 
-        hubs = self.sectionHubs.get(self.lastSection.key)
+        hubs = self.sectionHubs.get(self.cacheKeyForSection(self.lastSection))
         if hubs is None:
             return
 
@@ -2850,7 +3246,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def watchlistDirty(self, *args, **kwargs):
         # mark watchlist hub dirty
         if watchlist_section:
-            hubs = self.sectionHubs.get(watchlist_section.key)
+            hubs = self.sectionHubs.get(self.cacheKeyForSection(watchlist_section))
             if hubs:
                 util.DEBUG_LOG("Home: Setting watchlist hubs dirty")
                 hubs.lastUpdated = time.time() - HUBS_REFRESH_INTERVAL - 1
@@ -2981,7 +3377,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.fullyRefreshHome(section=section)
             if section is not None:
                 for mli in self.sectionList:
-                    if mli.dataSource and mli.dataSource.key == section.key:
+                    if mli.dataSource and self._sameRailSection(mli.dataSource, section):
                         self.sectionList.selectItem(mli.pos())
                         self.lastSection = mli.dataSource
             return True
@@ -3087,11 +3483,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         # playlists and the watchlist are plain virtual sections without a TYPE
         pinnable = PINNABLE_TYPES.get(str(getattr(section, 'TYPE', None)), ())
-        stored = self.librarySettings.get(section.key, {}).get('pinned_types') or []
+        ck = self.cacheKeyForSection(section)
+        stored = self.librarySettings.get(ck, {}).get('pinned_types') or []
         return [t for t in stored if t in pinnable]
 
     def setSectionPinned(self, section, item_type, pinned):
-        settings = self.librarySettings.setdefault(section.key, {})
+        ck = self.cacheKeyForSection(section)
+        settings = self.librarySettings.setdefault(ck, {})
         types = [t for t in settings.get('pinned_types') or [] if t != item_type]
         if pinned:
             types.append(item_type)
@@ -3137,10 +3535,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             had_section = False
             for s in sections:
-                section_settings = self.librarySettings.get(s.key)
+                ck = self.cacheKeyForSection(s)
+                section_settings = self.librarySettings.get(ck)
                 if section_settings and not section_settings.get("show", True):
                     options.append({'key': 'show',
-                                    'section_id': s.key,
+                                    'section_id': ck,
                                     'display': T(33029, "Show library: {}").format(s.title)
                                     }
                                    )
@@ -3173,14 +3572,15 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
         else:
             options = []
+            is_foreign = getattr(section, 'is_foreign', False)
 
-            if plexapp.ACCOUNT.isAdmin and section not in (watchlist_section, playlists_section):
+            if not is_foreign and plexapp.ACCOUNT.isAdmin and section not in (watchlist_section, playlists_section):
                 options = [{'key': 'refresh', 'display': T(33082, "Scan Library Files")},
                            {'key': 'emptyTrash', 'display': T(33083, "Empty Trash")},
                            {'key': 'analyze', 'display': T(33084, "Analyze")},
                            dropdown.SEPARATOR]
 
-            if section.locations and util.getSetting('path_mapping'):
+            if not is_foreign and section.locations and util.getSetting('path_mapping'):
                 for loc in section.locations:
                     source, target = section.getMappedPath(loc)
                     loc_is_mapped = source and target
@@ -3193,21 +3593,32 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
                 options.append(dropdown.SEPARATOR)
 
-            if 'collection' in PINNABLE_TYPES.get(str(getattr(section, 'TYPE', None)), ()) \
+            if not is_foreign and 'collection' in PINNABLE_TYPES.get(str(getattr(section, 'TYPE', None)), ()) \
                     and 'collection' not in self.sectionPinnedTypes(section):
                 options.append({'key': 'pin_collections',
                                 'display': T(35044, "Pin collections to the top bar")})
 
-            options.append({'key': 'hide', 'display': T(33028, "Hide library")})
+            if not is_foreign:
+                options.append({'key': 'hide', 'display': T(33028, "Hide library")})
             options.append({'key': 'move', 'display': T(33039, "Move")})
-            options.append(dropdown.SEPARATOR)
 
-            if 'libraries' in util.getSetting('cache_requests') and section != watchlist_section:
-                options.append({'key': 'section_cache_reset', 'display': T(33721, "Clear library cache (not items)")})
+            if section not in (watchlist_section, playlists_section):
+                if self.isSectionPinnedToHome(section):
+                    options.append({'key': 'unpin_from_home', 'display': T(35071, "Remove from home")})
+                else:
+                    options.append({'key': 'pin_to_home', 'display': T(35070, "Pin to home")})
+
+            show_cache = 'libraries' in util.getSetting('cache_requests') and section != watchlist_section
+            if not is_foreign or show_cache:
                 options.append(dropdown.SEPARATOR)
 
-            # Add Manage Hubs and Refresh Hubs options (not applicable to watchlist)
-            if section != watchlist_section:
+            if show_cache:
+                options.append({'key': 'section_cache_reset', 'display': T(33721, "Clear library cache (not items)")})
+                if not is_foreign:
+                    options.append(dropdown.SEPARATOR)
+
+            # Add Manage Hubs and Refresh Hubs options (not applicable to foreign or watchlist)
+            if not is_foreign and section != watchlist_section:
                 options.append(dropdown.SEPARATOR)
                 options.append({'key': 'manage_hubs', 'display': T(34080, "Manage Hubs")})
                 options.append({'key': 'refresh_hubs', 'display': T(34096, "Refresh Hubs")})
@@ -3249,9 +3660,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.setSectionPinned(section.librarySection, section.itemType, False)
             return section.librarySection
         elif choice["key"] == "hide":
-            if section.key not in self.librarySettings:
-                self.librarySettings[section.key] = {}
-            self.librarySettings[section.key]['show'] = False
+            ck = self.cacheKeyForSection(section)
+            if ck not in self.librarySettings:
+                self.librarySettings[ck] = {}
+            self.librarySettings[ck]['show'] = False
             self.saveLibrarySettings()
             return self.sectionList[self.sectionList.prev()].dataSource
         elif choice["key"] == "show":
@@ -3262,6 +3674,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     return self.lastSection
         elif choice["key"] == "move":
             self.sectionMover(item, "init")
+        elif choice["key"] == "pin_to_home":
+            self.pinForeignLibrary(
+                server_uuid=section.server.uuid,
+                section_key=section.key,
+                server_name=section.server.name or '',
+                section_title=section.title)
+            return section
+        elif choice["key"] == "unpin_from_home":
+            self.unpinForeignLibrary(
+                server_uuid=section.server.uuid,
+                section_key=section.key)
+            return section
         elif choice["key"] == "reset_order":
             if "order" in self.librarySettings:
                 del self.librarySettings["order"]
@@ -3569,7 +3993,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         elif action == xbmcgui.ACTION_SELECT_ITEM:
             stop_moving()
             # store section order
-            self.librarySettings["order"] = [i.dataSource.key for i in self.sectionList.items if i.dataSource]
+            self.librarySettings["order"] = [self.cacheKeyForSection(i.dataSource) for i in self.sectionList.items if i.dataSource]
             self.saveLibrarySettings()
 
     def checkSectionItem(self, force=False, action=None):
@@ -3751,16 +4175,17 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
     def sectionHubsCallback(self, section, hubs, reselect_pos_dict=None):
         with self.lock:
-            update = bool(self.sectionHubs.get(section.key))
+            ck = self.cacheKeyForSection(section)
+            update = bool(self.sectionHubs.get(ck))
             is_home = section.key is None
 
             # Sort hubs: user-defined order > server order
-            sorted_hubs = HubsList(self.sortHubsByUserOrder(hubs, is_home=is_home, section_key=section.key))
+            sorted_hubs = HubsList(self.sortHubsByUserOrder(hubs, is_home=is_home, section_key=self.cacheKeyForSection(section)))
             sorted_hubs.lastUpdated = hubs.lastUpdated
             sorted_hubs.invalid = hubs.invalid
             sorted_hubs.identifier = hubs.identifier
 
-            self.sectionHubs[section.key] = sorted_hubs
+            self.sectionHubs[ck] = sorted_hubs
             self.setBoolProperty('loading.content', False)
 
             on_home = self.lastSection and self.lastSection.key is None
@@ -3808,8 +4233,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if not section:
                     continue
 
-                checked_keys.add(section.key)
-                hubs = self.sectionHubs.get(section.key, ())
+                ck = self.cacheKeyForSection(section)
+                checked_keys.add(ck)
+                hubs = self.sectionHubs.get(ck, ())
                 if not hubs:
                     continue
 
@@ -3907,8 +4333,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self.wantedSections = []
         self.allSections = {}  # All libraries including hidden, for cross-section hub fetching
         for section in _sections:
-            self.allSections[str(section.key)] = section
-            if section.key in self.librarySettings and not self.librarySettings[section.key].get("show", True):
+            ck = self.cacheKeyForSection(section)
+            self.allSections[ck] = section
+            if ck in self.librarySettings and not self.librarySettings[ck].get("show", True):
                 self.anyLibraryHidden = True
                 continue
             sections.append(section)
@@ -3922,20 +4349,22 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 pinned.append(PinnedTypeSection(section, item_type))
         sections = pinned
 
-        # sort libraries
+        # foreign libraries resolved once (network); merged into the rail render order
+        # below so a moved foreign library keeps its saved position across restart.
+        # They stay out of the cross-section hub pipeline, which only handles locals.
+        foreign_sections = self.foreignRailSections()
+        self._kickForeignResolution()
+        for fs in foreign_sections:
+            self.allSections[self.cacheKeyForSection(fs)] = fs
+
+        hub_sections = list(sections)
+
+        # sort libraries (locals + foreign merge for render order)
         if "order" in self.librarySettings:
-            order = self.librarySettings["order"]
-
-            def orderPos(s):
-                if s.key in order:
-                    return order.index(s.key), 0
-                if isinstance(s, PinnedTypeSection) and s.librarySection.key in order:
-                    # pinned after the order was stored: follow its library instead of
-                    # ending up in front of everything
-                    return order.index(s.librarySection.key), 1
-                return -1, 0
-
-            sections = sorted(sections, key=orderPos)
+            sections = self._orderRailSections(
+                sections, foreign_sections, self.librarySettings["order"])
+        else:
+            sections = sections + foreign_sections
 
         # speedup if we don't have any hidden libraries
         if not self.anyLibraryHidden:
@@ -3944,13 +4373,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if plexapp.SERVERMANAGER.selectedServer.hasHubs():
             # Include hidden sections that are needed for cross-section hubs.
             # Pinned item-type views share their library's hubs, so they're never fetched.
-            fetch_sections = [s for s in sections if not isinstance(s, PinnedTypeSection)]
+            fetch_sections = [s for s in hub_sections if not isinstance(s, PinnedTypeSection)]
             required_sources = self.getRequiredSourceSections(None)  # Home's required sources
             for source_key in required_sources:
-                str_key = str(source_key) if source_key is not None else None
-                if str_key and str_key in self.allSections:
-                    if not any(str(s.key) == str_key for s in fetch_sections):
-                        fetch_sections.append(self.allSections[str_key])
+                if source_key and source_key in self.allSections:
+                    if not any(self.cacheKeyForSection(s) == source_key for s in fetch_sections):
+                        fetch_sections.append(self.allSections[source_key])
 
             self.tasks = [SectionHubsTask().setup(s, self.sectionHubsCallback, self.wantedSections)
                           for s in [home_section] + fetch_sections if not s.server.DEFER_HUBS]
@@ -3958,9 +4386,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             # are not hub sources for anything, so they're counted nowhere and fetched apart.
             self._pendingLibrarySections = len([s for s in fetch_sections if not s.server.DEFER_HUBS])
             self.tasks += [PinnedTypeHubsTask().setup(s, self.sectionHubsCallback)
-                           for s in sections if isinstance(s, PinnedTypeSection)
+                           for s in hub_sections if isinstance(s, PinnedTypeSection)
                            and not s.server.DEFER_HUBS]
             backgroundthread.BGThreader.addTasks(self.tasks)
+
+        self.scheduleForeignHubFetches(foreign_sections)
 
         show_pm_indicator = util.getSetting('path_mapping_indicators')
         for section in sections:
@@ -3976,6 +4406,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             elif isinstance(section, PinnedTypeSection):
                 # no icon of its own; it keeps the library's type icon
                 mli.setProperty('is.pinned.type', section.itemType)
+            elif isinstance(section, ForeignLibrarySection) or getattr(section, 'is_foreign', None):
+                mli.setProperty('is.foreign', '1')
             if pmm.mapping:
                 # a mapping that doesn't work is an error rather than decoration, so it shows
                 # even when the indicator setting is off
@@ -4078,13 +4510,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not update:
             self.clearHubs()
 
+        if getattr(section, 'offline', False):
+            # foreign placeholder: server is None, no hubs to fetch
+            return
+
         if not section.server.DEFER_HUBS and not plexapp.SERVERMANAGER.selectedServer.hasHubs():
             return
 
         if section.key is False:
             return
 
-        hubs = self.sectionHubs.get(section.key)
+        ck = self.cacheKeyForSection(section)
+        hubs = self.sectionHubs.get(ck)
         section_stale = False
 
         if hubs is None and section.server.DEFER_HUBS:
@@ -4127,8 +4564,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             rpd = self.getCurrentHubsPositions(section)
 
             if not update:
-                if section.key in self.sectionHubs:
-                    self.sectionHubs[section.key] = None
+                if ck in self.sectionHubs:
+                    self.sectionHubs[ck] = None
             if isinstance(section, PinnedTypeSection):
                 task = PinnedTypeHubsTask().setup(section, self.sectionHubsCallback, reselect_pos_dict=rpd)
             else:
@@ -4139,7 +4576,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             # Also refresh source library sections that feed cross-section hubs
             # into this section, otherwise getCombinedHubsForSection pulls stale data
-            self._refreshCrossSectionSources(section.key)
+            self._refreshCrossSectionSources(self.cacheKeyForSection(section))
 
             return
 
@@ -4212,7 +4649,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             is_cross_section = str_cross_source is not None and str_cross_source != str_section_key
 
             if not is_cross_section:
-                if self.isHubHidden(identifier, section.key):
+                if self.isHubHidden(identifier, self.cacheKeyForSection(section)):
                     hidden_count += 1
                     continue
 
@@ -4685,7 +5122,43 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
     def onRemoveServer(self, **kwargs):
         self.onNewServer()
 
+    def _reResolveForeignPlaceholders(self, server_uuid):
+        """Upgrade placeholders for `server_uuid` to their live section.
+
+        Uses the resolution cache when available (no network); falls back to a network
+        resolve for records not resolved this session (e.g. a server that became
+        reachable after startup). Returns True if any placeholder went live.
+        """
+        upgraded = False
+        cache = getattr(self, '_foreignResolved', None)
+        if cache is None:
+            cache = {}
+        for key, record in list(getattr(self, 'allSections', {}).items()):
+            if not isinstance(record, ForeignLibrarySection):
+                continue
+            if record.server_uuid != server_uuid:
+                continue
+            cached = cache.get(record.sectionId)
+            if cached is not None and not cached[1]:
+                self.allSections[key] = cached[0]  # reuse cached live, no network
+                upgraded = True
+            else:
+                resolved, offline = self.resolveForeignLibrary({
+                    'server_uuid': record.server_uuid,
+                    'section_key': record.section_key,
+                    'server_name': record.server_name,
+                    'section_title': record.section_title,
+                })
+                if not offline:
+                    cache[record.sectionId] = (resolved, False)  # keep cache in sync
+                    self.allSections[key] = resolved
+                    upgraded = True
+        return upgraded
+
     def onReachableServer(self, server=None, **kwargs):
+        if server is not None and self._reResolveForeignPlaceholders(server.uuid):
+            self.serverRefresh()
+            return
         for mli in self.serverList:
             if mli.uuid == server.uuid:
                 mli.unHookSignals()
