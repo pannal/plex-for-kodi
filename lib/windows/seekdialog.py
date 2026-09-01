@@ -703,7 +703,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         return
 
                 if action in (xbmcgui.ACTION_PAUSE, xbmcgui.ACTION_PLAYER_PLAY, xbmcgui.ACTION_PLAYER_PLAYPAUSE) and \
-                        self.player.playState == self.player.STATE_PLAYING:
+                        self.player.playState in (self.player.STATE_PLAYING, self.player.STATE_PAUSED):
                     self.hideOSD()
 
                 if action == xbmcgui.ACTION_CONTEXT_MENU or (self.getProperty('show.PPI') and action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT)):
@@ -2311,9 +2311,11 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         self.pausedAt = None
 
-        # Show the OSD briefly on resume and start the hide timer, so osd_hide_delay is honoured
-        self.showOSD(focusButton=False)
-        self.resetTimeout()
+        # Hide the OSD immediately on resume so the gradient/controls don't linger over subtitles.
+        # This also covers resume triggered externally (remote, Plex companion, etc.) where onAction
+        # may not have fired.
+        if self.osdVisible():
+            self.hideOSD()
 
     def onAVChange(self):
         util.DEBUG_LOG("SeekDialog: OnAVChange: DPO: {0}, offset: {1}", self.DPPlayerOffset, self.offset)
