@@ -100,20 +100,37 @@ jobs:
               f.write(md5)
           EOF
 
-          # Simple index page
-          cat > repo/index.html <<HTML
-          <!DOCTYPE html>
-          <html><head><meta charset="utf-8"><title>brwnj PlexMod Repo</title></head>
+          # Generate index.html with Apache-style directory listing so Kodi's
+          # file browser can parse the available zip files
+          python3 - "${REPO_ID}" "${ADDON_ID}" "${REPO_URL}" "${GITHUB_REF_NAME}" "${ADDON_VERSION}" <<'EOF'
+          import sys, os
+
+          repo_id, addon_id, repo_url, ref, version = sys.argv[1:]
+
+          zips = sorted(f for f in os.listdir("repo") if f.endswith(".zip"))
+          rows = "\n".join(
+              f'<tr><td><a href="{z}">{z}</a></td></tr>' for z in zips
+          )
+
+          html = f"""<!DOCTYPE html>
+          <html><head><meta charset="utf-8"><title>Index of /</title></head>
           <body>
-          <h1>brwnj PlexMod Kodi Repository</h1>
-          <p>In Kodi: <strong>Settings → File Manager → Add source</strong> →
-          enter <code>${REPO_URL}</code></p>
-          <p>Then: <strong>Add-ons → Install from zip file</strong> →
-          pick that source → install <code>${REPO_ID}.zip</code></p>
-          <p>After that Kodi will find and update PlexMod automatically.</p>
-          <p>Latest: ${ADDON_ID} ${ADDON_VERSION} (${GITHUB_REF_NAME})</p>
-          </body></html>
-          HTML
+          <h1>Index of /</h1>
+          <table>
+          <tr><th>Name</th></tr>
+          {rows}
+          </table>
+          <hr>
+          <p>Kodi setup: Settings &rarr; File Manager &rarr; Add source &rarr; <code>{repo_url}</code><br>
+          Add-ons &rarr; Install from zip file &rarr; pick that source &rarr; install <code>{repo_id}.zip</code><br>
+          Then: Add-ons &rarr; Install from repository &rarr; brwnj PlexMod Repo &rarr; Video add-ons &rarr; Plex</p>
+          <p>Latest: {addon_id} {version} ({ref})</p>
+          </body></html>"""
+
+          with open("repo/index.html", "w") as f:
+              f.write(html)
+          print("index.html written with", len(zips), "zip(s):", zips)
+          EOF
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
