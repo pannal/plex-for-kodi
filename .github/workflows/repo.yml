@@ -44,19 +44,43 @@ jobs:
           ADDON_ID=${{ steps.meta.outputs.addon_id }}
           ADDON_VERSION=${{ steps.meta.outputs.addon_version }}
           ZIP_NAME="${ADDON_ID}-${GITHUB_REF_NAME}.zip"
+          REPO_ID="repository.brwnj-plexmod"
           REPO_URL="https://brwnj.github.io/plex-for-kodi"
 
           mkdir -p repo/${ADDON_ID}
+          mkdir -p repo/${REPO_ID}
 
-          # Copy the zip and addon.xml into the repo folder
+          # Place addon zip and addon.xml
           cp ${ZIP_NAME} repo/${ADDON_ID}/
           cp addon.xml repo/${ADDON_ID}/
-
-          # Copy icon if present
           [ -f icon2.png ] && cp icon2.png repo/${ADDON_ID}/icon.png || true
           [ -f fanart.png ] && cp fanart.png repo/${ADDON_ID}/fanart.png || true
 
-          # Generate addons.xml by wrapping all addon.xml files
+          # Generate the repository addon.xml
+          cat > repo/${REPO_ID}/addon.xml <<REPOXML
+          <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          <addon id="${REPO_ID}" name="brwnj PlexMod Repo" version="1.0.0" provider-name="brwnj">
+            <requires>
+              <import addon="xbmc.addon" version="12.0.0"/>
+            </requires>
+            <extension point="xbmc.addon.repository" name="brwnj PlexMod">
+              <info compressed="false">${REPO_URL}/addons.xml</info>
+              <checksum>${REPO_URL}/addons.xml.md5</checksum>
+              <datadir zip="true">${REPO_URL}</datadir>
+            </extension>
+            <extension point="xbmc.addon.metadata">
+              <summary>brwnj fork of PlexMod for Kodi</summary>
+              <description>Unofficial Plex for Kodi with OSD fixes</description>
+              <platform>all</platform>
+            </extension>
+          </addon>
+          REPOXML
+
+          # Build repo zip for the repository addon itself
+          cd repo && zip -r ../${REPO_ID}.zip ${REPO_ID}/ && cd ..
+          cp ${REPO_ID}.zip repo/
+
+          # Generate addons.xml from all addon.xml files under repo/
           python3 - <<'EOF'
           import os, hashlib, xml.etree.ElementTree as ET
 
@@ -74,21 +98,21 @@ jobs:
               md5 = hashlib.md5(f.read()).hexdigest()
           with open("repo/addons.xml.md5", "w") as f:
               f.write(md5)
-
-          print("addons.xml and addons.xml.md5 written")
           EOF
 
-          # Write a minimal index.html so the gh-pages root is browseable
+          # Simple index page
           cat > repo/index.html <<HTML
           <!DOCTYPE html>
-          <html>
-          <head><meta charset="utf-8"><title>brwnj plex-for-kodi repo</title></head>
+          <html><head><meta charset="utf-8"><title>brwnj PlexMod Repo</title></head>
           <body>
-          <h1>Kodi Add-on Repository</h1>
-          <p>Add <code>${REPO_URL}</code> as a file source in Kodi, then install the repository zip.</p>
-          <p>Latest: <strong>${ADDON_ID} ${ADDON_VERSION} (${GITHUB_REF_NAME})</strong></p>
-          </body>
-          </html>
+          <h1>brwnj PlexMod Kodi Repository</h1>
+          <p>In Kodi: <strong>Settings → File Manager → Add source</strong> →
+          enter <code>${REPO_URL}</code></p>
+          <p>Then: <strong>Add-ons → Install from zip file</strong> →
+          pick that source → install <code>${REPO_ID}.zip</code></p>
+          <p>After that Kodi will find and update PlexMod automatically.</p>
+          <p>Latest: ${ADDON_ID} ${ADDON_VERSION} (${GITHUB_REF_NAME})</p>
+          </body></html>
           HTML
 
       - name: Deploy to GitHub Pages
