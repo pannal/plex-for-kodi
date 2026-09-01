@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build addon zip
+        run: |
+          mkdir -p dist/script.plexmod
+          rsync -a --exclude='.git' --exclude='.github' --exclude='dist' --exclude='tests' \
+            --exclude='*.pyc' --exclude='__pycache__' \
+            . dist/script.plexmod/
+          cd dist
+          zip -r ../script.plexmod-${GITHUB_REF_NAME}.zip script.plexmod/
+
+      - name: Create release and upload zip
+        uses: softprops/action-gh-release@v2
+        with:
+          files: script.plexmod-${{ github.ref_name }}.zip
+          generate_release_notes: false
