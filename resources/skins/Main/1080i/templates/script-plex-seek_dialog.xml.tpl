@@ -41,7 +41,7 @@
             <width>1920</width>
             <height>{{ vscale(140) }}</height>
             <texture>script.plex/white-square.png</texture>
-            <colordiffuse>A0000000</colordiffuse>
+            <colordiffuse>1A000000</colordiffuse>
         </control>
     </control>
 
