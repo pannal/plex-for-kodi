@@ -1,0 +1,99 @@
+name: Kodi Repository
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read addon metadata
+        id: meta
+        run: |
+          ADDON_ID=$(grep -oP '(?<=id=")[^"]+' addon.xml | head -1)
+          ADDON_VERSION=$(grep -oP '(?<=version=")[^"]+' addon.xml | head -1)
+          echo "addon_id=$ADDON_ID" >> $GITHUB_OUTPUT
+          echo "addon_version=$ADDON_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build addon zip
+        run: |
+          ADDON_ID=${{ steps.meta.outputs.addon_id }}
+          mkdir -p dist/${ADDON_ID}
+          rsync -a --exclude='.git' --exclude='.github' --exclude='dist' --exclude='tests' \
+            --exclude='*.pyc' --exclude='__pycache__' \
+            . dist/${ADDON_ID}/
+          cd dist
+          zip -r ../${ADDON_ID}-${GITHUB_REF_NAME}.zip ${ADDON_ID}/
+
+      - name: Attach zip to GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.meta.outputs.addon_id }}-${{ github.ref_name }}.zip
+
+      - name: Build Kodi repo index
+        run: |
+          ADDON_ID=${{ steps.meta.outputs.addon_id }}
+          ADDON_VERSION=${{ steps.meta.outputs.addon_version }}
+          ZIP_NAME="${ADDON_ID}-${GITHUB_REF_NAME}.zip"
+          REPO_URL="https://brwnj.github.io/plex-for-kodi"
+
+          mkdir -p repo/${ADDON_ID}
+
+          # Copy the zip and addon.xml into the repo folder
+          cp ${ZIP_NAME} repo/${ADDON_ID}/
+          cp addon.xml repo/${ADDON_ID}/
+
+          # Copy icon if present
+          [ -f icon2.png ] && cp icon2.png repo/${ADDON_ID}/icon.png || true
+          [ -f fanart.png ] && cp fanart.png repo/${ADDON_ID}/fanart.png || true
+
+          # Generate addons.xml by wrapping all addon.xml files
+          python3 - <<'EOF'
+          import os, hashlib, xml.etree.ElementTree as ET
+
+          addons = ET.Element("addons")
+          for root, dirs, files in os.walk("repo"):
+              if "addon.xml" in files:
+                  tree = ET.parse(os.path.join(root, "addon.xml"))
+                  addons.append(tree.getroot())
+
+          tree = ET.ElementTree(addons)
+          ET.indent(tree, space="    ")
+          tree.write("repo/addons.xml", encoding="utf-8", xml_declaration=True)
+
+          with open("repo/addons.xml", "rb") as f:
+              md5 = hashlib.md5(f.read()).hexdigest()
+          with open("repo/addons.xml.md5", "w") as f:
+              f.write(md5)
+
+          print("addons.xml and addons.xml.md5 written")
+          EOF
+
+          # Write a minimal index.html so the gh-pages root is browseable
+          cat > repo/index.html <<HTML
+          <!DOCTYPE html>
+          <html>
+          <head><meta charset="utf-8"><title>brwnj plex-for-kodi repo</title></head>
+          <body>
+          <h1>Kodi Add-on Repository</h1>
+          <p>Add <code>${REPO_URL}</code> as a file source in Kodi, then install the repository zip.</p>
+          <p>Latest: <strong>${ADDON_ID} ${ADDON_VERSION} (${GITHUB_REF_NAME})</strong></p>
+          </body>
+          </html>
+          HTML
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./repo
+          keep_files: false
