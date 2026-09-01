@@ -2311,6 +2311,10 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         self.pausedAt = None
 
+        # Show the OSD briefly on resume and start the hide timer, so osd_hide_delay is honoured
+        self.showOSD(focusButton=False)
+        self.resetTimeout()
+
     def onAVChange(self):
         util.DEBUG_LOG("SeekDialog: OnAVChange: DPO: {0}, offset: {1}", self.DPPlayerOffset, self.offset)
 
