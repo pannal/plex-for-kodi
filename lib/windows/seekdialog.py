@@ -2366,6 +2366,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             return
 
         self.pausedAt = time.time()
+        self.resetTimeout()
         self.showOSD(focusButton=False)
 
     def onPlayBackSeek(self, stime, offset):
@@ -2735,8 +2736,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 t = time.time()
                 # with a customizable OSD hide timeout, OSD hide timeout might happen before autoSeekTimeout;
                 # in case we're still waiting for a seek, postpone OSD hiding
-                if self.player.playState != self.player.STATE_PAUSED and t > self.timeout and \
-                        (not self.autoSeekTimeout or self.autoSeekTimeout < self.timeout < t):
+                if t > self.timeout and (not self.autoSeekTimeout or self.autoSeekTimeout < self.timeout < t):
                     xbmc.executebuiltin('Dialog.Close(videoosd,true)')
                     xbmc.executebuiltin('Dialog.Close(seekbar,true)')
                     if not xbmc.getCondVisibility('Window.IsActive(videoosd) | Player.Rewinding | Player.Forwarding'):
