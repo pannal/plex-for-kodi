@@ -31,6 +31,15 @@ Master branch is based off of the official plex-for-kodi master branch.
 ### Manual
 * Checkout any branch of this GitHub repository, rename to `script.plexmod` and use as an addon (for it to work with "Install from zip", the contents of the zip should be the folder `script.plexmod`.
 
+For a CoreELEC development box, install your SSH key once and deploy the current checkout with:
+
+```bash
+ssh-copy-id root@192.168.1.201
+./scripts/deploy-coreelec.sh
+```
+
+Pass a different SSH destination as the first argument when needed. The script replaces the deployed code and resources, removes the generated seek-dialog XML so Kodi recompiles it, and restarts Kodi.
+
 ### Installing to a read-only or write-protected location
 Set the environment variable `INSTALLATION_DIR_AVOID_WRITE` to any value before starting Kodi to prevent the addon from trying to write to its installation directory. Useful for package managers.
 

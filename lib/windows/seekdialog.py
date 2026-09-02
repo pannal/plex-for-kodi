@@ -185,7 +185,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self._delayedSeekThread = None
         self._delayedSeekTimeout = 0
         self._osdHideAnimationTimeout = 0
-        self._hideDelay = util.addonSettings.osdHideDelay if util.SKIN_PLEXTUARY else 4
+        self._hideDelay = util.addonSettings.osdHideDelay
         self._autoSeekDelay = util.addonSettings.autoSeek and util.addonSettings.autoSeekDelay or 0
         self._atSkipStep = -1
         self._lastSkipDirection = None
@@ -483,6 +483,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     def _onFirstInit(self):
         util.DEBUG_LOG("SeekDialog: onFirstInit")
         self.resetTimeout()
+        osdOpacity = max(0, min(100, util.addonSettings.osdBottomOpacity))
+        self.setProperty('osd.bottom.color', '{:02X}000000'.format(int(round(255 * osdOpacity / 100.0))))
         self.setProperty('skipMarkerName', T(32495, 'Skip intro'))
         self.bigSeekHideTimer = kodigui.PropertyTimer(self._winID, 0.5, 'hide.bigseek')
 
@@ -702,9 +704,11 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         self.seekMouse(action, without_osd=controlID == self.NO_OSD_BUTTON_ID, preview=True)
                         return
 
-                if action in (xbmcgui.ACTION_PAUSE, xbmcgui.ACTION_PLAYER_PLAY, xbmcgui.ACTION_PLAYER_PLAYPAUSE) and \
-                        self.player.playState in (self.player.STATE_PLAYING, self.player.STATE_PAUSED):
-                    self.hideOSD()
+                if action in (xbmcgui.ACTION_PAUSE, xbmcgui.ACTION_PLAYER_PLAY, xbmcgui.ACTION_PLAYER_PLAYPAUSE):
+                    if self.player.playState == self.player.STATE_PLAYING:
+                        self.showOSD(focusButton=False)
+                    elif self.player.playState == self.player.STATE_PAUSED:
+                        self.hideOSD()
 
                 if action == xbmcgui.ACTION_CONTEXT_MENU or (self.getProperty('show.PPI') and action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT)):
                     if self.getProperty('show.PPI') and not self._playerDebugActive and not self._playerNativePPIActive:
@@ -2334,6 +2338,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self._ignoreInput = False
 
         self.ldTimer and self.syncTimeKeeper()
+        self.hideOSD()
 
     def onPlayBackStarted(self):
         util.DEBUG_LOG("SeekDialog: OnPlaybackStarted")
@@ -2341,6 +2346,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self._ignoreInput = False
 
         self.ldTimer and self.syncTimeKeeper()
+        self.hideOSD()
 
     def onPlayBackPaused(self):
         util.DEBUG_LOG("SeekDialog: OnPlaybackPaused")
@@ -2360,11 +2366,14 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             return
 
         self.pausedAt = time.time()
+        self.showOSD(focusButton=False)
 
     def onPlayBackSeek(self, stime, offset):
         util.DEBUG_LOG("SeekDialog: OnPlaybackSeek: {0}, {1}", stime, offset)
         self.idleTime = None
         self.ldTimer and self.syncTimeKeeper()
+        if self.player.playState == self.player.STATE_PLAYING and self.osdVisible():
+            self.hideOSD()
 
     def onPlayBackStopped(self):
         util.DEBUG_LOG("SeekDialog: OnPlayBackStopped")
@@ -2726,7 +2735,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 t = time.time()
                 # with a customizable OSD hide timeout, OSD hide timeout might happen before autoSeekTimeout;
                 # in case we're still waiting for a seek, postpone OSD hiding
-                if t > self.timeout and (not self.autoSeekTimeout or self.autoSeekTimeout < self.timeout < t):
+                if self.player.playState != self.player.STATE_PAUSED and t > self.timeout and \
+                        (not self.autoSeekTimeout or self.autoSeekTimeout < self.timeout < t):
                     xbmc.executebuiltin('Dialog.Close(videoosd,true)')
                     xbmc.executebuiltin('Dialog.Close(seekbar,true)')
                     if not xbmc.getCondVisibility('Window.IsActive(videoosd) | Player.Rewinding | Player.Forwarding'):
@@ -2775,12 +2785,14 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.playlistDialogVisible = False
 
     def osdVisible(self):
-        return xbmc.getCondVisibility('Control.IsVisible(801)')
+        return self.getBoolProperty('show.OSD')
 
     def showOSD(self, focusButton=True):
         self.setProperty('show.OSD', '1')
+        self.setProperty('show.OSD.buttons', focusButton and '1' or '')
         util.setGlobalProperty('osd_active', '1')
         xbmc.executebuiltin('Dialog.Close(videoosd,true)')
+        xbmc.executebuiltin('Dialog.Close(seekbar,true)')
         if xbmc.getCondVisibility('Player.showinfo'):
             xbmc.executebuiltin('Action(Info)')
 
@@ -2790,7 +2802,10 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     def hideOSD(self, skipMarkerFocus=False, closing=False):
         util.DEBUG_LOG("SeekDialog: HideOSD: {}, {}", skipMarkerFocus, closing)
         self.setProperty('show.OSD', '')
+        self.setProperty('show.OSD.buttons', '')
         util.setGlobalProperty('osd_active', '')
+        xbmc.executebuiltin('Dialog.Close(videoosd,true)')
+        xbmc.executebuiltin('Dialog.Close(seekbar,true)')
         if closing:
             return
 

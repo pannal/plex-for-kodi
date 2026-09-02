@@ -134,9 +134,18 @@
                     <control type="slider" format="number">
                         <popup>false</popup>
                     </control>
-                    <dependencies>
-                        <dependency type="enable" setting="auto_seek">true</dependency>
-                    </dependencies>
+                </setting>
+                <setting id="osd_bottom_opacity" type="integer" label="35050" help="35051">
+                    <level>0</level>
+                    <default>10</default>
+                    <constraints>
+                        <minimum>0</minimum>
+                        <step>5</step>
+                        <maximum>100</maximum>
+                    </constraints>
+                    <control type="slider" format="integer">
+                        <popup>false</popup>
+                    </control>
                 </setting>
                 <setting id="auto_seek" type="boolean" label="32466" help="32900">
                     <level>0</level>

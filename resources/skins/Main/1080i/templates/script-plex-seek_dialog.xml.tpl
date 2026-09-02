@@ -21,7 +21,7 @@
 
 <control type="group" id="802">
     <!-- This is the buttonless OSD -->
-    <visible>[!String.IsEmpty(Window.Property(show.OSD)) | [String.IsEmpty(Window.Property(is_plextuary)) + Window.IsVisible(seekbar)] | !String.IsEmpty(Window.Property(button.seek))] + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
+    <visible>[!String.IsEmpty(Window.Property(show.OSD)) | !String.IsEmpty(Window.Property(button.seek))] + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
     <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
     <control type="group">
         <posx>0</posx>
@@ -41,7 +41,7 @@
             <width>1920</width>
             <height>{{ vscale(140) }}</height>
             <texture>script.plex/white-square.png</texture>
-            <colordiffuse>1A000000</colordiffuse>
+            <colordiffuse>$INFO[Window.Property(osd.bottom.color)]</colordiffuse>
         </control>
     </control>
 
@@ -256,6 +256,7 @@
     <texturenofocus>-</texturenofocus>
     <label> </label>
     <onclick condition="String.IsEmpty(Window.Property(button.seek)) + String.IsEmpty(Window.Property(marker.countdown)) + !String.IsEmpty(Window.Property(mouse.mode))">SetProperty(show.OSD,1)</onclick>
+    <onclick condition="String.IsEmpty(Window.Property(button.seek)) + String.IsEmpty(Window.Property(marker.countdown)) + !String.IsEmpty(Window.Property(mouse.mode))">SetProperty(show.OSD.buttons,1)</onclick>
 </control>
 
 <!-- PPI -->
@@ -454,7 +455,7 @@
 </control>
 <control type="group" id="801">
     <!-- This is the OSD with buttons -->
-    <visible>!String.IsEmpty(Window.Property(show.OSD)) + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
+    <visible>!String.IsEmpty(Window.Property(show.OSD.buttons)) + !Window.IsVisible(osdvideosettings) + !Window.IsVisible(osdaudiosettings) + !Window.IsVisible(osdsubtitlesettings) + !Window.IsVisible(subtitlesearch) + !Window.IsActive(playerprocessinfo) + !Window.IsActive(selectdialog) + !Window.IsVisible(osdcmssettings)</visible>
     <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
 
     <control type="grouplist" id="400">
