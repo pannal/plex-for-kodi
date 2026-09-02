@@ -44,6 +44,12 @@ def normalizeLanguagePart2t(code):
     return lang.part2t if lang else None
 
 
+def shouldAutoSelectSubtitleFallback():
+    """Whether Plex is configured to choose subtitles automatically."""
+    account = pnUtil.ACCOUNT
+    return bool(account and getattr(account, "autoSelectSubtitle", 0) in (1, 2))
+
+
 def getNativeLanguages(configured):
     """Effective set of 'native' subtitle language codes (part2t) whose same-language subtitles
     should be suppressed.

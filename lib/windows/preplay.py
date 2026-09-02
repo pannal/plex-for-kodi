@@ -9,7 +9,7 @@ from plexnet import plexplayer, media, plexobjects, util as pnUtil, plexapp, ple
 from lib import metadata
 from lib import util
 from lib.util import T
-from lib.language_util import getNativeLanguages
+from lib.language_util import getNativeLanguages, shouldAutoSelectSubtitleFallback
 from . import busy
 from . import dropdown
 from . import info
@@ -783,7 +783,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         sss = self.video.selectedSubtitleStream(
             forced_subtitles_override=util.getSetting("forced_subtitles_override") and pnUtil.ACCOUNT.subtitlesForced == 0,
-            deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []))
+            deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []),
+            fallback=shouldAutoSelectSubtitleFallback())
         if sss:
             if len(self.video.subtitleStreams) > 1:
                 self.setProperty(

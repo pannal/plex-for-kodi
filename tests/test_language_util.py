@@ -17,9 +17,10 @@ from .base import KodiTestCase
 
 
 class FakeAccount(object):
-    def __init__(self, autoSelectSubtitle=0, audioLanguage=""):
+    def __init__(self, autoSelectSubtitle=0, audioLanguage="", subtitlesLanguage=""):
         self.autoSelectSubtitle = autoSelectSubtitle
         self.audioLanguage = audioLanguage
+        self.subtitlesLanguage = subtitlesLanguage
 
 
 class NormalizeLanguageTest(KodiTestCase):
@@ -132,3 +133,23 @@ class NativeLanguagesTest(KodiTestCase):
         configured = ["eng"]
         language_util.getNativeLanguages(configured)
         self.assertEqual(["eng"], configured)
+
+
+class SubtitleFallbackModeTest(KodiTestCase):
+    def setUp(self):
+        KodiTestCase.setUp(self)
+        self._orig_account = pnUtil.ACCOUNT
+
+    def tearDown(self):
+        pnUtil.ACCOUNT = self._orig_account
+        KodiTestCase.tearDown(self)
+
+    def test_automatic_modes_enable_the_missing_selection_fallback(self):
+        for mode in (1, 2):
+            with self.subTest(mode=mode):
+                pnUtil.ACCOUNT = FakeAccount(autoSelectSubtitle=mode)
+                self.assertTrue(language_util.shouldAutoSelectSubtitleFallback())
+
+    def test_manual_mode_does_not_invent_a_selection(self):
+        pnUtil.ACCOUNT = FakeAccount(autoSelectSubtitle=0)
+        self.assertFalse(language_util.shouldAutoSelectSubtitleFallback())

@@ -1406,7 +1406,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.initialVideoSettings = dict(self.player.video.settings.prefOverrides)
             self.initialAudioStream = self.player.video.selectedAudioStream()
 
-        sss = self.player.video.selectedSubtitleStream(deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []))
+        sss = self.player.video.selectedSubtitleStream(
+            deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []))
         if sss != self.initialSubtitleStream:
             util.DEBUG_LOG("Subtitle changed from {} to {} (deselect: {})", self.initialSubtitleStream, sss,
                            util.getSetting("disable_subtitle_languages"))

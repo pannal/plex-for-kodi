@@ -1,7 +1,9 @@
 # How PM4K chooses subtitles
 
-PM4K never decides from scratch. **Plex preselects a subtitle, and PM4K keeps it** — with
-one thing it's allowed to do on top: turn a subtitle *off* when the **audio** is one of your
+PM4K normally uses the subtitle Plex preselects. If Plex returns subtitle tracks without
+marking one selected while your subtitle mode is automatic, PM4K falls back to the first
+track in your preferred subtitle language (or the first available track). Manual mode still
+selects nothing. PM4K can also turn a subtitle *off* when the **audio** is one of your
 **Native languages**. Forced subtitles are never turned off.
 
 So the whole behavior is two inputs combined.
@@ -34,6 +36,9 @@ In "Always" and "Manual" modes nothing is added automatically — the list is ju
 | Always enabled | A full subtitle |
 | Shown with foreign audio | A full subtitle when the audio is foreign; a forced one (if the file has it) when the audio is your preferred language |
 | Manual | Nothing (until you pick one) |
+
+If an automatic-mode metadata response unexpectedly has no selected flag, PM4K applies the
+fallback above so preplay and playback do not disagree.
 
 ## Putting them together
 

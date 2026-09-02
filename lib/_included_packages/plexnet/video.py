@@ -28,7 +28,7 @@ def _audioSelectionCacheId(rating_key):
     user_id = str(plexapp.ACCOUNT.ID or '') if plexapp.ACCOUNT else ''
     return "{}_{}".format(user_id, rating_key)
 from lib.util import T, shortDF, durationToShortText
-from lib.language_util import getNativeLanguages
+from lib.language_util import getNativeLanguages, normalizeLanguagePart2t
 
 
 class PlexVideoItemList(plexobjects.PlexItemList):
@@ -219,6 +219,7 @@ class Video(media.MediaItem, AudioCodecMixin):
                         util.DEBUG_LOG("Not selecting {} subtitle stream because audio is {}",
                                        sel_stream.languageCode, selas.languageCode)
                         self._current_subtitle_idx = None
+                        self.current_subtitle_is_embedded = False
                         return
 
                     if self._current_subtitle_idx != sel_stream.typeIndex:
@@ -226,11 +227,31 @@ class Video(media.MediaItem, AudioCodecMixin):
                     self.current_subtitle_is_embedded = sel_stream.embedded
                     return sel_stream
             if fallback:
-                stream = self.subtitleStreams[0]
-                if audio_is_native and not stream.forced_subtitle:
+                preferred_language = normalizeLanguagePart2t(
+                    getattr(util.ACCOUNT, "subtitlesLanguage", "") if util.ACCOUNT else ""
+                )
+                candidates = self.subtitleStreams
+                if preferred_language:
+                    preferred = [
+                        candidate for candidate in candidates
+                        if normalizeLanguagePart2t(candidate.languageCode) == preferred_language
+                    ]
+                    candidates = preferred or candidates
+
+                stream = next(
+                    (candidate for candidate in candidates if candidate.forced_subtitle),
+                    None
+                ) if audio_is_native else candidates[0]
+                if not stream:
+                    self._current_subtitle_idx = None
+                    self.current_subtitle_is_embedded = False
                     return
+                stream.setSelected(True)
+                if self.mediaChoice:
+                    self.mediaChoice.subtitleStream = stream
                 if self._current_subtitle_idx != stream.typeIndex:
                     self._current_subtitle_idx = stream.typeIndex
+                self.current_subtitle_is_embedded = stream.embedded
                 return stream
         return None
 

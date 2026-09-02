@@ -13,9 +13,11 @@ from __future__ import absolute_import
 from xml.etree import ElementTree as ET
 
 from plexnet import plexstream, video
+from plexnet import util as plexnet_util
 from plexnet.plexstream import NoneStream, PlexStream
 
 from .base import KodiTestCase, ensure_plex_interface, fixture
+from lib.language_util import getNativeLanguages
 
 
 def stream(**attrs):
@@ -212,6 +214,96 @@ class SelectionTest(KodiTestCase):
         item = stream(streamType=2, codec="ac3")
         self.assertNotEqual(item, None)
         self.assertNotEqual(item, NoneStream())
+
+    def test_fallback_prefers_the_account_subtitle_language(self):
+        ensure_plex_interface()
+        original_account = plexnet_util.ACCOUNT
+        try:
+            account = type("Account", (object,), {
+                "ID": "test-user",
+                "subtitlesLanguage": "de",
+                "autoSelectSubtitle": 2,
+            })()
+            plexnet_util.ACCOUNT = account
+            root = ET.fromstring(fixture("plexnet", "movie.xml"))
+            item = video.Movie(root.find("Video"))
+            item.setMediaChoice()
+
+            selected = item.selectedSubtitleStream(fallback=True)
+
+            self.assertEqual("7", selected.id)
+            self.assertEqual("deu", str(selected.languageCode))
+            self.assertTrue(selected.isSelected())
+            self.assertIs(selected, item.mediaChoice.subtitleStream)
+        finally:
+            plexnet_util.ACCOUNT = original_account
+
+    def test_normal_lookup_preserves_an_explicit_subtitle_off_choice(self):
+        ensure_plex_interface()
+        root = ET.fromstring(fixture("plexnet", "movie.xml"))
+        item = video.Movie(root.find("Video"))
+        item.setMediaChoice()
+        item.selectedSubtitleStream(fallback=True)
+
+        item.disableSubtitles(sync_to_server=False)
+
+        self.assertIsNone(item.selectedSubtitleStream())
+
+    def test_fallback_keeps_forced_subtitles_for_native_audio(self):
+        ensure_plex_interface()
+        original_account = plexnet_util.ACCOUNT
+        try:
+            account = type("Account", (object,), {
+                "ID": "test-user",
+                "audioLanguage": "en",
+                "subtitlesLanguage": "en",
+                "autoSelectSubtitle": 1,
+            })()
+            plexnet_util.ACCOUNT = account
+            root = ET.fromstring(fixture("plexnet", "movie.xml"))
+            item = video.Movie(root.find("Video"))
+            item.setMediaChoice()
+
+            selected = item.selectedSubtitleStream(
+                fallback=True,
+                deselect_subtitles=getNativeLanguages([])
+            )
+
+            self.assertEqual("5", selected.id)
+            self.assertTrue(selected.forced_subtitle)
+            self.assertIs(selected, item.mediaChoice.subtitleStream)
+        finally:
+            plexnet_util.ACCOUNT = original_account
+
+    def test_fallback_selects_nothing_for_native_audio_without_a_forced_track(self):
+        ensure_plex_interface()
+        original_account = plexnet_util.ACCOUNT
+        try:
+            account = type("Account", (object,), {
+                "ID": "test-user",
+                "audioLanguage": "en",
+                "subtitlesLanguage": "en",
+                "autoSelectSubtitle": 1,
+            })()
+            plexnet_util.ACCOUNT = account
+            root = ET.fromstring(fixture("plexnet", "movie.xml"))
+            item = video.Movie(root.find("Video"))
+            media_item = item.media()[0]
+            media_item.parts[0].streams = [
+                candidate for candidate in media_item.parts[0].streams
+                if not candidate.forced_subtitle
+            ]
+            item.setMediaChoice(media=media_item)
+
+            selected = item.selectedSubtitleStream(
+                fallback=True,
+                deselect_subtitles=getNativeLanguages([])
+            )
+
+            self.assertIsNone(selected)
+            self.assertIsNone(item.mediaChoice.subtitleStream)
+        finally:
+            plexnet_util.ACCOUNT = original_account
 
 
 class SubtitlePathTest(KodiTestCase):

@@ -7,7 +7,7 @@ from kodi_six import xbmcgui
 from lib import metadata
 from lib import util
 from lib.util import T
-from lib.language_util import getNativeLanguages
+from lib.language_util import getNativeLanguages, shouldAutoSelectSubtitleFallback
 from . import kodigui
 from .dialog import showOptionsDialog
 from .mixins.subtitledl import PlexSubtitleDownloadMixin
@@ -170,7 +170,8 @@ class VideoSettingsDialog(kodigui.BaseDialog, util.CronReceiver, PlexSubtitleDow
 
         sss = self.video.selectedSubtitleStream(
             forced_subtitles_override=util.getSetting("forced_subtitles_override") and plexnet.util.ACCOUNT.subtitlesForced == 0,
-            deselect_subtitles=util.getSetting("disable_subtitle_languages")
+            deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []),
+            fallback=self.nonPlayback and shouldAutoSelectSubtitleFallback()
         )
 
         if sss:
@@ -259,7 +260,8 @@ def showSubtitlesDialog(video, non_playback=False, session_id=None):
     idx = None
     sss = video.selectedSubtitleStream(
         forced_subtitles_override=util.getSetting("forced_subtitles_override") and plexnet.util.ACCOUNT.subtitlesForced == 0,
-        deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or [])
+        deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []),
+        fallback=non_playback and shouldAutoSelectSubtitleFallback()
     )
     for i, s in enumerate(video.subtitleStreams):
         if s == sss:

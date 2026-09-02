@@ -9,7 +9,7 @@ from plexnet import playlist, util as pnUtil, plexapp, plexlibrary
 from lib import metadata
 from lib import util
 from lib.util import T
-from lib.language_util import getNativeLanguages
+from lib.language_util import getNativeLanguages, shouldAutoSelectSubtitleFallback
 from . import busy
 from . import dropdown
 from . import episodes
@@ -187,7 +187,8 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         sss = self.mediaItem.selectedSubtitleStream(
             forced_subtitles_override=util.getSetting("forced_subtitles_override") and pnUtil.ACCOUNT.subtitlesForced == 0,
-            deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []))
+            deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []),
+            fallback=shouldAutoSelectSubtitleFallback())
         self.setProperty('subtitles', sss and sss.getTitle() or 'None')
 
         leafcount = self.mediaItem.leafCount.asFloat()

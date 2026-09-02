@@ -19,7 +19,7 @@ from . import colors
 from .windows import seekdialog, windowutils, blackoutdialog
 from . import util
 from . import seamless_branching
-from .language_util import getNativeLanguages, resolveLanguage
+from .language_util import getNativeLanguages, resolveLanguage, shouldAutoSelectSubtitleFallback
 from plexnet import plexplayer
 from plexnet import plexapp
 from plexnet import plexstream as plexstreamModule
@@ -316,6 +316,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self._absSeekSettled = True
         self._deferAudioTrack = False
         self._audioTrackSwitchedSOS = None
+        self._subtitleActivationGeneration = 0
         self.blackout = False
         self.blackoutWasWanted = False
         self.pbStartedSet = False
@@ -342,6 +343,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.waitingForSOS = False
         self._deferAudioTrack = False
         self._audioTrackSwitchedSOS = None
+        self._subtitleActivationGeneration += 1
         self._lastDuration = 0
         self._subtitleStreamOffset = None
         self._lastSetEmbeddedSubIdx = None
@@ -790,65 +792,78 @@ class SeekPlayerHandler(BasePlayerHandler):
 
         self.ignoreTimelines = False
 
-        # check if embedded subtitle was set correctly
+        # Kodi can report the requested index before its subtitle renderer is
+        # ready. Re-apply after this callback returns rather than racing it here.
         if self.isDirectPlay and self.player.video and self.player.video.current_subtitle_is_embedded:
-            # The resume SeekOnStart (player.seekTime) issued just above is async. Any
-            # subtitle-stream manipulation below (the mismatch re-apply, or the kernel-fix
-            # close/reopen) disrupts the renderer; doing it while the seek is still
-            # in flight clobbers it (AddPacketsRenderer timeout -> display reset ->
-            # playback restarts at 0). Wait until onPlayBackSeek confirms the seek has
-            # actually landed (real player position converged on the target, not the
-            # masked reported time) before touching the subtitle stream. ~15s ceiling
-            # to outlast a variable display reset; waitForAbort yields so onPlayBackSeek
-            # can run and raise the flag.
-            waited = 0
-            while not self._absSeekSettled and waited < 150 and not util.MONITOR.abortRequested():
-                util.MONITOR.waitForAbort(0.1)
-                waited += 1
-            if not self._absSeekSettled:
-                util.LOG("onAVStarted: seek-settle gate timed out before embedded subtitle "
-                         "re-apply; proceeding anyway")
+            self._subtitleActivationGeneration += 1
+            generation = self._subtitleActivationGeneration
+            threading.Thread(
+                target=self._activateEmbeddedSubtitle,
+                args=(self.player.video, self.playbackID, generation),
+                daemon=True,
+                name='subtitle_activation'
+            ).start()
 
-            got_player = False
-            tries = 0
-            while not got_player and tries < 50 and not util.MONITOR.abortRequested():
-                try:
-                    playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
-                    got_player = True
-                    currIdx = kodijsonrpc.rpc.Player.GetProperties(playerid=playerID, properties=['currentsubtitle'])[
-                        'currentsubtitle'].get('index', None)
-                    target = self.player.video._current_subtitle_idx + self.subtitleStreamOffset
-                    if currIdx != target:
-                        util.LOG("Embedded Subtitle index was incorrect ({}), setting to: {}".
-                                 format(currIdx, target))
-                        self.dialog.setSubtitles()
-                    elif util.CE_NEEDS_EMBEDDED_SEEKBACK:
-                        # Index already correct on Kodi side but rendering may not be engaged —
-                        # setSubtitleStream() called from onPrePlay/onPlayBackStarted runs before
-                        # Kodi has opened the file. On builds without the kernel fix, the seekback
-                        # in dialog.setSubtitles is what forces Kodi to engage subtitle rendering.
-                        util.DEBUG_LOG("Embedded subtitle index already correct — re-applying via "
-                                       "dialog to trigger seekback forcing function")
-                        self.dialog.setSubtitles()
-                    else:
-                        # Kernel-fix build (CE_NEEDS_EMBEDDED_SEEKBACK=False): the seekback that
-                        # normally wakes rendering doesn't fire. Force Kodi to close+reopen the
-                        # subtitle player by switching off then back to the target — the close/
-                        # reopen of the subtitle stream is what actually engages rendering when
-                        # the early setSubtitleStream call set the index without activating it.
-                        util.DEBUG_LOG("Embedded subtitle index already correct — forcing stream "
-                                       "switch to engage rendering (kernel-fix build)")
-                        self.player.setSubtitleStream(-1)
-                        util.MONITOR.waitForAbort(0.05)
-                        self.player.setSubtitleStream(target)
-                        self.player.showSubtitles(True)
-                except IndexError:
-                    util.DEBUG_LOG("Player not available yet, retrying ({}/{})".format(tries, 50))
-                    tries += 1
-                    util.MONITOR.waitForAbort(0.1)
-                except:
-                    util.ERROR("Exception when trying to check for embedded subtitles")
-                    break
+    def _activateEmbeddedSubtitle(self, video, playback_id, generation):
+        # Let Kodi finish dispatching AVStarted and opening the renderer.
+        util.MONITOR.waitForAbort(0.2)
+
+        def playback_is_current():
+            return self.player.video is video and self.playbackID == playback_id and \
+                self._subtitleActivationGeneration == generation
+
+        if util.MONITOR.abortRequested() or not playback_is_current():
+            return
+
+        # The resume SeekOnStart is async. Stream manipulation while it is in
+        # flight can reset playback, so wait until onPlayBackSeek releases it.
+        waited = 0
+        while not self._absSeekSettled and waited < 150 and not util.MONITOR.abortRequested():
+            util.MONITOR.waitForAbort(0.1)
+            waited += 1
+        if not playback_is_current():
+            return
+        if not self._absSeekSettled:
+            util.LOG("onAVStarted: seek-settle gate timed out before embedded subtitle "
+                     "re-apply; proceeding anyway")
+
+        tries = 0
+        while tries < 50 and not util.MONITOR.abortRequested() and playback_is_current():
+            try:
+                playerID = kodijsonrpc.rpc.Player.GetActivePlayers()[0]["playerid"]
+                currIdx = kodijsonrpc.rpc.Player.GetProperties(
+                    playerid=playerID, properties=['currentsubtitle']
+                )['currentsubtitle'].get('index', None)
+                if video._current_subtitle_idx is None:
+                    return
+                target = video._current_subtitle_idx + self.subtitleStreamOffset
+
+                if currIdx != target:
+                    util.LOG("Embedded Subtitle index was incorrect ({}), setting to: {}".
+                             format(currIdx, target))
+                    self.dialog.setSubtitles()
+                elif util.CE_NEEDS_EMBEDDED_SEEKBACK:
+                    util.DEBUG_LOG("Embedded subtitle index already correct — re-applying via "
+                                   "dialog to trigger seekback forcing function")
+                    self.dialog.setSubtitles()
+                else:
+                    util.DEBUG_LOG("Embedded subtitle index already correct — forcing stream "
+                                   "switch to engage rendering (kernel-fix build)")
+                    self.player.setSubtitleStream(-1)
+                    util.MONITOR.waitForAbort(0.05)
+                    if not playback_is_current() or video._current_subtitle_idx is None:
+                        return
+                    target = video._current_subtitle_idx + self.subtitleStreamOffset
+                    self.player.setSubtitleStream(target)
+                    self.player.showSubtitles(True)
+                return
+            except IndexError:
+                tries += 1
+                util.DEBUG_LOG("Player not available yet, retrying ({}/{})".format(tries, 50))
+                util.MONITOR.waitForAbort(0.1)
+            except Exception:
+                util.ERROR("Exception when trying to activate embedded subtitles")
+                return
 
     def onPrePlayStarted(self):
         util.DEBUG_LOG('SeekHandler: onPrePlayStarted, DP: {}', self.isDirectPlay)
@@ -2571,6 +2586,14 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             'change.background',
             url=self.video.defaultArt.asTranscodedImageURL(1920, 1080, opacity=60, background=colors.noAlpha.Background)
         )
+        if shouldAutoSelectSubtitleFallback():
+            self.video.selectedSubtitleStream(
+                forced_subtitles_override=util.getSetting("forced_subtitles_override") and
+                plexnetUtil.ACCOUNT.subtitlesForced == 0,
+                deselect_subtitles=getNativeLanguages(
+                    util.getSetting("disable_subtitle_languages") or []),
+                fallback=True
+            )
         try:
             if not playerObject:
                 self.playerObject = plexplayer.PlexPlayer(self.video, offset, forceUpdate=force_update, session_id=self.sessionID)
