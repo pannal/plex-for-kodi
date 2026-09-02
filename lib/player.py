@@ -2,6 +2,7 @@ from __future__ import absolute_import
 import base64
 import json
 import threading
+import time
 import six
 import re
 import os
@@ -2329,6 +2330,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     STATE_PLAYING = "playing"
     STATE_PAUSED = "paused"
     STATE_BUFFERING = "buffering"
+    STARTUP_OSD_GRACE = 3.0
 
     OFFSET_RE = re.compile(r'(offset=)\d+')
 
@@ -2362,6 +2364,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.sessionID = None
         self.hasOSD = False
         self.hasSeekOSD = False
+        self.suppressStartupOSDUntil = 0
         self.handler = AudioPlayerHandler(self)
         self.playerObject = None
         self.currentTime = 0
@@ -2391,6 +2394,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
     def reset(self):
         self.video = None
         self.started = False
+        self.suppressStartupOSDUntil = 0
         self.bgmPlaying = False
         self.playerObject = None
         self.pauseAfterPlaybackStarted = False
@@ -2833,6 +2837,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.trigger('starting.video')
         self.handler.queuingNext = False
         self.handler.queuingSpecific = False
+        self.suppressStartupOSDUntil = float('inf')
         self.play(url, li)
 
     def playVideoPlaylist(self, playlist, resume=False, handler=None, session_id=None):
@@ -3029,6 +3034,7 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         self.handler.onAVChange()
 
     def onAVStarted(self):
+        self.suppressStartupOSDUntil = time.time() + self.STARTUP_OSD_GRACE
         if not self.sessionID:
             return
         util.DEBUG_LOG('Player - AVStarted: {}, Time: {}', self.handler,
@@ -3185,6 +3191,22 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
         except:
             util.ERROR()
 
+    def _handleVideoOSDOpened(self):
+        if time.time() < self.suppressStartupOSDUntil:
+            util.DEBUG_LOG('Player: Closing unsolicited video OSD during playback startup')
+            xbmc.executebuiltin('Dialog.Close(videoosd,true)')
+            if self.handler:
+                self.handler.hideOSD()
+            return
+        self.onVideoOSD()
+
+    def _handleSeekOSDOpened(self):
+        if time.time() < self.suppressStartupOSDUntil:
+            util.DEBUG_LOG('Player: Closing unsolicited seek OSD during playback startup')
+            xbmc.executebuiltin('Dialog.Close(seekbar,true)')
+            return
+        self.onSeekOSD()
+
     def stopAndWait(self, fade=False, fade_fast=False, deferred=False):
         if self.isPlaying():
             util.DEBUG_LOG('Player: Stopping and waiting...')
@@ -3296,14 +3318,14 @@ class PlexPlayer(xbmc.Player, signalsmixin.SignalsMixin):
             if xbmc.getCondVisibility('Window.IsActive(videoosd)'):
                 if not self.hasOSD:
                     self.hasOSD = True
-                    self.onVideoOSD()
+                    self._handleVideoOSDOpened()
             else:
                 self.hasOSD = False
 
             if xbmc.getCondVisibility('Window.IsActive(seekbar)'):
                 if not self.hasSeekOSD:
                     self.hasSeekOSD = True
-                    self.onSeekOSD()
+                    self._handleSeekOSDOpened()
             else:
                 self.hasSeekOSD = False
 
