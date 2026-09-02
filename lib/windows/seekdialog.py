@@ -705,10 +705,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         return
 
                 if action in (xbmcgui.ACTION_PAUSE, xbmcgui.ACTION_PLAYER_PLAY, xbmcgui.ACTION_PLAYER_PLAYPAUSE):
-                    if self.player.playState == self.player.STATE_PLAYING:
-                        self.showOSD(focusButton=False)
-                    elif self.player.playState == self.player.STATE_PAUSED:
-                        self.hideOSD()
+                    self.hideOSD()
 
                 if action == xbmcgui.ACTION_CONTEXT_MENU or (self.getProperty('show.PPI') and action in (xbmcgui.ACTION_MOVE_LEFT, xbmcgui.ACTION_MOVE_RIGHT)):
                     if self.getProperty('show.PPI') and not self._playerDebugActive and not self._playerNativePPIActive:
