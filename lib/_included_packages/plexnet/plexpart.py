@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 from kodi_six import xbmcvfs
+from urllib.parse import quote, urlsplit, urlunsplit
 from . import plexobjects
 from . import plexstream
 from . import plexrequest
@@ -182,8 +183,31 @@ class PlexPart(plexobjects.PlexObject):
             # replace match and normalize path separator to separator style of map_path
             url = self.file.replace(pms_path, map_path, 1).replace(sep == "/" and "\\" or "/", sep)
 
-            if (verify and xbmcvfs.exists(url)) or not verify:
-                util.DEBUG_LOG("File {} found in path map, mapping to {}", self.file, pms_path)
+            # xbmcvfs.exists() uses Stat semantics for HTTP(S). Some WebDAV/
+            # authenticated HTTP servers reject that request (for example with
+            # 401) even though Kodi can subsequently open and stream the file.
+            # The path-mapping manager probes web roots separately, so avoid a
+            # false per-file rejection for HTTP(S) mappings.
+            is_web_url = url.lower().startswith(("http://", "https://"))
+            if is_web_url:
+                # Kodi/libcurl requires a valid URL. Plex file paths can contain
+                # spaces, parentheses and other characters that are legal in a
+                # filesystem path but must be percent-encoded in HTTP(S) URLs.
+                # Encode only the URL path so scheme/host/auth/query remain intact,
+                # and preserve any percent escapes already present in the mapping.
+                parsed = urlsplit(url)
+                url = urlunsplit((
+                    parsed.scheme,
+                    parsed.netloc,
+                    quote(parsed.path, safe="/%"),
+                    parsed.query,
+                    parsed.fragment,
+                ))
+
+            exists = is_web_url or not verify or xbmcvfs.exists(url)
+
+            if exists:
+                util.DEBUG_LOG("File {} found in path map, mapping to {}", self.file, url)
                 if verify:
                     pmm.markMappingState(server.name, map_path, True)
                 return url
