@@ -3356,3 +3356,11 @@ msgstr ""
 msgctxt "#35049"
 msgid "Local mode reaches your server over plain HTTP, so \"Allow Insecure Connections\" has been set to \"Always\".\n\nYour server needs the matching setting: in Plex under Settings > Network, \"Secure connections\" has to be \"Preferred\" - with \"Required\" the server refuses these connections."
 msgstr ""
+
+msgctxt "#35070"
+msgid "Pin to home"
+msgstr ""
+
+msgctxt "#35071"
+msgid "Remove from home"
+msgstr ""
