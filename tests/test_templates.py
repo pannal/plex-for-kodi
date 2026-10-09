@@ -352,3 +352,26 @@ class ClearLogoTest(KodiTestCase):
             with self.subTest(window=window):
                 _, logo = self.controlsFor(window)
                 self.assertEqual("keep", logo.findtext("aspectratio"))
+
+
+class TemplateStalenessTest(KodiTestCase):
+    """The generated-XML staleness check must be name-based, not count-based."""
+
+    def test_detects_a_missing_generated_file(self):
+        from lib.templating.render import templates_need_render
+        root = self.mktemp()
+        tpl = os.path.join(root, "templates")
+        gen = os.path.join(root, "1080i")
+        os.makedirs(tpl)
+        os.makedirs(gen)
+        for name in ("a", "b"):
+            open(os.path.join(tpl, "script-plex-{0}.xml.tpl".format(name)), "w").close()
+            open(os.path.join(gen, "script-plex-{0}.xml".format(name)), "w").close()
+        self.assertFalse(templates_need_render(tpl, gen))
+
+        # remove one template and add another: counts stay equal, but the new
+        # template's generated XML is missing, so a render is required
+        os.remove(os.path.join(tpl, "script-plex-a.xml.tpl"))
+        os.remove(os.path.join(gen, "script-plex-a.xml"))
+        open(os.path.join(tpl, "script-plex-c.xml.tpl"), "w").close()
+        self.assertTrue(templates_need_render(tpl, gen))
