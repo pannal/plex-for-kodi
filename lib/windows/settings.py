@@ -508,6 +508,8 @@ class Settings(object):
                     T(33712, 'When playback of an in-progress media is requested, resume it by default instead'
                              ' of asking whether to resume or start from the beginning.')
                 ),
+                BoolSetting('watchtogether.auto_join_last', T(35051, 'Auto-join the last Watch Together room on startup'), False),
+                BoolSetting('watchtogether.show_osd_status', T(35052, 'Show Watch Together status on the video OSD'), True),
             )
         ),
         'video': (

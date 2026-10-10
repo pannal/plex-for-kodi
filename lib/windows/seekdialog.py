@@ -128,6 +128,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     OPTIONS_BUTTON_ID = 411
     SUBTITLE_BUTTON_ID = 412
     VS10_BUTTON_ID = 413
+    WT_BUTTON_ID = 433
 
     BIG_SEEK_GROUP_ID = 500
     BIG_SEEK_LIST_ID = 501
@@ -1073,6 +1074,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.stop()
         elif controlID == self.SETTINGS_BUTTON_ID:
             self.handleDialog(self.showSettings)
+        elif controlID == self.WT_BUTTON_ID:
+            self.watchTogetherMenu()
         elif controlID == self.REPEAT_BUTTON_ID:
             self.repeatButtonClicked()
         elif controlID == self.SHUFFLE_BUTTON_ID:
@@ -1431,6 +1434,29 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 pl.refresh(force=True)
         else:
             xbmc.executebuiltin('PlayerControl(Repeat)')
+
+    def watchTogetherMenu(self):
+        from . import watchtogether as wtwin
+        # above the WT button: one slot right of the subtitle button, plus the
+        # VS10 button when it is shown
+        offset = 1360 - self.subtitleButtonLeft + self.NAVBAR_BTN_SIZE
+        if self.getProperty('nav.vs10'):
+            offset += self.NAVBAR_BTN_SIZE
+        choice = dropdown.showDropdown(
+            [{'key': 'wt_leave', 'display': T(35056, 'Leave room')},
+             {'key': 'wt_participants', 'display': T(35067, 'Participants')}],
+            (offset, 1060),
+            pos_is_bottom=True,
+            close_on_playback_ended=True,
+            select_index=0
+        )
+        if not choice:
+            return
+        if choice['key'] == 'wt_leave':
+            if wtwin.confirm_leave():
+                wtwin.leave_room()
+        elif choice['key'] == 'wt_participants':
+            wtwin.show_participants()
 
     def shuffleButtonClicked(self):
         if self.handler.playlist:

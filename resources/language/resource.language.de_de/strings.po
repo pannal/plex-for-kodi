@@ -3714,3 +3714,143 @@ msgstr "Unsichere Verbindungen aktiviert"
 msgctxt "#35049"
 msgid "Local mode reaches your server over plain HTTP, so \"Allow Insecure Connections\" has been set to \"Always\".\n\nYour server needs the matching setting: in Plex under Settings > Network, \"Secure connections\" has to be \"Preferred\" - with \"Required\" the server refuses these connections."
 msgstr "Der lokale Modus erreicht deinen Server über einfaches HTTP, daher wurde \"Unsichere Verbindungen erlauben\" auf \"Immer\" gesetzt.\n\nDein Server braucht die passende Einstellung: in Plex unter Einstellungen > Netzwerk muss \"Sichere Verbindungen\" auf \"Bevorzugt\" stehen - bei \"Erforderlich\" lehnt der Server diese Verbindungen ab."
+
+msgctxt "#35051"
+msgid "Auto-join the last Watch Together room on startup"
+msgstr "Letzten Watch-Together-Raum beim Start automatisch beitreten"
+
+msgctxt "#35052"
+msgid "Show Watch Together status on the video OSD"
+msgstr "Watch-Together-Status im Video-OSD anzeigen"
+
+msgctxt "#35053"
+msgid "Watch Together"
+msgstr "Watch Together"
+
+msgctxt "#35054"
+msgid "{} watching"
+msgstr "{} schauen zu"
+
+msgctxt "#35055"
+msgid "Reconnecting…"
+msgstr "Verbindung wird wiederhergestellt…"
+
+msgctxt "#35056"
+msgid "Leave room"
+msgstr "Raum verlassen"
+
+msgctxt "#35057"
+msgid "No active rooms"
+msgstr "Keine aktiven Räume"
+
+msgctxt "#35058"
+msgid "New Watch Together room: {}"
+msgstr "Neuer Watch-Together-Raum: {}"
+
+msgctxt "#35059"
+msgid "The Watch Together room has ended"
+msgstr "Der Watch-Together-Raum wurde beendet"
+
+msgctxt "#35060"
+msgid "You are already watching something else. Join and take over playback?"
+msgstr "Du siehst bereits etwas anderes. Beitreten und Wiedergabe übernehmen?"
+
+msgctxt "#35061"
+msgid "Leave the current room and join this one?"
+msgstr "Aktuellen Raum verlassen und diesem beitreten?"
+
+msgctxt "#35062"
+msgid "Join"
+msgstr "Beitreten"
+
+msgctxt "#35063"
+msgid "Remove"
+msgstr "Entfernen"
+
+msgctxt "#35064"
+msgid "Info"
+msgstr "Info"
+
+msgctxt "#35065"
+msgid "Remove me from this room?"
+msgstr "Mich aus diesem Raum entfernen?"
+
+msgctxt "#35066"
+msgid "Watching"
+msgstr "Wiedergabe"
+
+msgctxt "#35067"
+msgid "Participants"
+msgstr "Teilnehmer"
+
+msgctxt "#35068"
+msgid "Live"
+msgstr "Live"
+
+msgctxt "#35069"
+msgid "Close"
+msgstr "Schließen"
+
+msgctxt "#35072"
+msgid "Start"
+msgstr "Starten"
+
+msgctxt "#35073"
+msgid "Cancel"
+msgstr "Abbrechen"
+
+msgctxt "#35074"
+msgid "Waiting for the host…"
+msgstr "Warten auf den Host…"
+
+msgctxt "#35075"
+msgid "Ready"
+msgstr "Bereit"
+
+msgctxt "#35076"
+msgid "Invited"
+msgstr "Eingeladen"
+
+msgctxt "#35077"
+msgid "Access unknown"
+msgstr "Zugriff unbekannt"
+
+msgctxt "#35078"
+msgid "No one to invite"
+msgstr "Niemanden zum Einladen"
+
+msgctxt "#35079"
+msgid "Some people could not be invited"
+msgstr "Einige Personen konnten nicht eingeladen werden"
+
+msgctxt "#35080"
+msgid "Start Watch Together"
+msgstr "Watch Together starten"
+
+msgctxt "#35081"
+msgid "Leave the current room and start a new one?"
+msgstr "Aktuellen Raum verlassen und einen neuen starten?"
+
+msgctxt "#35082"
+msgid "Invite…"
+msgstr "Einladen…"
+
+msgctxt "#35083"
+msgid "Sign in again to use Watch Together"
+msgstr "Melde dich erneut an, um Watch Together zu nutzen"
+
+msgctxt "#35084"
+msgid "This item cannot be hosted"
+msgstr "Dieser Eintrag kann nicht gehostet werden"
+
+msgctxt "#35085"
+msgid "Invite (+)"
+msgstr "Einladen (+)"
+
+msgctxt "#35086"
+msgid "Leave this Watch Together room?"
+msgstr "Diesen Watch-Together-Raum verlassen?"
+
+msgctxt "#35087"
+msgid "Invite"
+msgstr "Einladen"

@@ -531,6 +531,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         With dynamic hub templating, all hubs support all display types via
         conditional visibility based on the hub.display.4XX window property.
         """
+        from . import watchtogether as wtwin
+        if identifier == wtwin.WATCHTOGETHER_HUB_ID:
+            return 'ar16x9'
+
         # Mixed content hubs (like Continue Watching) always use poster
         if identifier in self.HUBS_MIXED_CONTENT:
             return 'poster'
@@ -604,6 +608,11 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             'ar16x9': False,
             'with_art': False,
         }
+
+        from . import watchtogether as wtwin
+        if identifier == wtwin.WATCHTOGETHER_HUB_ID:
+            return {'with_progress': False, 'do_updates': True,
+                    'text2lines': True, 'ar16x9': True, 'with_art': False}
 
         # Watchlist/discovery hubs don't show progress
         if identifier in self.HUBS_NO_PROGRESS:
@@ -714,6 +723,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         self._lastReachabilityCheck = 0
         self._lastPathMappingProbe = 0
         self._pathMappingTargets = []
+        self._wtRoomsVersion = None
 
         from . import windowutils
         windowutils.HOME = self
@@ -774,6 +784,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         util.CRON.registerReceiver(self)
         self.updateProperties()
         self.checkPlexDirectHosts(list(plexapp.SERVERMANAGER.serversByUuid.values()), source="stored")
+
+        from . import watchtogether as wtwin
+        wtwin.bridge.start()
 
     def closeWRecompileTpls(self):
         self._applyTheme = False
@@ -1206,6 +1219,20 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if enabled is None:
             return False
         return catalog_id not in enabled
+
+    def _isHubHiddenFor(self, identifier, section, is_cross_section):
+        """A hub is hidden only when it is not cross-section and not the
+        always-on Watch Together hub."""
+        if is_cross_section:
+            return False
+        from . import watchtogether as wtwin
+        if identifier == wtwin.WATCHTOGETHER_HUB_ID:
+            return False
+        return self.isHubHidden(identifier, section.key)
+
+    def _isWatchTogetherItem(self, ds):
+        from . import watchtogether as wtwin
+        return isinstance(ds, wtwin.WatchTogetherRoomItem)
 
     def sortHubsByUserOrder(self, hubs, is_home=False, section_key=None):
         """Sort hubs by user-defined order, preserving server order for unordered hubs."""
@@ -2422,6 +2449,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if not self.lastSection or self._ignoreTick:
             return
 
+        if self.is_active and self.lastSection is home_section:
+            self.checkWatchTogetherHub()
+
         hubs = self.sectionHubs.get(self.lastSection.key)
         if hubs is None:
             return
@@ -2799,6 +2829,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
 
             if mli.dataSource is None:
                 return
+            if self._isWatchTogetherItem(mli.dataSource):
+                return          # a room tile has no watched state
             item = mli.dataSource
 
         if super(HomeWindow, self).toggleWatched(item, state=state) is None:
@@ -2993,6 +3025,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         if mli.dataSource is None:
+            return
+
+        if self._isWatchTogetherItem(mli.dataSource):
+            from . import watchtogether as wtwin
+            command = wtwin.bridge.room_clicked(mli.dataSource.room)
+            if command:
+                self.processCommand(command)
             return
 
         # auto resume for in-progress items
@@ -3311,6 +3350,60 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             self.showHubs(self.lastSection, force=True, update=True)
             return
 
+    def _watchtogether_hub_menu(self, room):
+        from . import watchtogether as wtwin
+        options = [{'key': 'wt_join', 'display': T(35062, 'Join')}]
+        # Invite only makes sense for the room we are actually in: invitees and
+        # invite are scoped to a room, so on any other tile it would silently
+        # target the wrong room (or say "no one to invite")
+        if wtwin.bridge.room is not None and wtwin.bridge.room.id == room.id:
+            options.append({'key': 'invite', 'display': T(35082, 'Invite…')})
+        options += [{'key': 'wt_remove', 'display': T(35063, 'Remove')},
+                    {'key': 'wt_info', 'display': T(35064, 'Info')}]
+        choice = dropdown.showDropdown(
+            options,
+            pos=(660, 441),
+            close_direction='none',
+            set_dropdown_prop=False,
+            header=T(33030, 'Choose action for: {}').format(room.title),
+            select_index=0,
+            align_items='left',
+            dialog_props=self.carriedProps
+        )
+        if not choice:
+            return
+        if choice['key'] == 'wt_join':
+            command = wtwin.bridge.room_clicked(room)
+            if command:
+                self.processCommand(command)
+        elif choice['key'] == 'invite':
+            wtwin.InviteDialog.open(room=room)
+        elif choice['key'] == 'wt_remove':
+            if self._confirm_remove_room(room):
+                wtwin.bridge.remove_room(room)
+        elif choice['key'] == 'wt_info':
+            wtwin.show_room_info(room)
+
+    def _confirm_remove_room(self, room):
+        button = optionsdialog.show(
+            T(35063, 'Remove'),
+            T(35065, 'Remove me from this room?'),
+            T(32328, 'Yes'),
+            T(32329, 'No'),
+            dialog_props=self.carriedProps
+        )
+        return button == 0
+
+    def _confirm_start_watch_together(self):
+        button = optionsdialog.show(
+            T(35053, 'Watch Together'),
+            T(35081, 'Leave the current room and start a new one?'),
+            T(32328, 'Yes'),
+            T(32329, 'No'),
+            dialog_props=self.carriedProps
+        )
+        return button == 0
+
     def hubMenu(self, hubControlID):
         hub = self.currentHub
         if not hub:
@@ -3325,6 +3418,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             return
 
         ds = mli.dataSource
+
+        if self._isWatchTogetherItem(ds):
+            return self._watchtogether_hub_menu(ds.room)
 
         # Determine the hub's source section and catalog_id
         is_home = not self.lastSection or self.lastSection.key is None
@@ -3393,6 +3489,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     options.insert(0, dropdown.SEPARATOR)
                     options.insert(1, {'key': 'start_over', 'display': T(32317, 'Play from beginning')})
                     options.insert(2, {'key': 'resume', 'display': T(32429, "Resume from {}").format(util.timeDisplay(ds.viewOffset.asInt()).lstrip('0').lstrip(':'))})
+                # Only offer hosting when the item's server/ratingKey resolve
+                # (Review Focus 4: no sourceUri otherwise). A server without a
+                # uuid also yields an unresolvable sourceUri.
+                if ds.server and getattr(ds.server, "uuid", None) and ds.ratingKey:
+                    options.append({'key': 'start_watch_together',
+                                    'display': T(35080, 'Start Watch Together')})
 
 
             if ds.TYPE in ('episode', 'season'):
@@ -3518,6 +3620,14 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 ds.clearCache()
             except Exception as e:
                 util.DEBUG_LOG("Couldn't clear cache: {}", e)
+
+        elif choice["key"] == "start_watch_together":
+            from . import watchtogether as wtwin
+            # host() leaves the current room unconfirmed; ask first (mirrors
+            # room_clicked's confirm_switch).
+            if wtwin.bridge.supervisor is not None and not self._confirm_start_watch_together():
+                return
+            wtwin.bridge.host(ds)
 
     def sectionMover(self, item, action):
         def stop_moving(reset=False):
@@ -4073,6 +4183,34 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     rp[identifier] = (str(mli.dataSource.ratingKey), pos)
         return rp
 
+    def _with_watchtogether_hub(self, hubs, section):
+        """Prepend the Watch Together hub on Home. Built fresh each draw so a
+        custom hub config can neither drop nor reorder it; `home_hub()` rebuilds
+        the item list from the bridge's live cache on every call."""
+        if section.key is not None or hubs is None:
+            return hubs
+        from . import watchtogether as wtwin
+        hub = wtwin.bridge.home_hub()
+        if hub is None:
+            return hubs
+        combined = HubsList([hub] + list(hubs))
+        combined.identifier = getattr(hubs, 'identifier', NO_HUB)
+        combined.lastUpdated = getattr(hubs, 'lastUpdated', 0)
+        combined.invalid = getattr(hubs, 'invalid', False)
+        return combined
+
+    def checkWatchTogetherHub(self):
+        """Redraw Home when the Watch Together room set changed. Returns True
+        when it redrew."""
+        from . import watchtogether as wtwin
+        version = wtwin.bridge.rooms_version
+        if version == self._wtRoomsVersion:
+            return False
+        self._wtRoomsVersion = version
+        self.showHubs(home_section, update=True,
+                      reselect_pos_dict=self.getCurrentHubsPositions(home_section))
+        return True
+
     @busy.busy_property()
     def _showHubs(self, section=None, update=False, force=False, reselect_pos_dict=None):
         if not update:
@@ -4150,6 +4288,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         if combined_hubs is not None and len(combined_hubs) > 0:
             hubs = combined_hubs
 
+        hubs = self._with_watchtogether_hub(hubs, section)
+
         # Append library's name in cross section hubs
         is_home = section.key is None
         linear_hubs = util.getSetting('hubs_linear', False)
@@ -4211,10 +4351,9 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             str_section_key = str(section.key) if section.key is not None else None
             is_cross_section = str_cross_source is not None and str_cross_source != str_section_key
 
-            if not is_cross_section:
-                if self.isHubHidden(identifier, section.key):
-                    hidden_count += 1
-                    continue
+            if self._isHubHiddenFor(identifier, section, is_cross_section):
+                hidden_count += 1
+                continue
 
             # Skip hubs with no content - they don't take a slot, but will appear
             # automatically when they have content on the next refresh.
@@ -4431,6 +4570,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie.png')
         return mli
 
+    def createWatchTogetherListItem(self, obj, wide=False):
+        mli = kodigui.ManagedListItem(obj.title, obj.subtitle,
+                                      thumbnailImage=obj.image, data_source=obj)
+        mli.setProperty('thumb.fallback', 'script.plex/thumb_fallbacks/movie16x9.png')
+        return mli
+
     def unhandledHub(self, self2, obj, wide=False):
         util.DEBUG_LOG('Unhandled Hub item: {0}', obj.type)
 
@@ -4446,7 +4591,8 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         'clip': createClipListItem,
         'artist': createArtistListItem,
         'playlist': createPlaylistListItem,
-        'collection': createCollectionListItem
+        'collection': createCollectionListItem,
+        'watchtogether': createWatchTogetherListItem
     }
 
     def createListItem(self, obj, wide=False):

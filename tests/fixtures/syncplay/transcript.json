@@ -1,0 +1,42 @@
+[
+  {
+    "note": "relay's own idle tick (§5.5) — apply as room truth",
+    "in": {"State": {"ping": {"latencyCalculation": 1791143689.1127045, "serverRtt": 0.16222858428955078, "clientLatencyCalculation": 2756.3902396698}, "playstate": {"position": 1806.0028346305862, "paused": false, "doSeek": false, "setBy": null}}},
+    "expect": {"remote_position": 1806.0028346305862, "relay_ignore": 0, "self_echo": 0}
+  },
+  {
+    "note": "our own State echoed back with setBy=us and relay apply-ack (§5.5/§5.9) — count, drop, mirror counter",
+    "in": {"State": {"ping": {"latencyCalculation": 1791143698.2830253, "serverRtt": 0.1694636344909668, "clientLatencyCalculation": 2765.5562961158753}, "playstate": {"position": 1806.0, "paused": false, "doSeek": false, "setBy": "<IDENTITY>"}, "ignoringOnTheFly": {"server": 1}}},
+    "expect": {"remote_position": 1806.0028346305862, "relay_ignore": 1, "self_echo": 1}
+  },
+  {
+    "note": "remote driver's state — apply position + setBy (§5.5)",
+    "in": {"State": {"ping": {"latencyCalculation": 1791143700.11, "serverRtt": 0.158, "clientLatencyCalculation": 2767.39}, "playstate": {"position": 1810.0, "paused": false, "doSeek": false, "setBy": "{\"deviceIdentifier\":\"zzzzzzzzzzzzzzzzzzzzzz\",\"deviceName\":\"Safari\",\"userID\":\"1000001\"}"}}},
+    "expect": {"remote_position": 1810.0, "relay_ignore": 1, "self_echo": 1, "set_by_name": "Safari"}
+  },
+  {
+    "note": "remote driver seeks — doSeek lives one tick, position is the target (§5.6)",
+    "in": {"State": {"ping": {"latencyCalculation": 1791143701.12, "serverRtt": 0.16}, "playstate": {"position": 1753.0, "paused": false, "doSeek": true, "setBy": "{\"deviceIdentifier\":\"zzzzzzzzzzzzzzzzzzzzzz\",\"deviceName\":\"Safari\",\"userID\":\"1000001\"}"}}},
+    "expect": {"remote_position": 1753.0, "remote_do_seek": true}
+  },
+  {
+    "note": "next tick: doSeek back to false (§5.6)",
+    "in": {"State": {"ping": {"latencyCalculation": 1791143702.13, "serverRtt": 0.16}, "playstate": {"position": 1754.0, "paused": false, "doSeek": false, "setBy": "{\"deviceIdentifier\":\"zzzzzzzzzzzzzzzzzzzzzz\",\"deviceName\":\"Safari\",\"userID\":\"1000001\"}"}}},
+    "expect": {"remote_position": 1754.0, "remote_do_seek": false}
+  },
+  {
+    "note": "paused room: position stays an int on the wire (§5.5)",
+    "in": {"State": {"ping": {"latencyCalculation": 1791143710.14, "serverRtt": 0.16}, "playstate": {"position": 1804, "paused": true, "doSeek": false, "setBy": null}}},
+    "expect": {"remote_position": 1804.0, "remote_paused": true}
+  },
+  {
+    "note": "roster snapshot keyed by room then identity (§5.3)",
+    "in": {"List": {"<ROOM>": {"{\"deviceIdentifier\":\"zzzzzzzzzzzzzzzzzzzzzz\",\"deviceName\":\"Safari\",\"userID\":\"1000001\"}": {"position": 0, "file": {}, "controller": false, "isReady": null}}}},
+    "expect": {"roster_len": 1}
+  },
+  {
+    "note": "peer's transport death as Set.user event (§5.8)",
+    "in": {"Set": {"user": {"{\"deviceIdentifier\":\"zzzzzzzzzzzzzzzzzzzzzz\",\"deviceName\":\"Safari\",\"userID\":\"1000001\"}": {"room": {"name": "<ROOM>"}, "event": {"left": true}}}}},
+    "expect": {"roster_len": 0, "last_event": ["left", "Safari"]}
+  }
+]

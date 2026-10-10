@@ -88,17 +88,24 @@ class Window(object):
     def __init__(self, existingWindowId=-1):
         self.windowId = existingWindowId
 
+    def _id(self):
+        # BaseDialog/BaseWindow call xbmcgui.WindowXML*.setProperty(self, ...) as
+        # an unbound method with the dialog/window as `self`; before the window
+        # is loaded that object has no windowId yet. Kodi raises RuntimeError
+        # there (which callers catch); a stub must not leak an AttributeError.
+        return getattr(self, "windowId", -1)
+
     def getProperty(self, key):
-        return ENV.window_props[self.windowId].get(key, "")
+        return ENV.window_props[self._id()].get(key, "")
 
     def setProperty(self, key, value):
-        ENV.window_props[self.windowId][key] = value
+        ENV.window_props[self._id()][key] = value
 
     def clearProperty(self, key):
-        ENV.window_props[self.windowId].pop(key, None)
+        ENV.window_props[self._id()].pop(key, None)
 
     def clearProperties(self):
-        ENV.window_props[self.windowId].clear()
+        ENV.window_props[self._id()].clear()
 
     def getFocusId(self):
         return 0
