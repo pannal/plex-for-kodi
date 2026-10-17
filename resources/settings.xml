@@ -118,6 +118,16 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="watchtogether.auto_join_last" type="boolean" label="35051">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
+                <setting id="watchtogether.show_osd_status" type="boolean" label="35052">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle"/>
+                </setting>
             </group>
         </category>
         <!-- Player -->

@@ -21,7 +21,7 @@ from kodienv import ENV, parse_strings_po
 
 from lib.i18n import T, TRANSLATED_ROLES
 
-from .base import KodiTestCase, LANGUAGE_DIR
+from .base import KodiTestCase, LANGUAGE_DIR, TEMPLATE_DIR
 from . import REPO_ROOT
 
 CTXT_RE = re.compile(r'^msgctxt\s+"#(\d+)"\s*$')
@@ -174,6 +174,41 @@ class SourceStringCoverageTest(KodiTestCase):
                     with open(os.path.join(root, fn), "r", encoding="utf-8") as fp:
                         found += len(T_CALL_RE.findall(fp.read()))
         self.assertGreater(found, 100, "T() scan found suspiciously few call sites")
+
+
+class TemplateStringCoverageTest(KodiTestCase):
+    """
+    Templates reference strings by number ($ADDON[script.plexmod 35087]). A
+    stale or typo'd id renders as a blank label at runtime and nothing in the
+    addon notices - the same silent failure the T() scan above guards for the
+    Python side.
+    """
+
+    ADDON_REF_RE = re.compile(r"\$ADDON\[script\.plexmod\s+(\d+)\]")
+
+    def test_every_template_string_id_exists_in_en_gb(self):
+        available = set(msgids(EN_GB))
+        missing = {}
+        for fn in sorted(os.listdir(TEMPLATE_DIR)):
+            if not fn.endswith(".xml.tpl"):
+                continue
+            with open(os.path.join(TEMPLATE_DIR, fn), "r", encoding="utf-8") as fp:
+                for lineno, line in enumerate(fp, 1):
+                    for match in self.ADDON_REF_RE.finditer(line):
+                        ident = int(match.group(1))
+                        if ident not in available:
+                            missing.setdefault(ident, []).append(
+                                "{0}:{1}".format(fn, lineno))
+        self.assertEqual({}, missing, "template $ADDON ids not in en_gb strings.po")
+
+    def test_the_scan_actually_found_template_references(self):
+        """A regex that matched nothing would make the test above vacuous."""
+        found = 0
+        for fn in os.listdir(TEMPLATE_DIR):
+            if fn.endswith(".xml.tpl"):
+                with open(os.path.join(TEMPLATE_DIR, fn), "r", encoding="utf-8") as fp:
+                    found += len(self.ADDON_REF_RE.findall(fp.read()))
+        self.assertGreater(found, 50, "template $ADDON scan found suspiciously few refs")
 
 
 class PoFileIntegrityTest(KodiTestCase):
