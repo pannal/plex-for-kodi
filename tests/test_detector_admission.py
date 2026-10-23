@@ -19,6 +19,10 @@ class AdmissionTest(KodiTestCase):
         self.value = ''
         self.calls = []
         self.skips = []
+        self.bindings = []
+        self.binds = []
+        self.releases = []
+        self.cancels = []
         self.p.bgmPlaying = False
         self.p.video.settings = SimpleNamespace(getGlobal=lambda key: 'synthetic-client')
         self.available = available
@@ -26,6 +30,7 @@ class AdmissionTest(KodiTestCase):
         self.on_play = None
         self.addCleanup(patch.stopall)
         patch.object(p3i_detector, '_supported', None).start()
+        patch.object(p3i_detector, '_job_supported', None).start()
         patch.object(p3i_detector.xbmc, 'executeJSONRPC', self.rpc).start()
         original = self.p.play
         def submit(url, li):
@@ -35,6 +40,7 @@ class AdmissionTest(KodiTestCase):
                 self.value = ''
             if self.on_play:
                 self.on_play()
+            self.bindings.append(li.getProperty('p3i.detector.binding'))
             original(url, li)
         patch.object(self.p, 'play', submit).start()
 
@@ -45,7 +51,20 @@ class AdmissionTest(KodiTestCase):
         if not self.available:
             return json.dumps({'jsonrpc': '2.0', 'error': {'code': -32601}, 'id': 1})
         if method == 'GetCapabilities':
-            result = {'version': 1, 'supported': True, 'ownedskip': True}
+            result = {'version': 1, 'supported': True, 'ownedskip': True, 'resultbinding': 1}
+        elif method == 'Start':
+            result = {'status': 'accepted', 'requestid': 'job-1'}
+        elif method == 'GetStatus':
+            result = {'status': 'completed'}
+        elif method == 'Bind':
+            self.binds.append(request.get('params'))
+            result = {'status': 'ready', 'bindingid': 'bind-1', 'property': 'p3i.detector.binding'}
+        elif method == 'ReleaseBinding':
+            self.releases.append(request.get('params'))
+            result = {'status': 'released'}
+        elif method == 'Cancel':
+            self.cancels.append(request.get('params'))
+            result = {'status': 'cancelled'}
         elif method == 'SetSkipNext':
             self.generation += 1
             self.value = '1'
@@ -201,3 +220,65 @@ class AdmissionTest(KodiTestCase):
         self.assertEqual(self.calls.count('GetCapabilities'), 1)
         self.assertEqual(self.calls.count('SetSkipNext'), 2)
         self.assertEqual(self.value, '')
+
+    def test_bind_is_mockable(self):
+        self.set_server()
+        self.assertIs(p3i_detector.job_supported(), True)
+        self.assertEqual(p3i_detector.start('/media/movie.mkv'), 'job-1')
+        self.assertEqual(p3i_detector.status('job-1')['status'], 'completed')
+        self.assertEqual(p3i_detector.bind('job-1', '/media/movie.mkv'),
+                         {'property': 'p3i.detector.binding', 'bindingid': 'bind-1'})
+        self.assertEqual(self.calls.count('Bind'), 1)
+        self.assertEqual(self.binds, [{'requestid': 'job-1', 'path': '/media/movie.mkv',
+                                       'options': {'association': 'source', 'streamindex': -1}}])
+        p3i_detector.release('bind-1')
+        p3i_detector.cancel('job-1')
+        self.assertEqual(self.releases, [{'bindingid': 'bind-1'}])
+        self.assertEqual(self.cancels, [{'requestid': 'job-1'}])
+
+    def test_direct_play_binds_and_sets_property_before_play(self):
+        self.set_server()
+        self.p.wt_detector_requestid = 'job-1'
+        self.meta.isTranscoded = False
+        self.meta.streamUrls = ['/media/movie.mkv']
+        self.meta.isMapped = False    # HTTP direct play: the played url is rewritten
+        self.start()
+        self.assertEqual(self.calls.count('Bind'), 1)
+        self.assertEqual(self.binds[0]['path'], '/media/movie.mkv')
+        self.assertEqual(self.binds[0]['options'], {'association': 'source', 'streamindex': -1})
+        self.assertEqual(self.bindings, ['bind-1'])
+        self.assertNotIn('SetSkipNext', self.calls)
+        # the played url carries HTTP params; the bind must still use the original
+        self.assertNotEqual(self.p.plays[-1][0], '/media/movie.mkv',
+                            "the harness must make the played url differ from "
+                            "meta.streamUrls[0], or a bind of the rewritten url "
+                            "would pass this test")
+
+    def test_transcoded_never_binds(self):
+        self.set_server()
+        self.p.wt_detector_requestid = 'job-1'
+        self.meta.isTranscoded = True
+        self.start()
+        self.assertNotIn('Bind', self.calls)
+        self.assertEqual(self.bindings, [''])
+
+    def test_bind_releases_only_on_submission_failure(self):
+        self.set_server()
+        self.p.wt_detector_requestid = 'job-1'
+        self.meta.isTranscoded = False
+        with patch.object(self.p, 'play', side_effect=ValueError('submission')):
+            with self.assertRaises(ValueError):
+                self.start()
+        self.assertEqual(self.calls.count('ReleaseBinding'), 1)
+        self.p.running = False
+        self.start()
+        self.assertEqual(self.calls.count('ReleaseBinding'), 1)
+
+    def test_multipart_skips_the_bind(self):
+        self.set_server()
+        self.p.wt_detector_requestid = 'job-1'
+        self.p.wt_detector_part_index = 0
+        self.meta.partIndex = 1
+        self.meta.isTranscoded = False
+        self.start()
+        self.assertNotIn('Bind', self.calls)
