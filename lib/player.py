@@ -383,6 +383,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.pbStartedRemoved = False
         self.blackoutDialog = None
         self.blackoutShown = False
+        self._blackoutLock = threading.Lock()
         self.skipFixForNextSeek = False
         self.reportedSeekPlayerTime = None
         self.pausedForSeek = False
@@ -394,6 +395,9 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def reset(self):
         finishVideoStartup(self._videoStartup)
+        with self._blackoutLock:
+            if self.blackoutDialog:
+                self.blackoutDialog.cancel()
         self._videoStartup = None
         self.duration = 0
         self.offset = 0
@@ -428,10 +432,13 @@ class SeekPlayerHandler(BasePlayerHandler):
         self.pbStartedSet = False
         self.pbStartedRemoved = False
         self.blackoutShown = False
-        self.prePlayVolume = None
+        # Keep the old baseline until setup dismisses its cancelled dialog.
 
     def setup(self, duration, meta, offset, bif_url, title='', title2='', seeking=NO_SEEK, chapters=None,
               is_mapped=False):
+        # Reset only cancels under the startup lock; native dismissal belongs
+        # here, before capturing the next playback's volume and dialog.
+        self._dismiss_blackout()
         util.MONITOR.on("system.exit", self.onKodiExit)
         self.ended = False
         self.baseOffset = offset / 1000.0
@@ -655,27 +662,65 @@ class SeekPlayerHandler(BasePlayerHandler):
                 self.setVolume(100)
 
     def start_blackout(self):
-        if not self.blackoutShown:
-            # set flag as early as possible as we might get called multiple times
+        startup = self._videoStartup
+        with self._blackoutLock:
+            dialog = self.blackoutDialog
+            if self.blackoutShown or not self.blackout or self.ended or not dialog:
+                return
             self.blackoutShown = True
-            util.DEBUG_LOG('SeekHandler: Blackout')
-            self.blackoutDialog.show()
+        util.DEBUG_LOG('SeekHandler: Blackout')
+        if not dialog.show():
+            return
 
+        with self._blackoutLock:
+            current = self.blackoutDialog is dialog and self.blackout and not self.ended
+        if current and self.player.handler is self and startupCurrent(self, startup):
             util.DEBUG_LOG('SeekHandler: Setting volume to 1.')
             self.setVolume(1)
+            # A volume operation can yield too. Compensate if this playback's
+            # blackout was cancelled while it ran, without touching a new owner.
+            with self._blackoutLock:
+                cancelled = self.blackoutDialog is not dialog or not self.blackout or self.ended
+            if cancelled and self.player.handler is self and startupCurrent(self, startup):
+                self.ensureCorrectVolume()
+
+    def _dismiss_blackout(self, startup=_ANY_STARTUP, clear_intent=True):
+        """Retire this handler's overlay without publishing playback-started."""
+        # Claim the captured owner atomically with reset/reuse. Native calls
+        # follow outside both locks, so a callback cannot deadlock the GUI.
+        with VideoStartup._lock:
+            if startup is not _ANY_STARTUP and (self.player.handler is not self
+                                               or not startupCurrent(self, startup)):
+                return False
+            startup = self._videoStartup
+            with self._blackoutLock:
+                dialog = self.blackoutDialog
+                self.blackoutDialog = None
+                wasShown = self.blackoutShown
+                self.blackout = self.blackoutShown = False
+                if clear_intent:
+                    self.blackoutWasWanted = False
+                if dialog:
+                    dialog.cancel()
+        if dialog:
+            try:
+                dialog.doClose()
+            finally:
+                if (self.player.handler is self and self._videoStartup is startup
+                        and self.player._videoStartup is startup):
+                    self.ensureCorrectVolume()
+        return wasShown
 
     def stop_blackout(self):
-        if self.blackoutShown:
+        startup = self._videoStartup
+        # Retain the startup history used by a later AVStarted notification.
+        wasShown = self._dismiss_blackout(startup=startup, clear_intent=False)
+        if self.player.handler is not self or not startupCurrent(self, startup) or self.ended:
+            return
+        if wasShown:
             if self.prePlayVolume is not None:
                 util.DEBUG_LOG('SeekHandler: Setting volume back to {}.', self.prePlayVolume)
                 self.setVolume(self.prePlayVolume)
-
-            if self.blackoutDialog.isOpen:
-                util.DEBUG_LOG('SeekHandler: Disabling Blackout')
-                self.blackoutDialog.doClose()
-
-            self.blackout = False
-            self.blackoutShown = False
 
         # double check for correct volume
         self.ensureCorrectVolume()
@@ -1057,6 +1102,11 @@ class SeekPlayerHandler(BasePlayerHandler):
         finishVideoStartup(startup)
         if not startupCurrent(self, startup):
             return
+        if (self.seeking not in (self.SEEK_IN_PROGRESS, self.SEEK_REWIND, self.SEEK_PLAYLIST)
+                or self.stoppedManually or self.endedManually):
+            self._dismiss_blackout(startup=startup)
+            if self.player.handler is not self or not startupCurrent(self, startup):
+                return
         util.DEBUG_LOG('SeekHandler: onPlayBackStopped - '
                        'Seeking={0}, QueueingNext={1}, BingeMode={2}, StoppedManually={3}, SkipPostPlay={4}'
                        .format(self.seeking, self.queuingNext, self.inBingeMode, self.stoppedManually,
@@ -1103,6 +1153,9 @@ class SeekPlayerHandler(BasePlayerHandler):
         startup = self._videoStartup
         finishVideoStartup(startup)
         if not startupCurrent(self, startup):
+            return
+        self._dismiss_blackout(startup=startup)
+        if self.player.handler is not self or not startupCurrent(self, startup):
             return
         util.DEBUG_LOG('SeekHandler: onPlayBackEnded - Seeking={0}, External={1}',
                        self.seeking, self.player.isExternal)
@@ -1925,7 +1978,9 @@ class SeekPlayerHandler(BasePlayerHandler):
         if not startupCurrent(self, startup):
             return
         # we might've crashed, make sure we set a correct volume again
-        self.stop_blackout()
+        self._dismiss_blackout(startup=startup)
+        if self.player.handler is not self or not startupCurrent(self, startup):
+            return
         if self.ended:
             return False
 
@@ -2001,21 +2056,16 @@ class SeekPlayerHandler(BasePlayerHandler):
 
     def close(self):
         finishVideoStartup(self._videoStartup)
+        self._dismiss_blackout()
         self.hideOSD(delete=True)
-        if self.blackoutDialog:
-            try:
-                d = self.blackoutDialog
-                self.blackoutDialog = None
-                d.doClose()
-                del d
-                util.garbageCollect()
-            except:
-                pass
 
     def sessionEnded(self):
         startup = self._videoStartup
         finishVideoStartup(startup)
         if not startupCurrent(self, startup):
+            return
+        self._dismiss_blackout(startup=startup)
+        if self.player.handler is not self or not startupCurrent(self, startup):
             return
         self.player.sessionID = None
         self.ensureCorrectVolume()
