@@ -1,5 +1,4 @@
 from __future__ import print_function, absolute_import
-import platform
 import uuid
 
 from . import signalsmixin
@@ -333,13 +332,13 @@ class DumbInterface(AppInterface):
         None: {}
     }
     _globals = {
-        'platform': platform.uname()[0],
+        'platform': util.X_PLEX_PLATFORM,
         'appVersionStr': '0.0.0a1',
         'clientIdentifier': str(hex(uuid.getnode())),
-        'platformVersion': platform.uname()[2],
+        'platformVersion': util.X_PLEX_PLATFORM_VERSION,
         'product': 'PlexNet.API',
         'provides': 'player',
-        'device': platform.uname()[0],
+        'device': util.X_PLEX_PLATFORM,
         'model': 'Unknown',
         'vendor': '',
         'friendlyName': 'PlexNet.API',
