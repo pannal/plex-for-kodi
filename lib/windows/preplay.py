@@ -417,6 +417,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         )
 
     def optionsButtonClicked(self):
+        from . import watchtogether as wtwin
         options = []
 
         inProgress = self.video.viewOffset.asInt()
@@ -424,6 +425,11 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             options.append({'key': 'mark_watched', 'display': T(32319, 'Mark Played')})
         if self.video.isWatched or inProgress:
             options.append({'key': 'mark_unwatched', 'display': T(32318, 'Mark Unplayed')})
+
+        if self.video.type in ('episode', 'movie'):
+            entry = wtwin.host_menu_entry(self.video)
+            if entry:
+                options.append(entry)
 
         options.append(dropdown.SEPARATOR)
 
@@ -463,6 +469,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.toggleWatched(self.video, state=True, **VIDEO_RELOAD_KW)
         elif choice['key'] == 'mark_unwatched':
             self.toggleWatched(self.video, state=False, **VIDEO_RELOAD_KW)
+        elif choice['key'] == 'start_watch_together':
+            wtwin.start_hosting(self.video)
         elif choice['key'] == 'to_season':
             self.processCommand(opener.open(self.video.parentRatingKey))
         elif choice['key'] == 'to_show':
