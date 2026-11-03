@@ -75,10 +75,32 @@ X_PLEX_CONTAINER_SIZE = 50                          # max results to return in a
 ACCEPT_LANGUAGE = 'en-US,en'
 LANGUAGE_CODE = 'en'
 
+
+def _safeUname():
+    """
+    platform.uname(), or (system, node, release) from sys when it raises.
+
+    Kodi for Xbox (UWP) can't start processes. When Windows' own version query fails there, as it does
+    since the Xbox system update of late 2026, platform falls back to running `ver` and raises
+    AttributeError ('_winapi' has no attribute 'CreateProcess'), which broke the addon at import.
+    """
+    try:
+        return platform.uname()
+    except (OSError, AttributeError):
+        system = 'Windows' if sys.platform == 'win32' else sys.platform
+        try:
+            release = str(sys.getwindowsversion().major)
+        except (OSError, AttributeError):
+            release = ''
+        return system, '', release
+
+
+_UNAME = _safeUname()
+
 # Plex Header Configuation
 X_PLEX_PROVIDES = 'player,controller'          # one or more of [player, controller, server]
-X_PLEX_PLATFORM = platform.uname()[0]          # Platform name, eg iOS, MacOSX, Android, LG, etc
-X_PLEX_PLATFORM_VERSION = platform.uname()[2]  # Operating system version, eg 4.3.1, 10.6.7, 3.2
+X_PLEX_PLATFORM = _UNAME[0]                    # Platform name, eg iOS, MacOSX, Android, LG, etc
+X_PLEX_PLATFORM_VERSION = _UNAME[2]            # Operating system version, eg 4.3.1, 10.6.7, 3.2
 X_PLEX_PRODUCT = PROJECT                       # Plex application name, eg Laika, Plex Media Server, Media Link
 X_PLEX_VERSION = VERSION                       # Plex application version number
 USER_AGENT = '{0}/{1}'.format(PROJECT, VERSION)
