@@ -34,7 +34,7 @@ from . import search
 from . import subitems
 from . import windowutils
 from .mixins.playbackbtn import PlaybackBtnMixin
-from .mixins.watchlist import removeFromWatchlistBlind
+from .mixins.watchlist import autoRemoveFromWatchlist, removeFromWatchlistBlind
 from .mixins.common import CommonMixin
 
 KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -681,13 +681,12 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
     def toggleWatched(self, mli, state=None, **kw):
         item = mli.dataSource
-        wl_ref = item.show() if item.TYPE in ('episode', 'season') else item
-        watched = super(LibraryWindow, self).toggleWatched(item)
+        watched = super(LibraryWindow, self).toggleWatched(item, state=state, **kw)
         if watched is None:
             return
 
         if watched:
-            removeFromWatchlistBlind(wl_ref.guid, wl_ref)
+            autoRemoveFromWatchlist(item)
         self.updateUnwatchedAndProgress(mli)
 
     def itemOptions(self):

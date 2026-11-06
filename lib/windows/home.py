@@ -26,7 +26,7 @@ from . import playlists
 from . import search
 from . import background
 from .mixins.spoilers import SpoilersMixin
-from .mixins.watchlist import removeFromWatchlistBlind
+from .mixins.watchlist import autoRemoveFromWatchlist
 from .mixins.common import CommonMixin
 
 
@@ -2805,12 +2805,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 return
             item = mli.dataSource
 
-        if super(HomeWindow, self).toggleWatched(item, state=state) is None:
+        watched = super(HomeWindow, self).toggleWatched(item, state=state)
+        if watched is None:
             return
 
-        if item.isFullyWatched:
-            ref = item.show() if item.TYPE in ('episode', 'season') else item
-            removeFromWatchlistBlind(ref.guid, ref)
+        if watched:
+            autoRemoveFromWatchlist(item)
         self._updateOnDeckHubs()
 
 
