@@ -446,7 +446,11 @@ class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
         self.doClose()
 
     def _onInit(self):
-        self._winID = xbmcgui.getCurrentWindowDialogId()
+        # Re-showing a registered dialog does not make it topmost. During Next,
+        # the startup blackout can be above a retained seek dialog; its ID must
+        # not replace the identity established on this dialog's first init.
+        if not self.started:
+            self._winID = xbmcgui.getCurrentWindowDialogId()
         BaseFunctions.lastDialogID = self._winID
         if self.started:
             self.onReInit()
@@ -470,11 +474,9 @@ class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
         if self._closing:
             return
 
-        if not self._winID:
-            self._winID = xbmcgui.getCurrentWindowId()
-
         try:
-            xbmcgui.Window(self._winID).setProperty(key, value)
+            # The native object owns its properties, including before show().
+            # A sampled window ID may belong to another window or be retired.
             xbmcgui.WindowXMLDialog.setProperty(self, key, value)
         except RuntimeError:
             xbmc.log('kodigui.BaseDialog.setProperty: Missing window', xbmc.LOGDEBUG)
