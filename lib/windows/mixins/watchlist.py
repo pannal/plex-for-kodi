@@ -125,13 +125,17 @@ def GUIDToRatingKey(guid):
     return guid.rsplit("/")[-1]
 
 
-def autoRemoveFromWatchlist(item):
-    """Remove completed titles after a manual watch action, never on stale show data."""
+def autoRemoveFromWatchlist(item, fully_watched=None):
+    """Use known session completion when supplied, otherwise verify show metadata."""
     if (not util.getUserSetting('watchlist_auto_remove', True)
             or not util.getUserSetting('use_watchlist', True) or pnUtil.ACCOUNT.isOffline):
         return
 
     try:
+        if fully_watched is not None:
+            if fully_watched and item.TYPE in ('show', 'movie'):
+                removeFromWatchlistBlind(item.guid, item)
+            return
         ref = item
         if item.TYPE in ('episode', 'season', 'show'):
             key = (item.grandparentRatingKey if item.TYPE == 'episode' else

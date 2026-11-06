@@ -11,6 +11,7 @@ from plexnet import plexapp, playlist, plexplayer, plexlibrary, util as pnUtil, 
 from lib import backgroundthread
 from lib import metadata
 from lib import player
+from lib import playback_sync
 from lib import util
 from lib.util import T
 from lib.language_util import getNativeLanguages
@@ -30,7 +31,7 @@ from .mixins.seasons import SeasonsMixin
 from .mixins.spoilers import SpoilersMixin
 from .mixins.playbackbtn import PlaybackBtnMixin
 from .mixins.thememusic import ThemeMusicMixin
-from .mixins.watchlist import WatchlistUtilsMixin, removeFromWatchlistBlind
+from .mixins.watchlist import WatchlistUtilsMixin, autoRemoveFromWatchlist
 from .mixins.ratings import RatingsMixin
 from .mixins.roles import RolesMixin
 from .mixins.common import CommonMixin
@@ -341,6 +342,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.lastFocusID = None
         self.lastNonOptionsFocusID = None
         self.openedWithAutoPlay = False
+        self._watchlistPlayback = None
         self.useBGM = False
         self.debouncing = False
         PlaybackBtnMixin.reset(self)
@@ -365,15 +367,36 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
     def onBlindClose(self):
         if self.openedWithAutoPlay and not self.started:
-            vp = None
-            if self.show_.ratingKey in VIDEO_PROGRESS:
-                # access progress data for current show only
-                vp = copy.deepcopy(VIDEO_PROGRESS[self.show_.ratingKey]).get(self.season.ratingKey, {})
+            with self._returnLock:
+                state = self._watchlistPlayback
+                complete = (state is not None and state['changed']
+                            and state['scope'] == self.watchlistPlaybackScope()
+                            and all(viewed and not offset for viewed, offset in state['episodes'].values()))
+                self._watchlistPlayback = None
+            autoRemoveFromWatchlist(self.show_, fully_watched=bool(complete))
 
-            if vp:
-                self.show_.reload(checkFiles=1, **VIDEO_RELOAD_KW)
-                if self.show_.isFullyWatched:
-                    removeFromWatchlistBlind(self.show_.guid, self.show_)
+    def watchlistPlaybackScope(self):
+        return (playback_sync.accountScope(), str(self.show_.server.uuid), str(self.show_.ratingKey),
+                playback_sync.readRevision(self.show_.server))
+
+    def snapshotWatchlistPlayback(self, items):
+        # The playlist already contains every episode. Copy primitives before
+        # playback reloads/mutates its models; session events replace their state.
+        with self._returnLock:
+            self._watchlistPlayback = None
+            try:
+                items = list(items)
+                states = {str(item.ratingKey): (item.viewCount.asInt() > 0, item.viewOffset.asInt()) for item in items}
+                count = self.show_.leafCount.asInt()
+                valid = (count > 0 and len(states) == len(items) == count
+                         and all(item.TYPE == 'episode' and item.ratingKey
+                                 and str(item.grandparentRatingKey) == str(self.show_.ratingKey)
+                                 and str(item.server.uuid) == str(self.show_.server.uuid) for item in items))
+            except (ValueError, TypeError, AttributeError):
+                # Unknown progress disables automatic removal, never playback.
+                return
+            if valid:
+                self._watchlistPlayback = dict(scope=self.watchlistPlaybackScope(), episodes=states, changed=False)
 
     @busy.dialog(delay_time=2.5)
     def _onFirstInit(self):
@@ -850,6 +873,18 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
 
         util.DEBUG_LOG("Storing video progress data: {}", data)
         gprk, prk, rk, state = data
+        with self._returnLock:
+            tracked = self._watchlistPlayback
+            video = player.PLAYER.video
+            if (tracked is not None and str(gprk) == str(self.show_.ratingKey) and video is not None
+                    and str(video.server.uuid) == str(self.show_.server.uuid) and str(video.ratingKey) == str(rk)):
+                key = str(rk)
+                if key not in tracked['episodes']:
+                    self._watchlistPlayback = None
+                else:
+                    viewed, offset = tracked['episodes'][key]
+                    tracked['episodes'][key] = (True, 0) if state is True else (viewed, state if state > 60000 else 0)
+                    tracked['changed'] = True
         if gprk not in VIDEO_PROGRESS:
             VIDEO_PROGRESS[gprk] = OrderedDict()
 
@@ -1081,6 +1116,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             pl = playlist.LocalPlaylist(items, seasonOrShow.getServer())
 
             pl.shuffle(shuffle, first=True)
+            self.snapshotWatchlistPlayback(pl)
             videoplayer.play(play_queue=pl)
             return True
 
@@ -1225,10 +1261,12 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                     ep._show = self.show_
 
                 pl.setCurrent(episode)
+                self.snapshotWatchlistPlayback(pl)
                 self.processCommand(videoplayer.play(play_queue=pl, resume=resume, bgm=self.useBGM))
                 self.playBtnClicked = False
                 return True
 
+            self.snapshotWatchlistPlayback([episode])
             self.processCommand(videoplayer.play(video=episode, resume=resume, bgm=self.useBGM))
             self.playBtnClicked = False
             return True

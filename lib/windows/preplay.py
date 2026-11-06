@@ -25,7 +25,7 @@ from . import windowutils
 from .mixins.ratings import RatingsMixin
 from .mixins.playbackbtn import PlaybackBtnMixin
 from .mixins.thememusic import ThemeMusicMixin
-from .mixins.watchlist import WatchlistUtilsMixin, removeFromWatchlistBlind
+from .mixins.watchlist import WatchlistUtilsMixin, autoRemoveFromWatchlist
 from .mixins.roles import RolesMixin
 from .mixins.common import CommonMixin
 from .mixins.tasks import TasksMixin
@@ -155,6 +155,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.collectionPaginators = [None, None, None]
         self.openedWithAutoPlay = False
         self.fromPlayback = False
+        self._watchlistPlaybackScope = None
         self.useBGM = False
 
     def doClose(self, **kw):
@@ -218,9 +219,15 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
     def onBlindClose(self):
         self._removeProgressHook()
         if self.fromPlayback and self.openedWithAutoPlay and not self.started:
-            self.video.reload(checkFiles=1, fromMediaChoice=self.video.mediaChoice is not None, **VIDEO_RELOAD_KW)
-            if self.video.isFullyWatched:
-                removeFromWatchlistBlind(self.video.guid, self.video)
+            from lib import playback_sync
+            scope = (playback_sync.accountScope(), str(self.video.server.uuid), str(self.video.ratingKey),
+                     playback_sync.readRevision(self.video.server))
+            self.applyPlaybackProgress(self.video)
+            with self._returnLock:
+                complete = (self._watchlistPlaybackScope == scope
+                            and self._returnProgress.get(str(self.video.ratingKey)) is True)
+                self._watchlistPlaybackScope = None
+            autoRemoveFromWatchlist(self.video, fully_watched=complete)
 
     def _setupProgressHook(self):
         if not self._progressHooked:
@@ -645,6 +652,9 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
 
         self.fromPlayback = True
         self.invalidatePlaybackReturn(clear_progress=True)
+        from lib import playback_sync
+        self._watchlistPlaybackScope = (playback_sync.accountScope(), str(self.video.server.uuid),
+                                       str(self.video.ratingKey), playback_sync.readRevision(self.video.server))
         self._setupProgressHook()
 
         preRoll = util.getUserSetting('preplay_preroll', False)

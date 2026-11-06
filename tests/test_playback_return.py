@@ -48,6 +48,7 @@ class MovieScreen(preplay.PrePlayWindow):
         self.wl_enabled = False
         self.is_watchlisted = False
         self._progressHooked = False
+        self._watchlistPlaybackScope = None
         self.props = {}
         self.refreshed = []
         self.themeMusicReinit = Mock()
@@ -99,6 +100,7 @@ class EpisodeScreen(episodes.EpisodesWindow):
         PlaybackReturnMixin.__init__(self)
         self._closing = self.closing = False
         self._returnRefreshFailed = False
+        self._watchlistPlayback = None
         self.isOpen = True
         self._winID = 13020
         self.wl_enabled = False
