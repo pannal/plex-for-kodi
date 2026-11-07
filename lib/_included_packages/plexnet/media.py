@@ -797,7 +797,7 @@ class RelatedMixin(object):
         if self._relatedCount is None:
             related = self.getRelated(0, 0 if self.related_source == "similar" else 36)
             if related is not None:
-                self._relatedCount = related.totalSize
+                self._relatedCount = related.totalSize.asInt()
             else:
                 self._relatedCount = 0
 
