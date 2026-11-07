@@ -1275,6 +1275,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.doClose()
 
     def optionsButtonClicked(self, from_item=False):
+        from . import watchtogether as wtwin
         options = []
 
         mli = self.episodeListControl.getSelectedItem()
@@ -1289,6 +1290,10 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
                 options.append({'key': 'mark_watched', 'display': T(32319, 'Mark Played')})
             if mli.dataSource.isWatched or inProgress:
                 options.append({'key': 'mark_unwatched', 'display': T(32318, 'Mark Unplayed')})
+
+            entry = wtwin.host_menu_entry(mli.dataSource)
+            if entry:
+                options.append(entry)
 
             # if True:
             #     options.append({'key': 'add_to_playlist', 'display': '[COLOR FF808080]Add To Playlist[/COLOR]'})
@@ -1377,6 +1382,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.updateItems(mli)
         elif choice['key'] == 'play_startover':
             self.episodeListClicked(start_over=True)
+        elif choice['key'] == 'start_watch_together':
+            wtwin.start_hosting(mli.dataSource)
         elif choice["key"] == "cache_reset":
             try:
                 util.DEBUG_LOG('Clearing requests cache for {}...', mli.dataSource)
