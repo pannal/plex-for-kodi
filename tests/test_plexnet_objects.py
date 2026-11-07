@@ -11,9 +11,10 @@ and the NA behaviour are worth pinning.
 from __future__ import absolute_import
 
 from datetime import datetime
+from unittest.mock import patch
 from xml.etree import ElementTree as ET
 
-from plexnet import plexobjects, plexstream, video
+from plexnet import media, plexobjects, plexstream, video
 
 from .base import KodiTestCase, ensure_plex_interface, fixture
 
@@ -187,6 +188,37 @@ class SubObjectTest(KodiTestCase):
     def test_roles_carry_the_character_name(self):
         roles = {r.tag: r.role for r in self.movie.roles}
         self.assertEqual("Joker", roles["Heath Ledger"])
+
+
+class RelatedCountTest(KodiTestCase):
+    def assert_related_count(self, attributes, expected):
+        item = movie()
+        data = ET.Element("MediaContainer", attributes)
+        container = plexobjects.PlexContainer(data, "/similar", address="/similar")
+        related = plexobjects.ItemContainer().init(container)
+        with patch.object(media.RelatedMixin, "getRelated", return_value=related) as get_related:
+            self.assertEqual(expected, int(item.relatedCount))
+            self.assertEqual(expected, int(item.relatedCount))
+            get_related.assert_called_once_with(0, 0)
+
+    def test_missing_total_size_is_zero(self):
+        self.assert_related_count({"size": "28"}, 0)
+
+    def test_empty_total_size_is_zero(self):
+        self.assert_related_count({"size": "0", "totalSize": ""}, 0)
+
+    def test_explicit_zero_is_preserved(self):
+        self.assert_related_count({"size": "0", "totalSize": "0"}, 0)
+
+    def test_count_only_response_preserves_the_total(self):
+        self.assert_related_count({"size": "0", "totalSize": "36"}, 36)
+
+    def test_unavailable_related_response_is_zero(self):
+        item = movie()
+        with patch.object(media.RelatedMixin, "getRelated", return_value=None) as get_related:
+            self.assertEqual(0, int(item.relatedCount))
+            self.assertEqual(0, int(item.relatedCount))
+            get_related.assert_called_once_with(0, 0)
 
 
 class ProgressTest(KodiTestCase):
