@@ -21,6 +21,18 @@ STEP_MAP = {
 }
 
 
+def templates_need_render(template_dir, target_dir):
+    """True when some template has no generated XML.
+
+    A count check misses a removed+added pair (counts stay equal), which left a
+    new window with no XML on disk until an unrelated recompile."""
+    tpl = {os.path.basename(f)[:-len(".xml.tpl")]
+           for f in fast_glob(os.path.join(template_dir, "script-plex-*.xml.tpl"))}
+    gen = {os.path.basename(f)[:-len(".xml")]
+           for f in fast_glob(os.path.join(target_dir, "script-plex-*.xml"))}
+    return not tpl.issubset(gen)
+
+
 def render_templates(theme=None, templates=None, force=False):
     # apply theme if version changed
     theme = theme or getSetting('theme', DEF_THEME)
@@ -93,8 +105,7 @@ def render_templates(theme=None, templates=None, force=False):
     if curThemeVer != THEME_VERSION or (force or
                                        lastSeenRes != DISPLAY_RESOLUTION or
                                        addonSettings.alwaysCompileTemplates or
-                                       len(fast_glob(os.path.join(engine.template_dir, "script-plex-*.xml.tpl"))) !=
-                                       len(fast_glob(os.path.join(engine.target_dir, "script-plex-*.xml")))):
+                                       templates_need_render(engine.template_dir, engine.target_dir)):
         setSetting('theme_version', THEME_VERSION)
         setSetting('last_resolution', "x".join(list(map(str, DISPLAY_RESOLUTION))))
         # apply seekdialog button theme
