@@ -2423,6 +2423,10 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
             util.setGlobalProperty('update_source_changed', self._updateSourceChanged, wait=True)
             self._updateSourceChanged = False
 
+        if not plexapp.SERVERMANAGER.selectedServer and time.time() - getattr(self, '_lastServerRetry', 0) > 30:
+            self._lastServerRetry = time.time()
+            plexapp.refreshResources()
+
         if not self.lastSection or self._ignoreTick:
             return
 
