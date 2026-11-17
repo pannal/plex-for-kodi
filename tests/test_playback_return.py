@@ -192,6 +192,16 @@ class PlaybackReturnTest(KodiTestCase):
         self.assertTrue(reload_.call_args.kwargs['skip_cache'])
         self.assertEqual(self.jobs, [])
 
+    def test_selected_episode_reloads_without_request_cache(self):
+        screen = EpisodeScreen(self.server)
+        screen._playbackReturning = False
+        screen.applyPlaybackProgress = Mock()
+        screen.tasks = set()
+        selected = screen.episodeListControl.getSelectedItem().dataSource
+        with patch.object(selected, 'reload') as reload_, patch.object(episodes.backgroundthread, 'BGThreader'):
+            screen.reloadItems([screen.episodeListControl[0]])
+        self.assertTrue(reload_.call_args.kwargs.get('skip_cache'))
+
     def test_episode_return_uses_local_completion_and_selects_next_without_network(self):
         screen = EpisodeScreen(self.server)
         episodes.VIDEO_PROGRESS['show'] = OrderedDict([('season', OrderedDict([('e1', True)]))])
