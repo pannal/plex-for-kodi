@@ -205,16 +205,21 @@ class PlaybackReturnTest(KodiTestCase):
         self.assertFalse(screen.currentItemLoaded)
         screen.postpone_simple.assert_not_called()
 
-    def test_returned_seasons_use_the_show_children_key_as_their_initpath(self):
+    def test_returned_seasons_skip_non_seasons_and_keep_the_show_children_initpath(self):
         screen = EpisodeScreen(self.server)
-        data = ET.fromstring('<MediaContainer><Directory type="season" ratingKey="season" '
-                             'key="/library/metadata/season/children" index="1"/></MediaContainer>')
+        data = ET.fromstring('<MediaContainer>'
+                             '<Directory key="/library/metadata/show/allLeaves" title="All episodes"/>'
+                             '<Directory type="season" ratingKey="s1" key="/library/metadata/s1/children"/>'
+                             '<Directory type="show" ratingKey="other"/>'
+                             '<Directory type="season" ratingKey="s2" key="/library/metadata/s2/children"/>'
+                             '</MediaContainer>')
         with patch.object(screen, 'fillSeasons') as fill:
-            screen.onPlaybackReturnSeasons(data)
+            screen.onPlaybackReturnSeasons(list(data))
         seasons = fill.call_args.kwargs['seasons']
-        self.assertEqual(len(seasons), 1)
-        self.assertIsInstance(seasons[0], video.Season)
-        self.assertEqual(seasons[0].initpath, str(screen.show_.key))
+        self.assertEqual([s.ratingKey for s in seasons], ['s1', 's2'])
+        for season in seasons:
+            self.assertIsInstance(season, video.Season)
+            self.assertEqual(season.initpath, str(screen.show_.key))
         self.server.query.assert_not_called()
 
     def test_stale_server_metadata_cannot_undo_local_completion_or_resume(self):

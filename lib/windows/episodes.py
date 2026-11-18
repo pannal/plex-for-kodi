@@ -1804,8 +1804,8 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
             self.selectPlayButton()
 
     def onPlaybackReturnSeasons(self, data):
-        seasons = [plexobjects.buildItem(self.show_.server, item, str(self.show_.key),
-                                         container=self.show_) for item in data if item.tag == 'Directory']
+        seasons = plexobjects.listItems(self.show_.server, str(self.show_.key), libtype='season',
+                                        data=data, container=self.show_)
         self.fillSeasons(self.show_, seasonsFilter=lambda x: len(x) > 1, selectSeason=self.season,
                          update=True, do_focus=not self.manuallySelectedSeason, seasons=seasons)
 
