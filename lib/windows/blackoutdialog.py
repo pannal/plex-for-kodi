@@ -21,6 +21,10 @@ class BlackoutDialog(kodigui.BaseDialog):
         self._retired = False
         self._showAdmitted = False
 
+    def onAction(self, action):
+        if not kodigui.forwardSelectDialogAction(action):
+            kodigui.BaseDialog.onAction(self, action)
+
     def cancel(self):
         # State only: handler reset can run under the startup ownership lock.
         with self._stateLock:

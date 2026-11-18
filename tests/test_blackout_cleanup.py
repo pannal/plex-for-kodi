@@ -70,6 +70,38 @@ class BlackoutCleanupTest(KodiTestCase):
     def newBlackout(self):
         return blackoutdialog.BlackoutDialog.create(show=False)
 
+    def test_native_chooser_receives_navigation_from_either_playback_overlay(self):
+        ENV.cond_visibility['Window.IsActive(selectdialog)'] = True
+        gui = kodigui.xbmcgui
+        seek = IdleDialog(self.handler)
+        for dialog in (self.dialog, seek):
+            for key, command in ((gui.ACTION_MOVE_DOWN, 'Down'), (gui.ACTION_MOVE_UP, 'Up'),
+                                 (gui.ACTION_SELECT_ITEM, 'Select'), (gui.ACTION_NAV_BACK, 'Back')):
+                with self.subTest(dialog=type(dialog).__name__, action=command):
+                    action = Mock()
+                    action.getId.return_value = key
+                    ENV.builtins.clear()
+                    dialog.onAction(action)
+                    self.assertEqual(ENV.builtins, ['Action({0},selectdialog)'.format(command)])
+
+    def test_chooser_confirmation_does_not_also_click_seek_control(self):
+        seek = IdleDialog(self.handler)
+        seek._ignoreInput = False
+        seek.stop = Mock()
+        ENV.cond_visibility['Window.IsActive(selectdialog)'] = True
+        seek.onClick(seek.STOP_BUTTON_ID)
+        seek.stop.assert_not_called()
+        ENV.cond_visibility['Window.IsActive(selectdialog)'] = False
+        seek.onClick(seek.STOP_BUTTON_ID)
+        seek.stop.assert_called_once_with()
+
+    def test_blackout_uses_normal_input_after_chooser_closes(self):
+        action = Mock()
+        with patch.object(kodigui.BaseDialog, 'onAction') as normal:
+            self.dialog.onAction(action)
+            normal.assert_called_once_with(self.dialog, action)
+        self.assertFalse(ENV.builtin_called('selectdialog'))
+
     def setVolume(self, volume):
         self.volume = volume
         self.volumes.append(volume)

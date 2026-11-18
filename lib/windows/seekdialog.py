@@ -670,9 +670,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.stop()
 
     def onAction(self, action):
-        if xbmc.getCondVisibility('Window.IsActive(selectdialog)'):
-            if self.doKodiSelectDialogHack(action):
-                return
+        if kodigui.forwardSelectDialogAction(action):
+            return
 
         try:
             self.resetTimeout()
@@ -994,23 +993,6 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         kodigui.BaseDialog.onAction(self, action)
 
-    def doKodiSelectDialogHack(self, action):
-        command = {
-            xbmcgui.ACTION_MOVE_UP: "Up",
-            xbmcgui.ACTION_MOVE_DOWN: "Down",
-            xbmcgui.ACTION_MOVE_LEFT: "Right",  # Not sure if these are actually reversed or something else is up here
-            xbmcgui.ACTION_MOVE_RIGHT: "Left",
-            xbmcgui.ACTION_SELECT_ITEM: "Select",
-            xbmcgui.ACTION_PREVIOUS_MENU: "Back",
-            xbmcgui.ACTION_NAV_BACK: "Back"
-        }.get(action.getId())
-
-        if command is not None:
-            xbmc.executebuiltin('Action({0},selectdialog)'.format(command))
-            return True
-
-        return False
-
     def onFocus(self, controlID):
         lastFocusID = self.lastFocusID
         self.previousFocusID = self.lastFocusID
@@ -1045,7 +1027,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.updateProgress()
 
     def onClick(self, controlID):
-        if self._ignoreInput:
+        # Kodi can deliver a control click before onAction forwards Select to the chooser.
+        if self._ignoreInput or xbmc.getCondVisibility('Window.IsActive(selectdialog)'):
             return
 
         if controlID in (self.MAIN_BUTTON_ID, self.NO_OSD_BUTTON_ID):

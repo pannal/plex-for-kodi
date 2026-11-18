@@ -10,6 +10,7 @@
     <visible>!String.IsEmpty(Window.Property(show.blackout))</visible>
     <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
     <control type="image">
+        <visible>!Window.IsVisible(selectdialog)</visible>
         <posx>0</posx>
         <posy>0</posy>
         <width>1920</width>

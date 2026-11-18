@@ -18,6 +18,26 @@ from plexnet import plexapp
 MONITOR = None
 
 
+def forwardSelectDialogAction(action):
+    # A playback overlay opened after Kodi's chooser can receive its remote input.
+    if not xbmc.getCondVisibility('Window.IsActive(selectdialog)'):
+        return False
+
+    command = {
+        xbmcgui.ACTION_MOVE_UP: 'Up',
+        xbmcgui.ACTION_MOVE_DOWN: 'Down',
+        xbmcgui.ACTION_MOVE_LEFT: 'Right',  # Preserve the seek dialog's horizontal navigation.
+        xbmcgui.ACTION_MOVE_RIGHT: 'Left',
+        xbmcgui.ACTION_SELECT_ITEM: 'Select',
+        xbmcgui.ACTION_PREVIOUS_MENU: 'Back',
+        xbmcgui.ACTION_NAV_BACK: 'Back',
+    }.get(action.getId())
+    if command is None:
+        return False
+    xbmc.executebuiltin('Action({0},selectdialog)'.format(command))
+    return True
+
+
 class BaseFunctions(object):
     xmlFile = ''
     path = ''
