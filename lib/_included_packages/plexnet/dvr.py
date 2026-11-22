@@ -35,6 +35,17 @@ LIBRARY_LOOKUP_PATH = '/library/all'
 GUIDE_PARENT_ATTRS = ('grandparentKey', 'grandparentRatingKey', 'parentKey', 'parentRatingKey')
 
 
+IN_PROGRESS_FLAG = 'dvrInProgress'
+
+
+def isInProgressRecording(item):
+    """
+    Was this item built for "Recording Now"? Read from __dict__: PlexObject.__getattr__ invents an empty value for
+    any attribute asked of it, and the flag must survive the reload the Play screen does.
+    """
+    return bool(item is not None and item.__dict__.get(IN_PROGRESS_FLAG))
+
+
 class ActiveRecording(object):
     """One grab operation the server is recording right now, and its library item."""
 
@@ -130,6 +141,7 @@ def _parse(server, data):
         except exceptions.UnknownType:
             continue
 
+        item.__dict__[IN_PROGRESS_FLAG] = True
         recordings.append(ActiveRecording(op, item))
     return recordings
 

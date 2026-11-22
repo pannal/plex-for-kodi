@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import six
-from plexnet import playqueue, plexapp, plexlibrary
+from plexnet import dvr, playqueue, plexapp, plexlibrary
 
 from lib import util
 from . import busy
@@ -28,6 +28,9 @@ def open(obj, **kwargs):
         server = kwargs.pop("server", None) or plexapp.SERVERMANAGER.selectedServer
         return open(server.getObject(key), **kwargs)
     elif obj.TYPE == 'episode':
+        if dvr.isInProgressRecording(obj):
+            # still recording: no show in the library yet, so go straight to the item's Play screen
+            return playableClicked(obj, **kwargs)
         return episodeClicked(obj, **kwargs)
     elif obj.TYPE == 'movie':
         return playableClicked(obj, **kwargs)

@@ -301,3 +301,41 @@ class HomeHubsTest(KodiTestCase):
         server.hubs(section="4")
         server.hubs(search_query="bears")
         self.assertNotIn(dvr.SCHEDULED_PATH, server.asked)
+
+
+class OpenRecordingTest(KodiTestCase):
+    """
+    Opening a "Recording Now" card goes to the item's Play screen. An episode normally opens its show's episode
+    list, but a recording in progress has no show in the library yet ("No data - deleted or server disconnected").
+    """
+
+    def setUp(self):
+        super(OpenRecordingTest, self).setUp()
+        ensure_plex_interface()
+        from lib.windows import opener
+        self.opener = opener
+        self.opened = []
+        self._orig = (opener.playableClicked, opener.episodeClicked)
+        opener.playableClicked = lambda obj, **kw: self.opened.append(("play screen", obj)) or ""
+        opener.episodeClicked = lambda obj, **kw: self.opened.append(("episode list", obj)) or ""
+
+    def tearDown(self):
+        self.opener.playableClicked, self.opener.episodeClicked = self._orig
+        super(OpenRecordingTest, self).tearDown()
+
+    def test_recording_items_are_marked(self):
+        item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
+        self.assertTrue(dvr.isInProgressRecording(item))
+
+    def test_recording_opens_the_play_screen(self):
+        item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
+        self.opener.open(item)
+        self.assertEqual([("play screen", item)], self.opened)
+
+    def test_ordinary_episode_still_opens_the_episode_list(self):
+        from plexnet import plexobjects
+        elem = ET.fromstring('<Video type="episode" ratingKey="1" key="/library/metadata/1" title="Pilot"/>')
+        episode = plexobjects.buildItem(None, elem, "/library/metadata/1")
+        self.assertFalse(dvr.isInProgressRecording(episode))
+        self.opener.open(episode)
+        self.assertEqual([("episode list", episode)], self.opened)
