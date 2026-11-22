@@ -99,6 +99,10 @@ def _toLibraryElem(server, op, elem):
     elem.set('key', LIBRARY_KEY_PREFIX + ratingKey)
     for attr in GUIDE_PARENT_ATTRS:
         elem.attrib.pop(attr, None)
+    # The guide dates items "YYYY-MM-DD HH:MM:SS"; library code parses "YYYY-MM-DD".
+    aired = elem.attrib.get('originallyAvailableAt')
+    if aired:
+        elem.set('originallyAvailableAt', aired.split(' ')[0])
     return elem
 
 

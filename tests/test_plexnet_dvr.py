@@ -98,6 +98,12 @@ class ActiveRecordingsTest(KodiTestCase):
         self.assertEqual(10800000, item.duration.asInt())
         self.assertTrue(item.get("art").startswith("https://metadata-static.plex.tv/"))
 
+    def test_card_air_date_reads_like_a_library_date(self):
+        """The guide dates items "2026-11-22 06:00:00"; Home formats episode dates from "%Y-%m-%d" and crashed."""
+        item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
+        self.assertEqual("2026-11-22", item.originallyAvailableAt)
+        self.assertEqual("11/22/26", item.originallyAvailableAt.asDatetime("%m/%d/%y"))
+
     def test_card_drops_guide_parent_keys(self):
         """Show/season keys point at the EPG provider, not the library; opening them would fail."""
         item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
