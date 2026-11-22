@@ -6,6 +6,7 @@ from . import http
 from . import plexrequest
 from . import mediadecisionengine
 from . import serverdecision
+from . import dvr
 from lib.util import KODI_VERSION_MAJOR
 from lib.cache import CACHE_SIZE
 from lib.language_util import getNativeLanguages
@@ -232,33 +233,20 @@ class PlexPlayer(BasePlayer):
     def offsetIsValid(self, offset_seconds):
         return self.metadata.startOffset <= offset_seconds < self.metadata.startOffset + (self.metadata.partDuration / 1000)
 
+    @staticmethod
     def isLiveHls(url=None, headers=None):
-        # Check to see if this is a live HLS playlist to fix two issues. One is a
-        # Roku workaround since it doesn't obey the absence of EXT-X-ENDLIST to
-        # start playback at the END of the playlist. The second is for us to know
-        # if it's live to modify the functionality and player UI.
+        # Is this HLS stream still growing (a DVR recording in progress)? A media playlist without EXT-X-ENDLIST is;
+        # a master playlist is followed to its first variant. Ported from the Roku client's stub, see plexnet.dvr.
+        if not url:
+            return False
 
-        # if IsString(url):
-        #     request = createHttpRequest(url, "GET", true)
-        #     AddRequestHeaders(request.request, headers)
-        #     response = request.GetToStringWithTimeout(10)
+        def fetch(u):
+            request = http.HttpRequest(u)
+            for name, value in (headers or {}).items():
+                request.addHeader(name, value)
+            return request.getToStringWithTimeout(10)
 
-        #     ' Inspect one of the media playlist streams if this is a master playlist.
-        #     if response.instr("EXT-X-STREAM-INF") > -1 then
-        #         Info("Identify live HLS: inspecting the master playlist")
-        #         mediaUrl = CreateObject("roRegex", "(^https?://.*$)", "m").Match(response)[1]
-        #         if mediaUrl <> invalid then
-        #             request = createHttpRequest(mediaUrl, "GET", true)
-        #             AddRequestHeaders(request.request, headers)
-        #             response = request.GetToStringWithTimeout(10)
-        #         end if
-        #     end if
-
-        #     isLiveHls = (response.Trim().Len() > 0 and response.instr("EXT-X-ENDLIST") = -1 and response.instr("EXT-X-STREAM-INF") = -1)
-        #     Info("Identify live HLS: live=" + isLiveHls.toStr())
-        #     return isLiveHls
-
-        return False
+        return dvr.isLiveHls(url, fetch)
 
     def getServerDecision(self):
         directPlay = not (self.metadata and self.metadata.isTranscoded)

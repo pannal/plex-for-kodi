@@ -208,6 +208,15 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
         newCW = util.INTERFACE.getPreference('hubs_use_new_continue_watching', False) and not search_query \
             and not section
 
+        if not search_query and not section:
+            # Home: recordings the DVR is making right now go first, so a game can be started from the beginning
+            # while it is still recording. No row at all when nothing playable is recording.
+            from . import dvr
+            recordings = dvr.recordingsHub(self)
+            if recordings:
+                self.currentHubs[recordings.hubIdentifier] = recordings.title
+                hubs.append(recordings)
+
         if newCW:
             cq = '/hubs/continueWatching'
             if section_ids:
