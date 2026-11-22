@@ -3,9 +3,11 @@
 DVR recordings that are still being recorded.
 
 Recordings only, not live TV: the server's scheduled-recordings list says which
-grabs are in progress, each wrapping the item being recorded. An item that is
-already in the library (a /library/metadata/ key) can be played from the start
-while the recording keeps growing; one that still only has an EPG key cannot.
+grabs are in progress, each wrapping the item being recorded. On a real server
+that item only carries EPG keys (/tv.plex.providers.epg.cloud.../metadata/...).
+The library item for the growing recording is found by looking the item's guid
+up in /library/all; the card keeps the guide's title, artwork, summary and
+scheduled length, but points at the library item so it can be played.
 
 isLiveHls finishes the stub plexplayer.PlexPlayer.isLiveHls carried over from
 the Roku client: an HLS media playlist without EXT-X-ENDLIST is still growing.
@@ -27,6 +29,10 @@ HUB_TITLE = 'Recording Now'
 
 STATUS_IN_PROGRESS = 'inprogress'
 LIBRARY_KEY_PREFIX = '/library/metadata/'
+LIBRARY_LOOKUP_PATH = '/library/all'
+
+# Show/season links in the guide data point at the EPG provider, not the library.
+GUIDE_PARENT_ATTRS = ('grandparentKey', 'grandparentRatingKey', 'parentKey', 'parentRatingKey')
 
 
 class ActiveRecording(object):
@@ -58,6 +64,44 @@ def _query(server):
         return None
 
 
+def _libraryRatingKey(server, guid):
+    """The library ratingKey of the item the server is recording under this guid, or None."""
+    if not guid:
+        return None
+    try:
+        data = server.query(LIBRARY_LOOKUP_PATH, params={'guid': guid})
+    except Exception as e:
+        util.DEBUG_LOG('DVR: library lookup for {0} failed: {1}', guid, e)
+        return None
+    if data is None:
+        return None
+    for elem in data:
+        if elem.attrib.get('ratingKey'):
+            return elem.attrib['ratingKey']
+    return None
+
+
+def _toLibraryElem(server, op, elem):
+    """
+    The grab's item as a library element, or None when the library has no item for it yet.
+    Guide details stay; ratingKey/key point at the library, and EPG show/season links are dropped.
+    """
+    if elem.attrib.get('key', '').startswith(LIBRARY_KEY_PREFIX):
+        return elem
+
+    ratingKey = _libraryRatingKey(server, elem.attrib.get('guid'))
+    if not ratingKey:
+        util.DEBUG_LOG('DVR: recording {0} has no library item yet ({1})', op.attrib.get('id'),
+                       elem.attrib.get('guid'))
+        return None
+
+    elem.set('ratingKey', ratingKey)
+    elem.set('key', LIBRARY_KEY_PREFIX + ratingKey)
+    for attr in GUIDE_PARENT_ATTRS:
+        elem.attrib.pop(attr, None)
+    return elem
+
+
 def _parse(server, data):
     recordings = []
     if data is None:
@@ -72,9 +116,8 @@ def _parse(server, data):
         if elem is None:
             continue
 
-        if not elem.attrib.get('key', '').startswith(LIBRARY_KEY_PREFIX):
-            util.DEBUG_LOG('DVR: recording {0} has no library item yet ({1})', op.attrib.get('id'),
-                           elem.attrib.get('key'))
+        elem = _toLibraryElem(server, op, elem)
+        if elem is None:
             continue
 
         try:

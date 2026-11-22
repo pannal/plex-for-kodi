@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GET /library/all?guid=plex://episode/ad40b8318c9c7212ea805cbf - real capture
+  (2026-11-22) while that episode was recording: the library item behind the
+  in-progress grab. Its key is the live session, not /library/metadata/.
+-->
+<MediaContainer size="1" allowSync="0" identifier="com.plexapp.plugins.library" mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1792751798">
+<Video ratingKey="482133" guid="plex://episode/ad40b8318c9c7212ea805cbf" type="episode" title="River City Kings at Metro Hawks" summary="" year="2026" addedAt="1795370462" genuineMediaAnalysis="1" grandparentThumb="https://metadata-static.plex.tv/2/gracenote/86f19f4d4e2f193036a93b6228dca586.jpg" grandparentTitle="NFL Football" key="/livetv/sessions/00000000-0000-4000-8000-000000000001" live="1" parentIndex="2026">
+</Video>
+</MediaContainer>

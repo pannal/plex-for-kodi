@@ -16,23 +16,55 @@ from plexnet import dvr
 from .base import KodiTestCase, ensure_plex_interface, fixture
 
 
-class FakeServer(object):
-    """Answers query() from a canned response and records what was asked."""
-
-    def __init__(self, xml=None, error=None):
-        self.xml = xml
-        self.error = error
-        self.queries = []
-
-    def query(self, path, **kwargs):
-        self.queries.append(path)
-        if self.error:
-            raise self.error
-        return ET.fromstring(self.xml) if self.xml is not None else None
+GUID = "plex://episode/ad40b8318c9c7212ea805cbf"
+TITLE = "River City Kings at Metro Hawks"
+OP_ID = "5d445defa82b5d8f2b7090ed64c659bb319aad84"
 
 
 def scheduled():
     return fixture("plexnet", "subscriptions_scheduled.xml")
+
+
+def library_lookup():
+    return fixture("plexnet", "library_all_guid_recording.xml")
+
+
+EMPTY = '<MediaContainer size="0"/>'
+
+
+class FakeServer(object):
+    """
+    Answers query() from canned responses and records what was asked.
+    The scheduled list comes from `xml`; a /library/all guid lookup from `library` (dict guid -> xml),
+    defaulting to the real capture for the recording in the fixture.
+    """
+
+    def __init__(self, xml=None, error=None, library=None):
+        self.xml = xml
+        self.error = error
+        self.library = {GUID: library_lookup()} if library is None else library
+        self.queries = []
+
+    def query(self, path, **kwargs):
+        params = kwargs.get("params") or {}
+        self.queries.append((path, params.get("guid")) if params else path)
+        if self.error:
+            raise self.error
+        if path == dvr.LIBRARY_LOOKUP_PATH:
+            return ET.fromstring(self.library.get(params.get("guid"), EMPTY))
+        return ET.fromstring(self.xml) if self.xml is not None else None
+
+
+def second_recording(root, op_id, guid, title):
+    """Copy the fixture's in-progress operation as another game recording at the same time."""
+    src = [op for op in root.findall("MediaGrabOperation") if op.get("status") == "inprogress"][0]
+    op = ET.fromstring(ET.tostring(src))
+    op.set("id", op_id)
+    video = op.find("Video")
+    video.set("guid", guid)
+    video.set("title", title)
+    root.append(op)
+    return root
 
 
 class ActiveRecordingsTest(KodiTestCase):
@@ -40,44 +72,82 @@ class ActiveRecordingsTest(KodiTestCase):
         super(ActiveRecordingsTest, self).setUp()
         ensure_plex_interface()
 
-    def test_queries_the_scheduled_recordings_endpoint(self):
+    def test_queries_the_scheduled_list_then_looks_up_the_library_item(self):
         server = FakeServer(scheduled())
         dvr.activeRecordings(server)
-        self.assertEqual([dvr.SCHEDULED_PATH], server.queries)
+        self.assertEqual([dvr.SCHEDULED_PATH, (dvr.LIBRARY_LOOKUP_PATH, GUID)], server.queries)
 
-    def test_lists_only_recordings_in_progress_with_a_library_item(self):
+    def test_lists_only_recordings_in_progress(self):
+        """Real capture: one scheduled, one in progress, two complete."""
         recordings = dvr.activeRecordings(FakeServer(scheduled()))
-        self.assertEqual(["77"], [r.id for r in recordings])
+        self.assertEqual([OP_ID], [r.id for r in recordings])
+
+    def test_epg_only_item_gets_its_library_rating_key(self):
+        """The grab's Video has an EPG key; the card must point at the library item the guid lookup finds."""
+        item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
+        self.assertEqual("482133", item.ratingKey)
+        self.assertEqual("/library/metadata/482133", item.key)
+
+    def test_card_keeps_the_guide_details(self):
+        """Title, artwork, summary and the scheduled length come from the guide data, which the library item lacks."""
+        item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
+        self.assertEqual("episode", item.type)
+        self.assertEqual(TITLE, item.title)
+        self.assertEqual("NFL Football", item.grandparentTitle)
+        self.assertTrue(item.summary.startswith("The Metro Hawks host"))
+        self.assertEqual(10800000, item.duration.asInt())
+        self.assertTrue(item.get("art").startswith("https://metadata-static.plex.tv/"))
+
+    def test_card_drops_guide_parent_keys(self):
+        """Show/season keys point at the EPG provider, not the library; opening them would fail."""
+        item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
+        for attr in ("grandparentKey", "grandparentRatingKey", "parentKey", "parentRatingKey"):
+            self.assertFalse(item.get(attr), attr)
+
+    def test_recording_without_a_library_item_yet_is_skipped(self):
+        """The server adds the library item a moment after the grab starts; until then nothing is playable."""
+        self.assertEqual([], dvr.activeRecordings(FakeServer(scheduled(), library={})))
+
+    def test_library_lookup_error_skips_that_recording(self):
+        class Flaky(FakeServer):
+            def query(self, path, **kwargs):
+                if path == dvr.LIBRARY_LOOKUP_PATH:
+                    raise IOError("timeout")
+                return FakeServer.query(self, path, **kwargs)
+        self.assertEqual([], dvr.activeRecordings(Flaky(scheduled())))
+
+    def test_item_already_in_the_library_needs_no_lookup(self):
+        root = ET.fromstring(scheduled())
+        op = [o for o in root.findall("MediaGrabOperation") if o.get("status") == "inprogress"][0]
+        op.find("Video").set("key", "/library/metadata/5501")
+        op.find("Video").set("ratingKey", "5501")
+        server = FakeServer(ET.tostring(root), library={})
+        rec = dvr.activeRecordings(server)[0]
+        self.assertEqual("/library/metadata/5501", rec.item.key)
+        self.assertEqual([dvr.SCHEDULED_PATH], server.queries)
 
     def test_every_playable_recording_is_listed_so_one_can_be_picked(self):
         """Two games recording at once -> two cards in the row, in the server's order."""
-        root = ET.fromstring(scheduled())
-        second = ET.fromstring(ET.tostring(root.find("MediaGrabOperation")))
-        second.set("id", "80")
-        video = second.find("Video")
-        video.set("ratingKey", "5601")
-        video.set("key", "/library/metadata/5601")
-        video.set("title", "Cowboys at Giants")
-        root.append(second)
-        recordings = dvr.activeRecordings(FakeServer(ET.tostring(root)))
-        self.assertEqual(["Bears at Packers", "Cowboys at Giants"], [r.item.title for r in recordings])
-        self.assertEqual(2, dvr.recordingsHub(FakeServer(ET.tostring(root))).size.asInt())
-
-    def test_recording_carries_its_library_item(self):
-        rec = dvr.activeRecordings(FakeServer(scheduled()))[0]
-        self.assertEqual("episode", rec.item.type)
-        self.assertEqual("Bears at Packers", rec.item.title)
-        self.assertEqual("/library/metadata/5501", rec.item.key)
+        other = "plex://episode/second"
+        root = second_recording(ET.fromstring(scheduled()), "80", other, "Cowboys at Giants")
+        library = {GUID: library_lookup(),
+                   other: library_lookup().replace("482133", "482200").replace(GUID, other)}
+        server = FakeServer(ET.tostring(root), library=library)
+        recordings = dvr.activeRecordings(server)
+        self.assertEqual([TITLE, "Cowboys at Giants"], [r.item.title for r in recordings])
+        self.assertEqual(["482133", "482200"], [r.item.ratingKey for r in recordings])
+        self.assertEqual(2, dvr.recordingsHub(FakeServer(ET.tostring(root), library=library)).size.asInt())
 
     def test_recording_progress_fields(self):
+        """Real servers report percent=-1 and currentSize=0 for a live grab."""
         rec = dvr.activeRecordings(FakeServer(scheduled()))[0]
-        self.assertEqual(37.5, rec.percent)
-        self.assertEqual(2147483648, rec.currentSize)
+        self.assertEqual(-1, rec.percent)
+        self.assertEqual(0, rec.currentSize)
         self.assertTrue(rec.isRecording)
 
     def test_no_dvr_or_empty_response_is_an_empty_list(self):
         self.assertEqual([], dvr.activeRecordings(FakeServer(None)))
-        self.assertEqual([], dvr.activeRecordings(FakeServer('<MediaContainer size="0"/>')))
+        self.assertEqual([], dvr.activeRecordings(FakeServer(EMPTY)))
 
     def test_server_error_is_an_empty_list_not_a_crash(self):
         """Shared users and servers without a DVR answer with an error; Home must still load."""
@@ -96,7 +166,7 @@ class RecordingsHubTest(KodiTestCase):
     def test_hub_lists_the_recordings_items(self):
         hub = dvr.recordingsHub(FakeServer(scheduled()))
         self.assertEqual(dvr.HUB_IDENTIFIER, hub.hubIdentifier)
-        self.assertEqual(["Bears at Packers"], [i.title for i in hub.items])
+        self.assertEqual([TITLE], [i.title for i in hub.items])
         self.assertEqual(1, hub.size.asInt())
         self.assertFalse(hub.more)
 
@@ -113,7 +183,7 @@ class RecordingsHubTest(KodiTestCase):
 
     def test_hub_extend_returns_the_current_items(self):
         hub = dvr.recordingsHub(FakeServer(scheduled()))
-        self.assertEqual(["Bears at Packers"], [i.title for i in hub.extend(0, 10)])
+        self.assertEqual([TITLE], [i.title for i in hub.extend(0, 10)])
 
 
 MEDIA_GROWING = """#EXTM3U
@@ -205,6 +275,8 @@ class HomeHubsTest(KodiTestCase):
             server.asked.append(path)
             if path == dvr.SCHEDULED_PATH:
                 return ET.fromstring(scheduled_xml)
+            if path == dvr.LIBRARY_LOOKUP_PATH:
+                return ET.fromstring(library_lookup())
             return ET.fromstring(HOME_HUBS)
 
         server.query = query
