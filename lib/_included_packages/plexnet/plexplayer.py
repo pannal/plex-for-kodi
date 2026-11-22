@@ -661,7 +661,13 @@ class PlexPlayer(BasePlayer):
         if liveRecording:
             # A recording in progress, played from its start the way Plex Web does it: tune the channel as this
             # playback session (joins the live session the recording fills), then stream it as HLS from offset 0.
-            dvr.tune(self.item.getServer(), self.media.channelIdentifier, self.sessionID)
+            tuned = dvr.tune(self.item.getServer(), self.media.channelIdentifier, self.sessionID)
+            if tuned and tuned.duration:
+                # the library item has no length; without one the seek bar cannot move
+                if not self.item.duration:
+                    self.item.set('duration', str(tuned.duration))
+                obj.duration = tuned.duration
+            obj.tunedRecording = tuned
             builder = self.buildTranscodeHls(obj)
             builder.extras.append(dvr.LIVE_HLS_TARGET)
         # if server.supportsFeature("mkvTranscode") and self.item.settings.getPreference("transcode_format", 'mkv') != "hls":
@@ -718,6 +724,9 @@ class PlexPlayer(BasePlayer):
             else:
                 startOffset = 0
 
+            if liveRecording and obj.get("tunedRecording"):
+                # seeking restarts the stream at that point; it can't go past what is recorded so far
+                startOffset = obj.tunedRecording.seekableOffset(startOffset)
             builder.addParam("offset", str(startOffset))
 
         builder.addParam("session", self.sessionID)

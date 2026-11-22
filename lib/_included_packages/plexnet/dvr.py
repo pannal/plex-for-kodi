@@ -14,6 +14,7 @@ the Roku client: an HLS media playlist without EXT-X-ENDLIST is still growing.
 """
 from __future__ import absolute_import
 
+import time
 from xml.etree import ElementTree
 
 from six.moves.urllib.parse import quote, urljoin
@@ -195,6 +196,42 @@ LIVE_SESSION_PREFIX = '/livetv/sessions/'
 DVRS_PATH = '/livetv/dvrs'
 TUNE_PATH = '/livetv/dvrs/{0}/channels/{1}/tune'
 # The Generic client profile gets "Neither direct play nor conversion is available" for a live session; allow HLS.
+# Seeking stops this far before the end of what is recorded so far.
+LIVE_EDGE_MARGIN = 30
+
+
+def now():
+    return int(time.time())
+
+
+class TunedRecording(object):
+    """What tuning a recording in progress tells: its live session, scheduled length (ms) and start (epoch s)."""
+
+    def __init__(self, key, duration, beginsAt, available=None):
+        self.key = key
+        self.duration = duration
+        self.beginsAt = beginsAt
+        self.available = available  # seconds recorded, as the server reported at tune time
+
+    def recordedSeconds(self, now=None):
+        """How much is recorded so far: what the server reports, else the clock (capped at the scheduled length)."""
+        if self.available is not None:
+            return int(self.available)
+        if not self.beginsAt:
+            return None
+        elapsed = max(0, (now if now is not None else globals()['now']()) - self.beginsAt)
+        if self.duration:
+            elapsed = min(elapsed, self.duration // 1000)
+        return elapsed
+
+    def seekableOffset(self, offset, now=None):
+        """offset (s) capped LIVE_EDGE_MARGIN before the recorded edge."""
+        recorded = self.recordedSeconds(now)
+        if recorded is None:
+            return offset
+        return max(0, min(offset, recorded - LIVE_EDGE_MARGIN))
+
+
 LIVE_HLS_TARGET = ('add-transcode-target(type=videoProfile&context=streaming&protocol=hls&container=mpegts&'
                    'videoCodec=h264&audioCodec=aac,ac3)')
 
@@ -226,7 +263,7 @@ def tune(server, channelIdentifier, sessionIdentifier):
     """
     Join the live session a recording in progress is filling, as this playback session (what Plex Web does before
     asking for the stream). Creates this viewer's consumer on the session; without it the transcoder's input 404s.
-    Returns the live session key, or None.
+    Returns a TunedRecording, or None.
     """
     if not channelIdentifier:
         return None
@@ -245,7 +282,30 @@ def tune(server, channelIdentifier, sessionIdentifier):
     for video in data.iter('Video'):
         key = video.attrib.get('key', '')
         if key.startswith(LIVE_SESSION_PREFIX):
-            return key
+            media = video.find('Media')
+            attrs = media.attrib if media is not None else {}
+            duration = plexobjects.PlexValue(video.attrib.get('duration') or attrs.get('duration', '')).asInt()
+            beginsAt = plexobjects.PlexValue(attrs.get('beginsAt', '')).asInt()
+            return TunedRecording(key, duration, beginsAt, available=recordedAvailable(server, key))
+    return None
+
+
+def recordedAvailable(server, liveKey):
+    """Seconds recorded so far: the live session's maxOffsetAvailable (counted from the recording's start)."""
+    try:
+        data = server.query(liveKey)
+    except Exception as e:
+        util.DEBUG_LOG('DVR: could not read live session {0}: {1}', liveKey, e)
+        return None
+    if data is None:
+        return None
+    for ts in data.iter('TranscodeSession'):
+        value = ts.attrib.get('maxOffsetAvailable')
+        if value:
+            try:
+                return float(value)
+            except ValueError:
+                return None
     return None
 
 

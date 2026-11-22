@@ -399,15 +399,22 @@ DVRS = """<MediaContainer size="2">
 </MediaContainer>"""
 
 TUNED = """<MediaContainer size="1"><MediaSubscription key="1812"><MediaGrabOperation status="inprogress">
-  <Video ratingKey="482133" key="/livetv/sessions/00000000-0000-4000-8000-000000000001" type="episode"/>
+  <Video ratingKey="482133" key="/livetv/sessions/00000000-0000-4000-8000-000000000001" type="episode" duration="10800000">
+    <Media beginsAt="1795370400" endsAt="1795381200" duration="10800000"/>
+  </Video>
 </MediaGrabOperation></MediaSubscription></MediaContainer>"""
 
 
-class TuneServer(object):
-    """Answers the DVR list and the tune POST; records (method, path, params)."""
+LIVE_SESSION = """<MediaContainer size="1"><Video key="/livetv/sessions/00000000-0000-4000-8000-000000000001"><Media/>
+  <TranscodeSession timeStamp="1795370402.57" minOffsetAvailable="1.16" maxOffsetAvailable="{0}"/>
+</Video></MediaContainer>"""
 
-    def __init__(self, dvrs=DVRS, tuned=TUNED, error=None):
-        self.dvrs, self.tuned, self.error = dvrs, tuned, error
+
+class TuneServer(object):
+    """Answers the DVR list, the tune POST and the live session; records (method, path, params)."""
+
+    def __init__(self, dvrs=DVRS, tuned=TUNED, error=None, available="2400.5"):
+        self.dvrs, self.tuned, self.error, self.available = dvrs, tuned, error, available
         self.calls = []
 
     def query(self, path, method=None, **kwargs):
@@ -416,6 +423,8 @@ class TuneServer(object):
             raise self.error
         if path == "/livetv/dvrs":
             return ET.fromstring(self.dvrs)
+        if path.startswith("/livetv/sessions/"):
+            return ET.fromstring(LIVE_SESSION.format(self.available)) if self.available is not None else None
         return ET.fromstring(self.tuned)
 
 
@@ -434,10 +443,25 @@ class TuneTest(KodiTestCase):
 
     def test_tune_posts_with_the_session_identifier(self):
         server = TuneServer()
-        key = dvr.tune(server, "lineup-fox", "sess-1")
-        self.assertEqual(("post", "/livetv/dvrs/14/channels/lineup-fox/tune", {"X-Plex-Session-Identifier": "sess-1"}),
-                         server.calls[-1])
-        self.assertEqual("/livetv/sessions/00000000-0000-4000-8000-000000000001", key)
+        tuned = dvr.tune(server, "lineup-fox", "sess-1")
+        self.assertIn(("post", "/livetv/dvrs/14/channels/lineup-fox/tune", {"X-Plex-Session-Identifier": "sess-1"}),
+                      server.calls)
+        self.assertEqual("/livetv/sessions/00000000-0000-4000-8000-000000000001", tuned.key)
+
+    def test_tune_tells_the_scheduled_length_and_start(self):
+        tuned = dvr.tune(TuneServer(), "lineup-fox", "sess-1")
+        self.assertEqual(10800000, tuned.duration)
+        self.assertEqual(1795370400, tuned.beginsAt)
+
+    def test_recorded_so_far_as_the_server_reports_it(self):
+        """The live session's maxOffsetAvailable: seconds recorded since the start (what Plex Web shows)."""
+        tuned = dvr.tune(TuneServer(available="2400.5"), "lineup-fox", "sess-1")
+        self.assertEqual(2400, tuned.recordedSeconds(now=1795370400 + 99999))
+
+    def test_recorded_so_far_from_the_clock_when_the_server_does_not_say(self):
+        tuned = dvr.tune(TuneServer(available=None), "lineup-fox", "sess-1")
+        self.assertEqual(600, tuned.recordedSeconds(now=1795370400 + 600))
+        self.assertEqual(10800, tuned.recordedSeconds(now=1795370400 + 99999))  # finished: the scheduled length
 
     def test_tune_failure_is_none_not_a_crash(self):
         self.assertIsNone(dvr.tune(TuneServer(error=IOError("timeout")), "lineup-fox", "sess-1"))
@@ -495,9 +519,15 @@ class LiveRecordingStreamTest(KodiTestCase):
             def supportsAudioStream(self, codec, channels):
                 return False
 
+        from plexnet import plexobjects
+
         class Item(object):
             settings = Settings()
             key = "/livetv/sessions/00000000-0000-4000-8000-000000000001"
+            duration = plexobjects.PlexValue("")
+
+            def set(self, name, value):
+                setattr(self, name, plexobjects.PlexValue(value))
 
             def get(self, name, default=""):
                 return {"live": "1", "key": self.key}.get(name, default)
@@ -527,7 +557,33 @@ class LiveRecordingStreamTest(KodiTestCase):
         self.player = plexplayer.PlexPlayer.__new__(plexplayer.PlexPlayer)
         self.player.item, self.player.media, self.player.choice = Item(), Media(), Choice()
         self.player.seekValue, self.player.sessionID = 0, "sess-1"
-        self.obj = self.player.buildTranscode(server, pnUtil.AttributeDict(), 0, True, True, features=[])
+        self.pnUtil = pnUtil
+        self.obj = self.build(seek_ms=0, now=1795370400 + 3600)
+
+    def build(self, seek_ms, now):
+        from plexnet import dvr as dvrmod
+        self.player.seekValue = seek_ms
+        orig = dvrmod.now
+        dvrmod.now = lambda: now
+        try:
+            return self.player.buildTranscode(self.server, self.pnUtil.AttributeDict(), 0, True, True, features=[])
+        finally:
+            dvrmod.now = orig
+
+    def test_length_is_the_scheduled_length(self):
+        """The library item of a recording in progress has no duration; with 0 the seek bar cannot move at all."""
+        self.assertEqual("10800000", self.player.item.duration)
+        self.assertEqual(10800000, self.obj.duration)
+
+    def test_seek_restarts_the_stream_at_that_point(self):
+        """Skipping commercials: the stream restarts at the new position, like any converted stream."""
+        obj = self.build(seek_ms=20 * 60 * 1000, now=1795370400 + 3600)
+        self.assertEqual("1200", self.split(obj.streamUrls[0])[1]["offset"])
+
+    def test_seek_is_capped_at_what_is_recorded(self):
+        """40 min recorded (server says 2400.5s): a seek to 2h lands 30s before the recording's edge, not past it."""
+        obj = self.build(seek_ms=2 * 3600 * 1000, now=1795370400 + 3600)
+        self.assertEqual(str(2400 - dvr.LIVE_EDGE_MARGIN), self.split(obj.streamUrls[0])[1]["offset"])
 
     def test_tunes_the_channel_with_the_playback_session(self):
         self.assertIn(("post", "/livetv/dvrs/14/channels/lineup-fox/tune", {"X-Plex-Session-Identifier": "sess-1"}),
