@@ -109,10 +109,24 @@ def _liveSessionRatingKey(server, channelIdentifier):
     if data is None:
         return None
     for video in data.iter('Video'):
-        media = video.find('Media')
-        if media is not None and media.attrib.get('channelIdentifier') == channelIdentifier:
-            return video.attrib.get('ratingKey')
+        ratingKey = video.attrib.get('ratingKey')
+        if ratingKey and _channelOf(server, video, ratingKey) == channelIdentifier:
+            return ratingKey
     return None
+
+
+def _channelOf(server, video, ratingKey):
+    """A live session's channel: the sessions list leaves it out, the item's own metadata has it."""
+    media = video.find('Media')
+    if media is not None and media.attrib.get('channelIdentifier'):
+        return media.attrib['channelIdentifier']
+    try:
+        data = server.query(LIBRARY_KEY_PREFIX + ratingKey)
+    except Exception as e:
+        util.DEBUG_LOG('DVR: metadata for live session item {0} failed: {1}', ratingKey, e)
+        return None
+    media = data.find('Video/Media') if data is not None else None
+    return media.attrib.get('channelIdentifier') if media is not None else None
 
 
 def _toLibraryElem(server, op, elem):

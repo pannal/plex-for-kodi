@@ -124,15 +124,25 @@ class ActiveRecordingsTest(KodiTestCase):
         root = ET.fromstring(scheduled())
         op = [o for o in root.findall("MediaGrabOperation") if o.get("status") == "inprogress"][0]
         channel = op.find("Video/Media").get("channelIdentifier")
-        sessions = ('<MediaContainer size="1"><Video ratingKey="482133" guid="plex://episode/next-program" live="1" '
-                    'key="/livetv/sessions/x" type="episode"><Media channelIdentifier="{0}"/></Video>'
-                    '</MediaContainer>').format(channel)
+        # the live sessions list leaves the channel out; the item's own metadata has it
+        sessions = ('<MediaContainer size="2">'
+                    '<Video ratingKey="482100" live="1" key="/livetv/sessions/y" type="episode"><Media id="1"/></Video>'
+                    '<Video ratingKey="482133" guid="plex://episode/next-program" live="1" key="/livetv/sessions/x" '
+                    'type="episode"><Media id="2"/></Video></MediaContainer>')
+        metadata = {
+            "/library/metadata/482100": '<MediaContainer><Video ratingKey="482100"><Media channelIdentifier="other"/></Video></MediaContainer>',
+            "/library/metadata/482133": ('<MediaContainer><Video ratingKey="482133"><Media channelIdentifier="{0}"/></Video>'
+                                         '</MediaContainer>').format(channel),
+        }
 
         class AfterSlot(FakeServer):
             def query(self, path, **kwargs):
                 if path == dvr.LIVE_SESSIONS_PATH:
                     self.queries.append(path)
                     return ET.fromstring(sessions)
+                if path in metadata:
+                    self.queries.append(path)
+                    return ET.fromstring(metadata[path])
                 return FakeServer.query(self, path, **kwargs)
 
         rec = dvr.activeRecordings(AfterSlot(scheduled(), library={}))[0]
