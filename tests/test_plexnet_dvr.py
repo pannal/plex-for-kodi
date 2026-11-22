@@ -371,6 +371,18 @@ class EpisodeWithoutShowTest(KodiTestCase):
         self.assertEqual([], list(self.episode.genres()))
         self.assertEqual([], list(self.episode.roles()))
 
+    def test_playback_settings_without_a_show(self):
+        """The player's seek bar reads binge/auto-skip settings from the show; with none it crashed on start."""
+        from plexnet import util as pnUtil
+        asked = []
+        original = pnUtil.INTERFACE.playbackManager
+        pnUtil.INTERFACE.playbackManager = lambda obj, **kw: asked.append(obj) or "item settings"
+        try:
+            self.assertEqual("item settings", self.episode.playbackSettings)
+        finally:
+            pnUtil.INTERFACE.playbackManager = original
+        self.assertEqual([self.episode], asked)
+
     def test_live_item_is_a_full_object(self):
         """
         Its key is the live session, not the /library/metadata/ path it was loaded from, so it never counted as a
@@ -379,3 +391,153 @@ class EpisodeWithoutShowTest(KodiTestCase):
         self.assertNotEqual(self.episode.initpath, self.episode.key)
         self.assertEqual([], list(self.episode.directors()))
         self.assertEqual([], list(self.episode.writers()))
+
+
+DVRS = """<MediaContainer size="2">
+  <Dvr key="7" uuid="a"><Device key="1"><ChannelMapping channelKey="lineup-other" enabled="1"/></Device></Dvr>
+  <Dvr key="14" uuid="b"><Device key="13"><ChannelMapping channelKey="lineup-fox" enabled="1"/></Device></Dvr>
+</MediaContainer>"""
+
+TUNED = """<MediaContainer size="1"><MediaSubscription key="1812"><MediaGrabOperation status="inprogress">
+  <Video ratingKey="482133" key="/livetv/sessions/00000000-0000-4000-8000-000000000001" type="episode"/>
+</MediaGrabOperation></MediaSubscription></MediaContainer>"""
+
+
+class TuneServer(object):
+    """Answers the DVR list and the tune POST; records (method, path, params)."""
+
+    def __init__(self, dvrs=DVRS, tuned=TUNED, error=None):
+        self.dvrs, self.tuned, self.error = dvrs, tuned, error
+        self.calls = []
+
+    def query(self, path, method=None, **kwargs):
+        self.calls.append((method or "get", path, kwargs.get("params")))
+        if self.error:
+            raise self.error
+        if path == "/livetv/dvrs":
+            return ET.fromstring(self.dvrs)
+        return ET.fromstring(self.tuned)
+
+
+class TuneTest(KodiTestCase):
+    """
+    Plex Web tunes the recording's channel before asking for the stream: the tune creates this viewer's consumer
+    on the live session the recording fills. Without it the transcoder's input 404s and the session never starts.
+    """
+
+    def test_dvr_is_the_one_carrying_the_channel(self):
+        self.assertEqual("14", dvr.dvrIdForChannel(TuneServer(), "lineup-fox"))
+
+    def test_single_dvr_is_used_when_no_mapping_matches(self):
+        one = '<MediaContainer size="1"><Dvr key="3"/></MediaContainer>'
+        self.assertEqual("3", dvr.dvrIdForChannel(TuneServer(dvrs=one), "lineup-unknown"))
+
+    def test_tune_posts_with_the_session_identifier(self):
+        server = TuneServer()
+        key = dvr.tune(server, "lineup-fox", "sess-1")
+        self.assertEqual(("post", "/livetv/dvrs/14/channels/lineup-fox/tune", {"X-Plex-Session-Identifier": "sess-1"}),
+                         server.calls[-1])
+        self.assertEqual("/livetv/sessions/00000000-0000-4000-8000-000000000001", key)
+
+    def test_tune_failure_is_none_not_a_crash(self):
+        self.assertIsNone(dvr.tune(TuneServer(error=IOError("timeout")), "lineup-fox", "sess-1"))
+        self.assertIsNone(dvr.tune(TuneServer(), "", "sess-1"))
+
+
+class LiveRecordingDetectionTest(KodiTestCase):
+    def setUp(self):
+        super(LiveRecordingDetectionTest, self).setUp()
+        ensure_plex_interface()
+
+    def build(self, attrs):
+        from plexnet import plexobjects
+        elem = ET.Element("Video", dict(type="episode", ratingKey="1", **attrs))
+        return plexobjects.buildItem(None, elem, "/library/metadata/1")
+
+    def test_library_item_of_a_recording_in_progress(self):
+        self.assertTrue(dvr.isLiveRecording(self.build({"key": "/livetv/sessions/x", "live": "1"})))
+
+    def test_ordinary_episode_is_not(self):
+        self.assertFalse(dvr.isLiveRecording(self.build({"key": "/library/metadata/1"})))
+        self.assertFalse(dvr.isLiveRecording(None))
+
+
+class LiveRecordingStreamTest(KodiTestCase):
+    """PlexPlayer.buildTranscode for a recording in progress mirrors Plex Web: tune, relative live path, HLS, offset 0."""
+
+    def setUp(self):
+        super(LiveRecordingStreamTest, self).setUp()
+        ensure_plex_interface()
+        from plexnet import plexplayer, util as pnUtil
+        from six.moves.urllib.parse import urlsplit, parse_qs
+        self.split = lambda url: (urlsplit(url).path, {k: v[0] for k, v in parse_qs(urlsplit(url).query).items()})
+
+        server = TuneServer()
+        server.TYPE = "PLEXSERVER"
+        server.supportsFeature = lambda name: True
+        server.isLocalConnection = lambda: True
+        server.buildUrl = lambda path, includeToken=False: "http://pms:32400" + path
+        self.server = server
+
+        class Settings(object):
+            maxVerticalDPRes = 1080
+
+            def getPreference(self, name, default=None):
+                return default
+
+            def getGlobal(self, name, default=None):
+                return {"clientIdentifier": "client-1", "transcodeVideoBitrates": ["20000"],
+                        "transcodeVideoResolutions": [(1920, 1080)], "supports1080p60": True}.get(name, default)
+
+            def getQualityIndex(self, qualityType):
+                return 0
+
+            def supportsAudioStream(self, codec, channels):
+                return False
+
+        class Item(object):
+            settings = Settings()
+            key = "/livetv/sessions/00000000-0000-4000-8000-000000000001"
+
+            def get(self, name, default=""):
+                return {"live": "1", "key": self.key}.get(name, default)
+
+            def getServer(self):
+                return server
+
+            def getAbsolutePath(self, attr):
+                return "http://pms:32400" + self.key
+
+            def getQualityType(self, server):
+                return 0
+
+        class Part(object):
+            duration = pnUtil.AttributeDict(asInt=lambda: 0)
+
+        class Media(object):
+            mediaIndex = None
+            parts = [Part()]
+            channelIdentifier = "lineup-fox"
+
+        class Choice(object):
+            SUBTITLES_SOFT_ANY = 1
+            subtitleDecision = 1
+            subtitleStream = None
+
+        self.player = plexplayer.PlexPlayer.__new__(plexplayer.PlexPlayer)
+        self.player.item, self.player.media, self.player.choice = Item(), Media(), Choice()
+        self.player.seekValue, self.player.sessionID = 0, "sess-1"
+        self.obj = self.player.buildTranscode(server, pnUtil.AttributeDict(), 0, True, True, features=[])
+
+    def test_tunes_the_channel_with_the_playback_session(self):
+        self.assertIn(("post", "/livetv/dvrs/14/channels/lineup-fox/tune", {"X-Plex-Session-Identifier": "sess-1"}),
+                      self.server.calls)
+
+    def test_streams_hls_from_the_start_of_the_live_session(self):
+        path, q = self.split(self.obj.streamUrls[0])
+        self.assertEqual("/video/:/transcode/universal/start.m3u8", path)
+        self.assertEqual("hls", q["protocol"])
+        self.assertEqual("/livetv/sessions/00000000-0000-4000-8000-000000000001", q["path"])
+        self.assertEqual("0", q["offset"])
+        self.assertEqual("sess-1", q["X-Plex-Session-Identifier"])
+        self.assertEqual("hls", self.obj.streamFormat)

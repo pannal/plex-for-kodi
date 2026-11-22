@@ -1209,7 +1209,11 @@ class Episode(PlayableVideo, SectionOnDeckMixin):
 
     @property
     def playbackSettings(self):
-        return self.show().playbackSettings
+        show = self.show()
+        if show is None:
+            # no show in the library yet (DVR recording in progress): settings of the item itself
+            return util.INTERFACE.playbackManager(self)
+        return show.playbackSettings
 
     def getStreamURL(self, **params):
         return self._getStreamURL(**params)

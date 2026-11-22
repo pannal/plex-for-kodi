@@ -103,6 +103,9 @@ class PlexPlayer(BasePlayer):
             util.LOG(directPlay and "Forced Direct Play" or "Forced Transcode; allowDirectStream={0}".format(directStream))
 
         directPlay = False if directPlay is False else self.choice.isDirectPlayable
+        if dvr.isLiveRecording(self.item):
+            # still recording: there is no file to play, only the server's live session
+            directPlay = False
 
         server = self.item.getServer()
 
@@ -654,13 +657,22 @@ class PlexPlayer(BasePlayer):
         obj.transcodeServer = server
         obj.isTranscoded = True
 
+        liveRecording = dvr.isLiveRecording(self.item)
+        if liveRecording:
+            # A recording in progress, played from its start the way Plex Web does it: tune the channel as this
+            # playback session (joins the live session the recording fills), then stream it as HLS from offset 0.
+            dvr.tune(self.item.getServer(), self.media.channelIdentifier, self.sessionID)
+            builder = self.buildTranscodeHls(obj)
         # if server.supportsFeature("mkvTranscode") and self.item.settings.getPreference("transcode_format", 'mkv') != "hls":
-        if server.supportsFeature("mkvTranscode"):
+        elif server.supportsFeature("mkvTranscode"):
             builder = self.buildTranscodeMkv(obj, directStream=directStream)
         else:
             builder = self.buildTranscodeHls(obj)
 
-        if self.item.getServer().TYPE == 'MYPLEXSERVER':
+        if liveRecording:
+            # relative, as Plex Web sends it
+            path = self.item.key
+        elif self.item.getServer().TYPE == 'MYPLEXSERVER':
             path = server.swizzleUrl(self.item.getAbsolutePath("key"))
         else:
             path = self.item.getAbsolutePath("key")

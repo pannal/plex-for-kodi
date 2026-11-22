@@ -16,7 +16,7 @@ from __future__ import absolute_import
 
 from xml.etree import ElementTree
 
-from six.moves.urllib.parse import urljoin
+from six.moves.urllib.parse import quote, urljoin
 
 from . import exceptions
 from . import plexlibrary
@@ -189,6 +189,61 @@ def recordingsHub(server):
     if not recordings:
         return None
     return RecordingsHub(server, recordings)
+
+
+LIVE_SESSION_PREFIX = '/livetv/sessions/'
+DVRS_PATH = '/livetv/dvrs'
+TUNE_PATH = '/livetv/dvrs/{0}/channels/{1}/tune'
+
+
+def isLiveRecording(item):
+    """A library item still being recorded: keyed by its live session (live="1") instead of a file."""
+    if item is None:
+        return False
+    # key is an attribute of the object, not in its attribs (item.get('key') is empty)
+    return item.get('live') == '1' and str(getattr(item, 'key', '') or '').startswith(LIVE_SESSION_PREFIX)
+
+
+def dvrIdForChannel(server, channelIdentifier):
+    """The DVR whose lineup carries this channel; the only DVR when no mapping matches."""
+    data = server.query(DVRS_PATH)
+    if data is None:
+        return None
+    dvrs = data.findall('Dvr')
+    for d in dvrs:
+        for mapping in d.iter('ChannelMapping'):
+            if mapping.attrib.get('channelKey') == channelIdentifier:
+                return d.attrib.get('key')
+    if len(dvrs) == 1:
+        return dvrs[0].attrib.get('key')
+    return None
+
+
+def tune(server, channelIdentifier, sessionIdentifier):
+    """
+    Join the live session a recording in progress is filling, as this playback session (what Plex Web does before
+    asking for the stream). Creates this viewer's consumer on the session; without it the transcoder's input 404s.
+    Returns the live session key, or None.
+    """
+    if not channelIdentifier:
+        return None
+    try:
+        dvrId = dvrIdForChannel(server, channelIdentifier)
+        if not dvrId:
+            util.WARN_LOG('DVR: no DVR carries channel {0}', channelIdentifier)
+            return None
+        data = server.query(TUNE_PATH.format(dvrId, quote(channelIdentifier, safe='')), method='post',
+                            params={'X-Plex-Session-Identifier': sessionIdentifier})
+    except Exception as e:
+        util.WARN_LOG('DVR: tuning channel {0} failed: {1}', channelIdentifier, e)
+        return None
+    if data is None:
+        return None
+    for video in data.iter('Video'):
+        key = video.attrib.get('key', '')
+        if key.startswith(LIVE_SESSION_PREFIX):
+            return key
+    return None
 
 
 def _text(body):
