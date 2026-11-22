@@ -1152,7 +1152,8 @@ class Episode(PlayableVideo, SectionOnDeckMixin):
 
     def _setData(self, data):
         PlayableVideo._setData(self, data)
-        if self.isFullObject():
+        # A DVR recording in progress (live="1") is loaded from /library/metadata/ but keyed by its live session.
+        if self.isFullObject() or data.attrib.get('live') == '1':
             self.directors = plexobjects.PlexItemList(data, media.Director, media.Director.TYPE, server=self.server)
             self._roles = plexobjects.PlexItemList(data, media.Role, media.Role.TYPE, server=self.server)
             self.media = plexobjects.PlexMediaItemList(data, plexmedia.PlexMedia, media.Media.TYPE, initpath=self.initpath, server=self.server, media=self)

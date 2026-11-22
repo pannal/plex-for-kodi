@@ -370,3 +370,12 @@ class EpisodeWithoutShowTest(KodiTestCase):
     def test_no_genres_or_cast(self):
         self.assertEqual([], list(self.episode.genres()))
         self.assertEqual([], list(self.episode.roles()))
+
+    def test_live_item_is_a_full_object(self):
+        """
+        Its key is the live session, not the /library/metadata/ path it was loaded from, so it never counted as a
+        full object: directors/writers stayed unset and the Play screen crashed calling directors().
+        """
+        self.assertNotEqual(self.episode.initpath, self.episode.key)
+        self.assertEqual([], list(self.episode.directors()))
+        self.assertEqual([], list(self.episode.writers()))
