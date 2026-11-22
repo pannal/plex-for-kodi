@@ -1151,6 +1151,11 @@ class Episode(PlayableVideo, SectionOnDeckMixin):
         self._season = None
 
     def _setData(self, data):
+        guide = self.__dict__.get('_dvrGuide')
+        if guide:
+            # a Recording Now item reloaded from the library keeps the recording's guide details
+            # (past its slot, the library item carries whatever the channel airs now)
+            data.attrib.update(guide)
         PlayableVideo._setData(self, data)
         # A DVR recording in progress (live="1") is loaded from /library/metadata/ but keyed by its live session.
         if self.isFullObject() or data.attrib.get('live') == '1':

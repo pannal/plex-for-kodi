@@ -4,7 +4,7 @@ import os
 
 from kodi_six import xbmc
 from kodi_six import xbmcgui
-from plexnet import plexplayer, media, plexobjects, util as pnUtil, plexapp, plexlibrary, playlist, playqueue
+from plexnet import dvr, plexplayer, media, plexobjects, util as pnUtil, plexapp, plexlibrary, playlist, playqueue
 
 from lib import metadata
 from lib import player
@@ -625,7 +625,31 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             return
 
         resume = False
-        if self.video.viewOffset.asInt() and not self.startOver:
+        liveRecording = dvr.isLiveRecording(self.video)
+        if liveRecording:
+            # still recording: start at the beginning or jump to what is being recorded now (as Plex Web offers)
+            options = [
+                {'key': 'play', 'display': T(32317, 'Play from beginning')},
+                {'key': 'live', 'display': T(35051, 'Jump to live')},
+            ]
+            if self.video.viewOffset.asInt():
+                options.insert(0, {'key': 'resume', 'display': T(32429, 'Resume from {0}').format(
+                    util.timeDisplay(self.video.viewOffset.asInt()).lstrip('0').lstrip(':'))})
+            choice = dropdown.showDropdown(
+                options=options,
+                pos=(660, 441),
+                close_direction='none',
+                set_dropdown_prop=False,
+                header=T(35052, 'Recording in progress'),
+                dialog_props=from_auto_play and self.dialogProps or None
+            )
+            if not choice:
+                return
+            if choice['key'] == 'resume':
+                resume = True
+            elif choice['key'] == 'live':
+                dvr.requestLiveStart(self.video)
+        elif self.video.viewOffset.asInt() and not self.startOver:
             if not util.getSetting('assume_resume') or force_resume_menu:
                 choice = dropdown.showDropdown(
                     options=[
@@ -661,7 +685,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         preRollFirst = util.getUserSetting('preplay_preroll_first', True)
         trailers = 5 - util.getUserSetting('preplay_trailers', 5)
         # play playqueue if necessary (trailer preplay or plex told us to preplay something)
-        if not resume:
+        if not resume and not liveRecording:
             if preRoll or trailers:
                 pq = playqueue.createPlayQueueForItem(self.video, use_async=False, method="POST",
                                                           extrasPrefixCount=trailers)

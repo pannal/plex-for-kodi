@@ -38,6 +38,27 @@ GUIDE_PARENT_ATTRS = ('grandparentKey', 'grandparentRatingKey', 'parentKey', 'pa
 
 
 IN_PROGRESS_FLAG = 'dvrInProgress'
+GUIDE_FLAG = '_dvrGuide'
+LIVE_START_FLAG = 'dvrStartAtLive'
+# What the recording keeps from the guide when the library item is reloaded (past its slot, that item carries
+# whatever the channel airs now).
+GUIDE_KEEP = ('title', 'grandparentTitle', 'parentTitle', 'summary', 'art', 'thumb', 'grandparentThumb',
+              'grandparentArt', 'duration', 'originallyAvailableAt', 'year', 'index', 'parentIndex')
+
+
+def guideDetails(item):
+    """The guide attributes a Recording Now item keeps across reloads, or None."""
+    return item.__dict__.get(GUIDE_FLAG) if item is not None else None
+
+
+def requestLiveStart(item):
+    """Jump to live: the next stream built for this item starts at the recorded edge."""
+    item.__dict__[LIVE_START_FLAG] = True
+
+
+def takeLiveStart(item):
+    """Was Jump to live asked for? Consumed: later seeks (including back to the start) are not affected."""
+    return bool(item.__dict__.pop(LIVE_START_FLAG, False))
 
 
 def isInProgressRecording(item):
@@ -182,6 +203,7 @@ def _parse(server, data):
             continue
 
         item.__dict__[IN_PROGRESS_FLAG] = True
+        item.__dict__[GUIDE_FLAG] = dict((k, elem.attrib[k]) for k in GUIDE_KEEP if elem.attrib.get(k))
         recordings.append(ActiveRecording(op, item))
     return recordings
 

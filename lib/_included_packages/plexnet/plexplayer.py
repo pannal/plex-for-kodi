@@ -725,6 +725,9 @@ class PlexPlayer(BasePlayer):
                 startOffset = 0
 
             if liveRecording and obj.get("tunedRecording"):
+                if dvr.takeLiveStart(self.item):
+                    # Jump to live: as far as the cap below allows
+                    startOffset = obj.tunedRecording.duration // 1000 or 10 ** 7
                 # seeking restarts the stream at that point; it can't go past what is recorded so far
                 startOffset = obj.tunedRecording.seekableOffset(startOffset)
             builder.addParam("offset", str(startOffset))

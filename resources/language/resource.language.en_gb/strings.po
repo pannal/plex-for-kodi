@@ -3360,3 +3360,11 @@ msgstr ""
 msgctxt "#35050"
 msgid "Plex is temporarily limiting Watchlist requests. Try again in {} seconds."
 msgstr ""
+
+msgctxt "#35051"
+msgid "Jump to live"
+msgstr ""
+
+msgctxt "#35052"
+msgid "Recording in progress"
+msgstr ""

@@ -116,6 +116,21 @@ class ActiveRecordingsTest(KodiTestCase):
         """The server adds the library item a moment after the grab starts; until then nothing is playable."""
         self.assertEqual([], dvr.activeRecordings(FakeServer(scheduled(), library={})))
 
+    def test_reload_keeps_the_recordings_guide_details(self):
+        """
+        The Play screen reloads the item from the library; past its slot that item carries whatever airs now
+        ("the postgame show"). The recording keeps its own title, summary and length.
+        """
+        item = dvr.activeRecordings(FakeServer(scheduled()))[0].item
+        airing = ET.fromstring('<Video ratingKey="482133" key="/livetv/sessions/x" live="1" type="episode" '
+                               'title="Postgame" grandparentTitle="Postgame Show" summary=""/>')
+        item._setData(airing)
+        self.assertEqual(TITLE, item.title)
+        self.assertEqual("NFL Football", item.grandparentTitle)
+        self.assertTrue(item.summary.startswith("The Metro Hawks host"))
+        self.assertEqual(10800000, item.duration.asInt())
+        self.assertEqual("1", item.get("live"))
+
     def test_after_its_slot_the_recording_is_found_by_channel(self):
         """
         Past the scheduled end (recording padding), the live session's item takes the next program's guid, so the
@@ -334,7 +349,7 @@ class HomeHubsTest(KodiTestCase):
     def test_sections_and_search_do_not_ask_for_recordings(self):
         server = self.server(scheduled())
         server.hubs(section="4")
-        server.hubs(search_query="bears")
+        server.hubs(search_query="football")
         self.assertNotIn(dvr.SCHEDULED_PATH, server.asked)
 
 
@@ -609,6 +624,14 @@ class LiveRecordingStreamTest(KodiTestCase):
         """The library item of a recording in progress has no duration; with 0 the seek bar cannot move at all."""
         self.assertEqual("10800000", self.player.item.duration)
         self.assertEqual(10800000, self.obj.duration)
+
+    def test_jump_to_live_starts_at_the_recorded_edge(self):
+        """Jump to live: 40 min recorded (server says 2400.5s) -> start 30s before the edge; only for that start."""
+        dvr.requestLiveStart(self.player.item)
+        obj = self.build(seek_ms=0, now=1795370400 + 3600)
+        self.assertEqual(str(2400 - dvr.LIVE_EDGE_MARGIN), self.split(obj.streamUrls[0])[1]["offset"])
+        obj = self.build(seek_ms=0, now=1795370400 + 3600)
+        self.assertEqual("0", self.split(obj.streamUrls[0])[1]["offset"])
 
     def test_seek_restarts_the_stream_at_that_point(self):
         """Skipping commercials: the stream restarts at the new position, like any converted stream."""
