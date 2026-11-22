@@ -49,6 +49,20 @@ class ActiveRecordingsTest(KodiTestCase):
         recordings = dvr.activeRecordings(FakeServer(scheduled()))
         self.assertEqual(["77"], [r.id for r in recordings])
 
+    def test_every_playable_recording_is_listed_so_one_can_be_picked(self):
+        """Two games recording at once -> two cards in the row, in the server's order."""
+        root = ET.fromstring(scheduled())
+        second = ET.fromstring(ET.tostring(root.find("MediaGrabOperation")))
+        second.set("id", "80")
+        video = second.find("Video")
+        video.set("ratingKey", "5601")
+        video.set("key", "/library/metadata/5601")
+        video.set("title", "Cowboys at Giants")
+        root.append(second)
+        recordings = dvr.activeRecordings(FakeServer(ET.tostring(root)))
+        self.assertEqual(["Bears at Packers", "Cowboys at Giants"], [r.item.title for r in recordings])
+        self.assertEqual(2, dvr.recordingsHub(FakeServer(ET.tostring(root))).size.asInt())
+
     def test_recording_carries_its_library_item(self):
         rec = dvr.activeRecordings(FakeServer(scheduled()))[0]
         self.assertEqual("episode", rec.item.type)
