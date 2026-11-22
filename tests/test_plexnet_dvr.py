@@ -52,6 +52,8 @@ class FakeServer(object):
             raise self.error
         if path == dvr.LIBRARY_LOOKUP_PATH:
             return ET.fromstring(self.library.get(params.get("guid"), EMPTY))
+        if path == dvr.LIVE_SESSIONS_PATH:
+            return ET.fromstring(EMPTY)
         return ET.fromstring(self.xml) if self.xml is not None else None
 
 
@@ -113,6 +115,29 @@ class ActiveRecordingsTest(KodiTestCase):
     def test_recording_without_a_library_item_yet_is_skipped(self):
         """The server adds the library item a moment after the grab starts; until then nothing is playable."""
         self.assertEqual([], dvr.activeRecordings(FakeServer(scheduled(), library={})))
+
+    def test_after_its_slot_the_recording_is_found_by_channel(self):
+        """
+        Past the scheduled end (recording padding), the live session's item takes the next program's guid, so the
+        guid lookup finds nothing; the live session on the recording's channel is still the recording.
+        """
+        root = ET.fromstring(scheduled())
+        op = [o for o in root.findall("MediaGrabOperation") if o.get("status") == "inprogress"][0]
+        channel = op.find("Video/Media").get("channelIdentifier")
+        sessions = ('<MediaContainer size="1"><Video ratingKey="482133" guid="plex://episode/next-program" live="1" '
+                    'key="/livetv/sessions/x" type="episode"><Media channelIdentifier="{0}"/></Video>'
+                    '</MediaContainer>').format(channel)
+
+        class AfterSlot(FakeServer):
+            def query(self, path, **kwargs):
+                if path == dvr.LIVE_SESSIONS_PATH:
+                    self.queries.append(path)
+                    return ET.fromstring(sessions)
+                return FakeServer.query(self, path, **kwargs)
+
+        rec = dvr.activeRecordings(AfterSlot(scheduled(), library={}))[0]
+        self.assertEqual("482133", rec.item.ratingKey)
+        self.assertEqual(TITLE, rec.item.title)
 
     def test_library_lookup_error_skips_that_recording(self):
         class Flaky(FakeServer):

@@ -31,6 +31,7 @@ HUB_TITLE = 'Recording Now'
 STATUS_IN_PROGRESS = 'inprogress'
 LIBRARY_KEY_PREFIX = '/library/metadata/'
 LIBRARY_LOOKUP_PATH = '/library/all'
+LIVE_SESSIONS_PATH = '/livetv/sessions'
 
 # Show/season links in the guide data point at the EPG provider, not the library.
 GUIDE_PARENT_ATTRS = ('grandparentKey', 'grandparentRatingKey', 'parentKey', 'parentRatingKey')
@@ -93,6 +94,27 @@ def _libraryRatingKey(server, guid):
     return None
 
 
+def _liveSessionRatingKey(server, channelIdentifier):
+    """
+    The library ratingKey of the live session recording this channel. Past its scheduled slot (recording padding)
+    the session's item takes the next program's guid, so the guid lookup no longer finds it.
+    """
+    if not channelIdentifier:
+        return None
+    try:
+        data = server.query(LIVE_SESSIONS_PATH)
+    except Exception as e:
+        util.DEBUG_LOG('DVR: live sessions lookup failed: {0}', e)
+        return None
+    if data is None:
+        return None
+    for video in data.iter('Video'):
+        media = video.find('Media')
+        if media is not None and media.attrib.get('channelIdentifier') == channelIdentifier:
+            return video.attrib.get('ratingKey')
+    return None
+
+
 def _toLibraryElem(server, op, elem):
     """
     The grab's item as a library element, or None when the library has no item for it yet.
@@ -102,6 +124,9 @@ def _toLibraryElem(server, op, elem):
         return elem
 
     ratingKey = _libraryRatingKey(server, elem.attrib.get('guid'))
+    if not ratingKey:
+        media = elem.find('Media')
+        ratingKey = _liveSessionRatingKey(server, media.attrib.get('channelIdentifier') if media is not None else None)
     if not ratingKey:
         util.DEBUG_LOG('DVR: recording {0} has no library item yet ({1})', op.attrib.get('id'),
                        elem.attrib.get('guid'))
