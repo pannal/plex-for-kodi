@@ -194,6 +194,9 @@ def recordingsHub(server):
 LIVE_SESSION_PREFIX = '/livetv/sessions/'
 DVRS_PATH = '/livetv/dvrs'
 TUNE_PATH = '/livetv/dvrs/{0}/channels/{1}/tune'
+# The Generic client profile gets "Neither direct play nor conversion is available" for a live session; allow HLS.
+LIVE_HLS_TARGET = ('add-transcode-target(type=videoProfile&context=streaming&protocol=hls&container=mpegts&'
+                   'videoCodec=h264&audioCodec=aac,ac3)')
 
 
 def isLiveRecording(item):

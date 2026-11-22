@@ -663,6 +663,7 @@ class PlexPlayer(BasePlayer):
             # playback session (joins the live session the recording fills), then stream it as HLS from offset 0.
             dvr.tune(self.item.getServer(), self.media.channelIdentifier, self.sessionID)
             builder = self.buildTranscodeHls(obj)
+            builder.extras.append(dvr.LIVE_HLS_TARGET)
         # if server.supportsFeature("mkvTranscode") and self.item.settings.getPreference("transcode_format", 'mkv') != "hls":
         elif server.supportsFeature("mkvTranscode"):
             builder = self.buildTranscodeMkv(obj, directStream=directStream)

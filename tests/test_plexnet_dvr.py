@@ -541,3 +541,8 @@ class LiveRecordingStreamTest(KodiTestCase):
         self.assertEqual("0", q["offset"])
         self.assertEqual("sess-1", q["X-Plex-Session-Identifier"])
         self.assertEqual("hls", self.obj.streamFormat)
+
+    def test_profile_allows_an_hls_conversion(self):
+        """The add-on's Generic profile alone gets "Neither direct play nor conversion is available" for a live session."""
+        path, q = self.split(self.obj.streamUrls[0])
+        self.assertIn(dvr.LIVE_HLS_TARGET, q["X-Plex-Client-Profile-Extra"])
