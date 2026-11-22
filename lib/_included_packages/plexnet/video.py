@@ -1226,6 +1226,9 @@ class Episode(PlayableVideo, SectionOnDeckMixin):
 
     def show(self):
         if not self._show:
+            if not self.grandparentKey:
+                # a DVR recording in progress has no show in the library yet
+                return None
             self._show = plexobjects.listItems(self.server, self.grandparentKey, cachable=self.cachable,
                                                cache_ref=self.cacheRef, not_cachable=self._not_cachable)[0]
         return self._show
@@ -1235,14 +1238,25 @@ class Episode(PlayableVideo, SectionOnDeckMixin):
 
     @property
     def genres(self):
-        return self.show().genres
+        show = self.show()
+        if show is None:
+            return plexobjects.PlexItemList(None, media.Genre, media.Genre.TYPE, server=self.server)
+        return show.genres
 
     @property
     def roles(self):
-        return self._roles or self.show().roles
+        if self._roles:
+            return self._roles
+        show = self.show()
+        if show is None:
+            return plexobjects.PlexItemList(None, media.Role, media.Role.TYPE, server=self.server)
+        return show.roles
 
     def getRelated(self, offset=None, limit=None, _max=36):
-        return self.show().getRelated(offset=offset, limit=limit, _max=_max)
+        show = self.show()
+        if show is None:
+            return None
+        return show.getRelated(offset=offset, limit=limit, _max=_max)
 
 
 @plexobjects.registerLibType

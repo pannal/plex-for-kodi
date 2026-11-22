@@ -339,3 +339,34 @@ class OpenRecordingTest(KodiTestCase):
         self.assertFalse(dvr.isInProgressRecording(episode))
         self.opener.open(episode)
         self.assertEqual([("episode list", episode)], self.opened)
+
+
+class EpisodeWithoutShowTest(KodiTestCase):
+    """
+    The Play screen asks an episode for related shows, genres and cast, all of which go through its show. A recording
+    in progress has no show in the library yet; it must come back empty instead of crashing the screen
+    (IndexError in Episode.show).
+    """
+
+    def setUp(self):
+        super(EpisodeWithoutShowTest, self).setUp()
+        ensure_plex_interface()
+        from plexnet import plexobjects
+
+        class NoShowServer(FakeServer):
+            def query(self, path, **kwargs):
+                raise AssertionError("asked the server for {0}".format(path))
+
+        # what /library/metadata/<ratingKey> returns for the recording: no grandparentKey
+        elem = ET.fromstring(library_lookup()).find("Video")
+        self.episode = plexobjects.buildItem(NoShowServer(), elem, "/library/metadata/482133")
+
+    def test_no_show(self):
+        self.assertIsNone(self.episode.show())
+
+    def test_no_related_items(self):
+        self.assertEqual(0, self.episode.relatedCount)
+
+    def test_no_genres_or_cast(self):
+        self.assertEqual([], list(self.episode.genres()))
+        self.assertEqual([], list(self.episode.roles()))
