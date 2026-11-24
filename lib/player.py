@@ -24,6 +24,7 @@ from plexnet import plexplayer
 from plexnet import plexapp
 from plexnet import plexstream as plexstreamModule
 from plexnet import signalsmixin
+from plexnet.signalslot import Slot
 from plexnet import util as plexnetUtil
 from six.moves import range
 
@@ -127,6 +128,7 @@ class BasePlayerHandler(object):
         self.isMapped = False
         self.currentlyPlaying = None
         self.reused = False
+        self._exitMonitor = None
 
     def onAVChange(self):
         pass
@@ -177,7 +179,17 @@ class BasePlayerHandler(object):
         pass
 
     def close(self):
-        pass
+        monitor = self._exitMonitor
+        self._exitMonitor = None
+        if monitor is not None:
+            monitor.off('system.exit', self.onKodiExit)
+
+    def _hookExit(self):
+        # The player owns its handler. The process-wide monitor must not keep a
+        # replaced handler alive when startup fails before terminal callbacks.
+        BasePlayerHandler.close(self)
+        self._exitMonitor = util.MONITOR
+        self._exitMonitor.on('system.exit', Slot(self.onKodiExit, weak=True))
 
     def setSubtitles(self, *args, **kwargs):
         pass
@@ -217,9 +229,10 @@ class BasePlayerHandler(object):
         return self._lastDuration
 
     def onKodiExit(self, *args, **kwargs):
+        BasePlayerHandler.close(self)
+        if self.player.handler is not self:
+            return
         finishVideoStartup(getattr(self, '_videoStartup', None))
-        if util.MONITOR:
-            util.MONITOR.off("system.exit", self.onKodiExit)
 
         try:
             util.DEBUG_LOG("{}: onKodiExit", self.__class__.__name__)
@@ -318,6 +331,7 @@ class BasePlayerHandler(object):
         self._setVolume(vol)
 
     def sessionEnded(self):
+        BasePlayerHandler.close(self)
         self.player.sessionID = None
 
     def prev(self):
@@ -439,7 +453,7 @@ class SeekPlayerHandler(BasePlayerHandler):
         # Reset only cancels under the startup lock; native dismissal belongs
         # here, before capturing the next playback's volume and dialog.
         self._dismiss_blackout()
-        util.MONITOR.on("system.exit", self.onKodiExit)
+        self._hookExit()
         self.ended = False
         self.baseOffset = offset / 1000.0
         self.seeking = seeking
@@ -2055,6 +2069,7 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.dialog.tick()
 
     def close(self):
+        BasePlayerHandler.close(self)
         finishVideoStartup(self._videoStartup)
         self._dismiss_blackout()
         self.hideOSD(delete=True)
@@ -2069,6 +2084,8 @@ class SeekPlayerHandler(BasePlayerHandler):
             return
         self.player.sessionID = None
         self.ensureCorrectVolume()
+        if self.player.handler is not self or not startupCurrent(self, startup):
+            return
         if self.ended:
             return
         self.ended = True
@@ -2085,8 +2102,15 @@ class SeekPlayerHandler(BasePlayerHandler):
             self.useAlternateSeek = True
             self.player._originalAlternateSeek = False
 
+        # Native volume/LAV restoration above can yield to another startup.
+        # Remove only this session's exit hook under the startup ownership lock.
+        with VideoStartup._lock:
+            if self.player.handler is not self or not startupCurrent(self, startup):
+                return
+            BasePlayerHandler.close(self)
         self.player.trigger('session.ended', session_id=self.sessionID)
-        self.hideOSD(delete=True)
+        if self.player.handler is self and startupCurrent(self, startup):
+            self.hideOSD(delete=True)
 
     __next__ = next
 
@@ -2099,7 +2123,7 @@ class AudioPlayerHandler(BasePlayerHandler):
         self.extractTrackInfo()
 
     def setup(self, *args, **kwargs):
-        util.MONITOR.on("system.exit", self.onKodiExit)
+        self._hookExit()
 
     def extractTrackInfo(self):
         if not self.player.isPlayingAudio():
@@ -2138,6 +2162,8 @@ class AudioPlayerHandler(BasePlayerHandler):
             util.ERROR()
 
     def setPlayQueue(self, pq):
+        if self.playQueue is not None:
+            self.playQueue.off('items.changed', self.playQueueCallback)
         self.playQueue = pq
         pq.on('items.changed', self.playQueueCallback)
 
@@ -2245,6 +2271,7 @@ class AudioPlayerHandler(BasePlayerHandler):
 
     def onPlayBackStarted(self):
         util.DEBUG_LOG('AudioPlayerHandler: onPlayBackStarted')
+        self._hookExit()
         self.player.lastPlayWasBGM = False
         self.updatePlayQueue(delay=True)
         self.extractTrackInfo()
@@ -2279,9 +2306,16 @@ class AudioPlayerHandler(BasePlayerHandler):
         self.finish()
 
     def onPlayBackFailed(self):
+        self.close()
         return True
 
+    def close(self):
+        BasePlayerHandler.close(self)
+        if self.playQueue is not None:
+            self.playQueue.off('items.changed', self.playQueueCallback)
+
     def finish(self):
+        BasePlayerHandler.close(self)
         self.player.trigger('session.ended')
         util.setGlobalProperty('track.ID', '')
 

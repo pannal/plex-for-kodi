@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import six.moves.queue
 import heapq
+import threading
 from kodi_six import xbmc
 from .monitor import MONITOR
 from .settings_util import getSetting
@@ -95,7 +96,7 @@ class BackgroundWorker:
         self._task = None
 
     def _runTask(self, task):
-        if task._canceled:
+        if self.aborted() or task._canceled:
             return
         try:
             task._run()
@@ -124,9 +125,11 @@ class BackgroundWorker:
         try:
             while not self.aborted():
                 self._task = self._queue.get_nowait()
-                self._runTask(self._task)
-                self._queue.task_done()
-                self._task = None
+                try:
+                    self._runTask(self._task)
+                finally:
+                    self._queue.task_done()
+                    self._task = None
         except six.moves.queue.Empty:
             logging.DEBUG_LOG('BGThreader ({0}): Idle', self.name)
 
@@ -157,6 +160,7 @@ class BackgroundThreader:
         self._queue = MutablePriorityQueue()
         self._abort = False
         self._priority = -1
+        self._stateLock = threading.RLock()
         self.workers = [BackgroundWorker(self._queue, 'queue.{0}:worker.{1}'.format(self.name, x)) for x in range(worker_count)]
 
     def _nextPriority(self):
@@ -164,9 +168,23 @@ class BackgroundThreader:
         return self._priority
 
     def abort(self):
-        self._abort = True
-        for w in self.workers:
-            w.abort()
+        with self._stateLock:
+            self._abort = True
+            for w in self.workers:
+                w.abort()
+            # Abandoned queues are never serviced again. Drop callbacks to
+            # windows now; running tasks keep their references until completion.
+            while True:
+                try:
+                    task = self._queue.get_nowait()
+                except six.moves.queue.Empty:
+                    break
+                try:
+                    # These tasks never started. Subclass cancel() can stop
+                    # live playback, which this discard must not do.
+                    Task.cancel(task)
+                finally:
+                    self._queue.task_done()
         return self
 
     def aborted(self):
@@ -179,27 +197,37 @@ class BackgroundThreader:
             w.shutdown()
 
     def addTask(self, task):
-        task._priority = self._nextPriority()
-        self._queue.put(task)
+        with self._stateLock:
+            # A caller can have captured this method before the manager reset.
+            if self._abort:
+                Task.cancel(task)
+                return
+            task._priority = self._nextPriority()
+            self._queue.put(task)
         self.startWorkers()
 
     def addTasks(self, tasks):
-        for t in tasks:
-            t._priority = self._nextPriority()
-            self._queue.put(t)
+        with self._stateLock:
+            for t in tasks:
+                if self._abort:
+                    Task.cancel(t)
+                else:
+                    t._priority = self._nextPriority()
+                    self._queue.put(t)
 
         self.startWorkers()
 
     def addTasksToFront(self, tasks):
-        lowest = self.getLowestPrority()
-        if lowest is None:
-            return self.addTasks(tasks)
+        with self._stateLock:
+            lowest = self.getLowestPrority()
+            if self._abort or lowest is None:
+                return self.addTasks(tasks)
 
-        p = lowest - len(tasks)
-        for t in tasks:
-            t._priority = p
-            self._queue.put(t)
-            p += 1
+            p = lowest - len(tasks)
+            for t in tasks:
+                t._priority = p
+                self._queue.put(t)
+                p += 1
 
         self.startWorkers()
 
@@ -242,6 +270,7 @@ class ThreaderManager:
         return getattr(self.threader, name)
 
     def reset(self):
+        self.abandoned = [t for t in self.abandoned if t.hasTask()]
         if self.threader._queue.empty() and not self.threader.hasTask():
             return
 

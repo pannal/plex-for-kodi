@@ -68,14 +68,28 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.setDuration()
         self.exitCommand = None
         self.musicPlayerWinID = kwargs.get('winID')
+        self._hookedPlayQueue = None
 
     def doClose(self, **kwargs):
         player.PLAYER.off('av.started', self.onPlayBackStarted)
         player.PLAYER.off('playlist.changed', self.playQueueCallback)
-        if player.PLAYER.handler.playQueue and player.PLAYER.handler.playQueue.isRemote:
-            player.PLAYER.handler.playQueue.off('change', self.updateProperties)
+        self._setPlayQueueHook(None)
         self.commonDeinit()
         kodigui.ControlledWindow.doClose(self)
+
+    def _setPlayQueueHook(self, queue):
+        previous = getattr(self, '_hookedPlayQueue', None)
+        if previous is queue:
+            return
+        if previous is not None:
+            previous.off('change', self.updateProperties)
+        self._hookedPlayQueue = queue
+        if queue is not None:
+            queue.on('change', self.updateProperties)
+
+    def _updatePlayQueueHook(self):
+        queue = player.PLAYER.handler.playQueue
+        self._setPlayQueueHook(queue if queue and queue.isRemote else None)
 
     def commonInit(self):
         player.PLAYER.on('starting.audio', self.onAudioStarting)
@@ -96,8 +110,7 @@ class CurrentPlaylistWindow(kodigui.ControlledWindow, windowutils.UtilMixin):
         self.setFocusId(self.PLAYLIST_LIST_ID)
         self.commonInit()
         self.updateProperties()
-        if player.PLAYER.handler.playQueue and player.PLAYER.handler.playQueue.isRemote:
-            player.PLAYER.handler.playQueue.on('change', self.updateProperties)
+        self._updatePlayQueueHook()
         player.PLAYER.on('playlist.changed', self.playQueueCallback)
 
     def onAction(self, action):

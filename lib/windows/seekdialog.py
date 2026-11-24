@@ -254,8 +254,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.showItemEndsInfo = util.addonSettings.showMediaEndsInfo
         self.showItemEndsLabel = util.addonSettings.showMediaEndsLabel
 
-        self.player.video.server.on("np:timelineResponse", self.timelineResponseCallback)
-        self.player.video.server.on("np:streamTerminated", self.streamTerminatedCallback)
+        self._timelineServer = self.player.video.server
+        self._timelineServer.on("np:timelineResponse", self.timelineResponseCallback)
+        self._timelineServer.on("np:streamTerminated", self.streamTerminatedCallback)
 
         if util.kodiSkipSteps and util.addonSettings.kodiSkipStepping and not self.handler.useAlternateSeek:
             self.skipSteps = {"negative": [], "positive": []}
@@ -277,6 +278,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         return self.handler.player
 
     def timelineResponseCallback(self, **kwargs):
+        if self._timelineServer is None:
+            return
         response = kwargs.get("response")
         self.lastTimelineResponse = response.getBodyXml()
 
@@ -285,7 +288,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         # shutdown, ...). Capture progress, suppress next-episode/post-play, stop
         # playback immediately instead of waiting for the buffer to drain, and tell
         # the user why.
-        if self._terminated:
+        if self._timelineServer is None or self._terminated:
             return
         self._terminated = True
 
@@ -1112,6 +1115,12 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
     def doClose(self, delete=False, **kw):
         util.DEBUG_LOG("SeekDialog: Closing")
+        if delete:
+            server = getattr(self, '_timelineServer', None)
+            self._timelineServer = None
+            if server is not None:
+                server.off('np:timelineResponse', self.timelineResponseCallback)
+                server.off('np:streamTerminated', self.streamTerminatedCallback)
         if not self._closing:
             self._closing = True
             util.setGlobalProperty('osd_active', '')

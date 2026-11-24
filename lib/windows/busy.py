@@ -51,15 +51,16 @@ def dialog(msg='LOADING', condition=None, delay=True, delay_time=1.5):
             try:
                 return func(*args, **kwargs)
             finally:
-                w.doClose()
+                # A timer already inside show() cannot be cancelled. Let it
+                # finish before the final close so it cannot reopen the dialog.
                 try:
+                    if timer and timer.is_alive():
+                        timer.cancel()
+                        timer.join()
+                finally:
+                    w.doClose()
                     del w
-                except:
-                    pass
-                if timer and timer.is_alive():
-                    timer.cancel()
-                    timer.join()
-                del timer
+                    del timer
 
         if condition is not None:
             return condition() and inner or func

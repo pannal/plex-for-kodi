@@ -73,13 +73,16 @@ def handleOpen(winclass, **kwargs):
         if autoPlay and winclass.supportsAutoPlay:
             # create but don't open window
             w = winclass.create(show=False, **kwargs)
-            if autoPlayOpen and w.doAutoPlay(blind=not autoPlayOpen):
-                # open window after autoPlay to be able to return to it after playback
-                w.modal()
-            else:
-                # just autoPlay and don't open the window
-                w.doAutoPlay()
-                w.onBlindClose()
+            try:
+                if autoPlayOpen and w.doAutoPlay(blind=not autoPlayOpen):
+                    # open window after autoPlay to be able to return to it after playback
+                    w.modal()
+                else:
+                    # just autoPlay and don't open the window
+                    w.doAutoPlay()
+            finally:
+                if not w.started:
+                    w.onBlindClose()
         else:
             w = winclass.open(**kwargs)
         return w.exitCommand or ''

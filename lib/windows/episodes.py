@@ -343,6 +343,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.lastNonOptionsFocusID = None
         self.openedWithAutoPlay = False
         self._watchlistPlayback = None
+        self._hookedPlayer = None
         self.useBGM = False
         self.debouncing = False
         PlaybackBtnMixin.reset(self)
@@ -357,15 +358,13 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self.episodesPaginator = None
         self.relatedPaginator = None
         TasksMixin.doClose(self)
-        try:
-            player.PLAYER.off('new.video', self.onNewVideo)
-            player.PLAYER.off('video.progress', self.onVideoProgress)
-        except KeyError:
-            pass
+        self._remove_hooks()
         kodigui.ControlledWindow.doClose(self)
         #super(EpisodesWindow, self).doClose(**kw)
 
     def onBlindClose(self):
+        self._remove_hooks()
+        self.invalidatePlaybackReturn(closed=True)
         if self.openedWithAutoPlay and not self.started:
             with self._returnLock:
                 state = self._watchlistPlayback
@@ -570,8 +569,17 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         self._setup()
 
     def _setup_hooks(self):
-        player.PLAYER.on('new.video', self.onNewVideo)
-        player.PLAYER.on('video.progress', self.onVideoProgress)
+        self._remove_hooks()
+        self._hookedPlayer = player.PLAYER
+        self._hookedPlayer.on('new.video', self.onNewVideo)
+        self._hookedPlayer.on('video.progress', self.onVideoProgress)
+
+    def _remove_hooks(self):
+        hooked = getattr(self, '_hookedPlayer', None)
+        self._hookedPlayer = None
+        if hooked is not None:
+            hooked.off('new.video', self.onNewVideo)
+            hooked.off('video.progress', self.onVideoProgress)
 
     def _setup(self, from_redirect=False):
         (self.season or self.show_).reload(checkFiles=1, **VIDEO_RELOAD_KW)
@@ -856,7 +864,7 @@ class EpisodesWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMix
         kodigui.ControlledWindow.onAction(self, action)
 
     def onNewVideo(self, video=None, **kwargs):
-        if not video:
+        if not video or self._returnClosed:
             return
 
         if not video.type == 'episode':
