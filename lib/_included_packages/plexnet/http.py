@@ -165,6 +165,8 @@ class HttpRequest(object):
             return
         except (urllib3.exceptions.ProtocolError, requests.exceptions.ConnectionError):
             self.removeAsPending()
+            if context and context.callback:
+                context.callback(None, context)
             return
         except Exception as e:
             util.ERROR('Request failed {0}'.format(util.cleanToken(self.url)))
