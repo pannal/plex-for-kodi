@@ -197,9 +197,8 @@
             <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
             <posx>776</posx>
             <posy>0</posy>
-            <!-- 714, not the heading's 950: this box overlaps the ratings' y range, and 776+714 stops short
-                 of them at 1560. The heading below clears them and can run wider. -->
-            <width>714</width>
+            <!-- Leave room for personal stars at x=1726 when a long series title scrolls. -->
+            <width>930</width>
             <height>{{ vscale(68) }}</height>
             <!-- stands in for the logo and has its whole 100px box to fill, so it takes the largest face
                  the templates use; font32_title is the step down if this crowds the box -->
@@ -260,9 +259,10 @@
 
         <control type="grouplist">
             <visible>!String.IsEmpty(Container(400).ListItem.Property(rating))</visible>
-            <posx>1040</posx>
-            <posy>{{ vscale(50) }}</posy>
-            <width>820</width>
+            <!-- Between the title/logo ending at 68 and the episode heading starting at 114. -->
+            <posx>776</posx>
+            <posy>{{ vscale(75) }}</posy>
+            <width>1084</width>
             <height>{{ vscale(32) }}</height>
             <align>right</align>
             <itemgap>15</itemgap>
