@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GET /media/subscriptions/scheduled - real capture from a Plex Media Server with an
+  HDHomeRun DVR (2026-11-22), with tokens, addresses and paths absent and team,
+  channel, lineup and artwork identifiers replaced by made-up ones.
+
+  Four operations on one subscription (NFL Football):
+  - 8bd5...: scheduled for later -> not listed
+  - 5d44...: recording right now (River City Kings at Metro Hawks). Its Video only has an
+    EPG key; the library item is found by looking its guid up in /library/all.
+  - two "complete" operations for earlier games -> not listed
+-->
+<MediaContainer size="4">
+<MediaGrabOperation mediaSubscriptionID="356" mediaIndex="0" id="8bd5a35f08d72d2fe0e815e3a9d72bddecbaa963" key="/media/grabbers/operations/8bd5a35f08d72d2fe0e815e3a9d72bddecbaa963" grabberIdentifier="tv.plex.grabbers.hdhomerun" grabberProtocol="livetv" deviceID="13" status="scheduled" provider="tv.plex.providers.epg.cloud:14">
+<Video addedAt="1795341831" art="https://metadata-static.plex.tv/d/gracenote/586eea3379c9aefdbc1da96cd542d227.jpg" duration="12600000" grandparentArt="https://metadata-static.plex.tv/7/gracenote/78365849557ee07b6b31c729f08800f2.jpg" grandparentGuid="plex://show/bcba885b7b78f2e1db3134a4" grandparentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentRatingKey="plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentThumb="https://metadata-static.plex.tv/2/gracenote/86f19f4d4e2f193036a93b6228dca586.jpg" grandparentTitle="NFL Football" guid="plex://episode/e0023b5fbdd95513cc3ef3b4" key="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fepisode%2Fe0023b5fbdd95513cc3ef3b4" originallyAvailableAt="2026-11-26 06:00:00" parentGuid="plex://season/bcba885b7b78f2e1db3134a4" parentIndex="2026" parentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" parentRatingKey="plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" parentTitle="Season 2026" ratingKey="plex%3A%2F%2Fepisode%2Fe0023b5fbdd95513cc3ef3b4" skipParent="1" subscriptionID="356" subscriptionType="playlist" summary="The Motor City Bulldogs host the Metro Hawks in NFL regular-season play at Motor Stadium. Motor City has won four of the last five meetings, including a 19-16 road win over Metro earlier this season." title="Metro Hawks at Motor City Bulldogs" type="episode" year="2026">
+<Media audioChannels="2" beginsAt="1795716000" channelCallSign="KAAADT" channelID="1" channelIdentifier="497af6cfa384c5c2713a92f9-a2aed8bab114784553330f65" channelThumb="https://provider-static.plex.tv/4/epg/channels/logos/gracenote/ba73036b350f17ea8812d50fa249f561.png" channelTitle="2.1 KAAADT (CBS)" channelVcn="2.1" duration="12600000" endOffsetSeconds="2700" endsAt="1795728600" gridKey="a2aed8bab114784553330f65" hasVoiceActivity="0" id="20" premiere="1" protocol="livetv" videoResolution="720">
+</Media>
+<Genre tag="Football" />
+<Genre tag="Sports event" />
+<Image alt="Metro Hawks at Motor City Bulldogs" type="coverPoster" url="https://metadata-static.plex.tv/2/gracenote/86f19f4d4e2f193036a93b6228dca586.jpg" />
+<Image alt="Metro Hawks at Motor City Bulldogs" type="background" url="https://metadata-static.plex.tv/d/gracenote/586eea3379c9aefdbc1da96cd542d227.jpg" />
+</Video>
+</MediaGrabOperation>
+<MediaGrabOperation mediaSubscriptionID="356" mediaIndex="0" id="5d445defa82b5d8f2b7090ed64c659bb319aad84" key="/media/grabbers/operations/5d445defa82b5d8f2b7090ed64c659bb319aad84" grabberIdentifier="tv.plex.grabbers.hdhomerun" grabberProtocol="livetv" percent="-1" currentSize="0" deviceID="13" status="inprogress" provider="tv.plex.providers.epg.cloud:14">
+<Video addedAt="1795341887" art="https://metadata-static.plex.tv/b/gracenote/af12d67b5e78866e4d4984103d44faab.jpg" duration="10800000" grandparentArt="https://metadata-static.plex.tv/7/gracenote/78365849557ee07b6b31c729f08800f2.jpg" grandparentGuid="plex://show/bcba885b7b78f2e1db3134a4" grandparentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentRatingKey="plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentThumb="https://metadata-static.plex.tv/2/gracenote/86f19f4d4e2f193036a93b6228dca586.jpg" grandparentTitle="NFL Football" guid="plex://episode/ad40b8318c9c7212ea805cbf" key="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fepisode%2Fad40b8318c9c7212ea805cbf" originallyAvailableAt="2026-11-22 06:00:00" parentGuid="plex://season/bcba885b7b78f2e1db3134a4" parentIndex="2026" parentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" parentRatingKey="plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" parentTitle="Season 2026" ratingKey="plex%3A%2F%2Fepisode%2Fad40b8318c9c7212ea805cbf" skipParent="1" subscriptionID="356" subscriptionType="playlist" summary="The Metro Hawks host the River City Kings in NFL regular-season play at Metro Stadium. The Metro Hawks have won four games straight and sit at 7-2, while the River City Kings arrive at 3-6 after a recent 20-17 loss to Coastal." title="River City Kings at Metro Hawks" type="episode" year="2026">
+<Media audioChannels="2" beginsAt="1795370400" channelCallSign="KBBBDT" channelID="59" channelIdentifier="497af6cfa384c5c2713a92f9-09b6917945a3f89da442a68a" channelThumb="https://provider-static.plex.tv/2/epg/channels/logos/gracenote/776fb99ee6ad39634177ba2245f8c561.png" channelTitle="32.1 KBBBDT (FOX)" channelVcn="32.1" duration="10800000" endOffsetSeconds="2700" endsAt="1795381200" gridKey="09b6917945a3f89da442a68a" hasVoiceActivity="0" id="8019" premiere="1" protocol="livetv" videoResolution="720">
+</Media>
+<Genre tag="Football" />
+<Genre tag="Sports event" />
+<Image alt="River City Kings at Metro Hawks" type="coverPoster" url="https://metadata-static.plex.tv/2/gracenote/86f19f4d4e2f193036a93b6228dca586.jpg" />
+<Image alt="River City Kings at Metro Hawks" type="background" url="https://metadata-static.plex.tv/b/gracenote/af12d67b5e78866e4d4984103d44faab.jpg" />
+</Video>
+</MediaGrabOperation>
+<MediaGrabOperation deviceID="13" grabberIdentifier="tv.plex.grabbers.hdhomerun" grabberProtocol="livetv" mediaIndex="0" mediaSubscriptionID="356" status="complete" identifier="com.plexapp.plugins.library">
+<Video grandparentGuid="plex://show/bcba885b7b78f2e1db3134a4" grandparentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentRatingKey="plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentThumb="https://metadata-static.plex.tv/2/gracenote/86f19f4d4e2f193036a93b6228dca586.jpg" grandparentTitle="NFL Football" guid="plex://episode/55e071ef27d3f697769b9804" key="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fepisode%2F55e071ef27d3f697769b9804" originallyAvailableAt="2026-11-02 06:00:00" parentGuid="plex://season/bcba885b7b78f2e1db3134a4" parentIndex="2026" parentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" parentRatingKey="plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" ratingKey="plex%3A%2F%2Fepisode%2F55e071ef27d3f697769b9804" title="Metro Hawks at Harbor Gulls" type="episode">
+<Media beginsAt="1793667600" channelIdentifier="497af6cfa384c5c2713a92f9-73afbe6e8907d50e5df561f5" channelTitle="26.1 KCCCDT (Independent)" endsAt="1793679300" premiere="1" protocol="livetv" />
+</Video>
+</MediaGrabOperation>
+<MediaGrabOperation deviceID="13" grabberIdentifier="tv.plex.grabbers.hdhomerun" grabberProtocol="livetv" mediaIndex="0" mediaSubscriptionID="356" status="complete" identifier="com.plexapp.plugins.library">
+<Video grandparentGuid="plex://show/bcba885b7b78f2e1db3134a4" grandparentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentRatingKey="plex%3A%2F%2Fshow%2Fbcba885b7b78f2e1db3134a4" grandparentThumb="https://metadata-static.plex.tv/2/gracenote/86f19f4d4e2f193036a93b6228dca586.jpg" grandparentTitle="NFL Football" guid="plex://episode/c93e8ba3d1f317a8feb496ef" key="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fepisode%2Fc93e8ba3d1f317a8feb496ef" originallyAvailableAt="2026-11-08 06:00:00" parentGuid="plex://season/bcba885b7b78f2e1db3134a4" parentIndex="2026" parentKey="/tv.plex.providers.epg.cloud:14/metadata/plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" parentRatingKey="plex%3A%2F%2Fseason%2Fbcba885b7b78f2e1db3134a4%2F2026" ratingKey="plex%3A%2F%2Fepisode%2Fc93e8ba3d1f317a8feb496ef" title="Bay Pirates at Metro Hawks" type="episode">
+<Media beginsAt="1794186900" channelIdentifier="497af6cfa384c5c2713a92f9-0e9902ba62092ffe74c8a7f2" channelTitle="5.1 KDDDDT (NBC)" endsAt="1794198600" premiere="1" protocol="livetv" />
+</Video>
+</MediaGrabOperation>
+</MediaContainer>
