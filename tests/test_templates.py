@@ -143,6 +143,23 @@ class TemplateRenderTest(KodiTestCase):
                     self.assertIsNotNone(root.find("controls"),
                                          "{0} has no <controls> block".format(name))
 
+    def test_episode_ratings_fit_between_show_identity_and_episode_heading(self):
+        for theme in THEMES:
+            with self.subTest(theme=theme):
+                engine = make_engine(self.mktemp())
+                engine.apply(theme, lambda *args: None, templates=["episodes"])
+                root = ET.parse(os.path.join(engine.target_dir, "script-plex-episodes.xml"))
+                ratings = root.find(".//control[label='$INFO[Container(400).ListItem.Property(rating)]']/..")
+                title = root.find(".//control[label='$INFO[Container(400).ListItem.Property(show.title)]']")
+                logo = root.find(".//control[texture='$INFO[Window.Property(clear.logo)]']")
+                heading = root.find(".//control[label='$INFO[Container(400).ListItem.Property(heading.prefix)]']/..")
+                for identity in (title, logo):
+                    bottom = float(identity.findtext("posy")) + float(identity.findtext("height"))
+                    self.assertLessEqual(bottom, float(ratings.findtext("posy")))
+                bottom = float(ratings.findtext("posy")) + float(ratings.findtext("height"))
+                self.assertLessEqual(bottom, float(heading.findtext("posy")))
+                self.assertEqual(6, len(ratings.findall("control[@type='label']")))
+
     def test_startup_blackouts_yield_while_kodis_select_dialog_is_visible(self):
         rendered = render_theme(make_engine(self.mktemp()), "modern")
         for name in ("blackout_dialog", "seek_dialog"):

@@ -197,9 +197,8 @@
             <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
             <posx>776</posx>
             <posy>0</posy>
-            <!-- 714, not the heading's 950: this box overlaps the ratings' y range, and 776+714 stops short
-                 of them at 1560. The heading below clears them and can run wider. -->
-            <width>714</width>
+            <!-- Leave room for personal stars at x=1726 when a long series title scrolls. -->
+            <width>930</width>
             <height>{{ vscale(68) }}</height>
             <!-- stands in for the logo and has its whole 100px box to fill, so it takes the largest face
                  the templates use; font32_title is the step down if this crowds the box -->
@@ -259,10 +258,11 @@
         </control>
 
         <control type="grouplist">
-            <visible>!String.IsEmpty(Container(400).ListItem.Property(rating)) | !String.IsEmpty(Container(400).ListItem.Property(rating2))</visible>
-            <posx>1560</posx>
-            <posy>{{ vscale(50) }}</posy>
-            <width>300</width>
+            <visible>!String.IsEmpty(Container(400).ListItem.Property(rating))</visible>
+            <!-- Between the title/logo ending at 68 and the episode heading starting at 114. -->
+            <posx>776</posx>
+            <posy>{{ vscale(75) }}</posy>
+            <width>1084</width>
             <height>{{ vscale(32) }}</height>
             <align>right</align>
             <itemgap>15</itemgap>
@@ -285,23 +285,25 @@
                 <textcolor>FFFFFFFF</textcolor>
                 <label>$INFO[Container(400).ListItem.Property(rating)]</label>
             </control>
+            {% for i in range(2, 7) %}
             <control type="image">
-                <visible>!String.IsEmpty(Container(400).ListItem.Property(rating2))</visible>
+                <visible>!String.IsEmpty(Container(400).ListItem.Property(rating{{ i }}))</visible>
                 <posy>2</posy>
-                <width>40</width>
+                <width>63</width>
                 <height>{{ vscale(30) }}</height>
-                <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Container(400).ListItem.Property(rating2.image)]</texture>
+                <texture fallback="script.plex/ratings/other/image.rating.png">$INFO[Container(400).ListItem.Property(rating{{ i }}.image)]</texture>
                 <aspectratio align="right">keep</aspectratio>
             </control>
             <control type="label">
-                <visible>!String.IsEmpty(Container(400).ListItem.Property(rating2))</visible>
+                <visible>!String.IsEmpty(Container(400).ListItem.Property(rating{{ i }}))</visible>
                 <width>auto</width>
                 <height>{{ vscale(30) }}</height>
                 <font>font12</font>
                 <align>left</align>
                 <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Container(400).ListItem.Property(rating2)]</label>
+                <label>$INFO[Container(400).ListItem.Property(rating{{ i }})]</label>
             </control>
+            {% endfor %}
         </control>
 
         <control type="grouplist">
