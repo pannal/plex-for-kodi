@@ -2797,7 +2797,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         # Native label reads may yield while the dialog is being retired.
         if self._closing:
             return
-        active = self.getBoolProperty('show.OSD') or (self._standaloneMarkerVisible() and needsMarker)
+        osd_open = self.getBoolProperty('show.OSD')
+        active = osd_open or (self._standaloneMarkerVisible() and needsMarker)
+        util.setGlobalProperty('show_osd', '1' if osd_open else '')
         util.setGlobalProperty('osd_active', '1' if active else '')
 
     def showOSD(self, focusButton=True):
@@ -2815,6 +2817,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.setProperty('show.OSD', '')
         if closing:
             self._closing = True
+            util.setGlobalProperty('show_osd', '')
             util.setGlobalProperty('osd_active', '')
             return
 

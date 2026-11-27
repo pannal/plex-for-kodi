@@ -150,6 +150,7 @@ def main(force_render=False):
             util.setGlobalProperty('ignore_spinner', '')
             util.setGlobalProperty('is_active', '')
             util.setGlobalProperty('osd_active', '')
+            util.setGlobalProperty('show_osd', '')
         except:
             pass
 
