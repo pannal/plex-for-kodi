@@ -34,7 +34,7 @@ from . import search
 from . import subitems
 from . import windowutils
 from .mixins.playbackbtn import PlaybackBtnMixin
-from .mixins.watchlist import removeFromWatchlistBlind
+from .mixins.watchlist import autoRemoveFromWatchlist, removeFromWatchlistBlind
 from .mixins.common import CommonMixin
 
 KEYS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -566,7 +566,9 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
         self.setTitle()
         self.setBoolProperty("initialized", True)
-        self.fill()
+        if self.fill() is False:
+            self.setFocusId(self.HOME_BUTTON_ID)
+            return
         self.refill = False
         if self.getProperty('no.content') or self.getProperty('no.content.filtered'):
             self.setFocusId(self.HOME_BUTTON_ID)
@@ -679,13 +681,12 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
     def toggleWatched(self, mli, state=None, **kw):
         item = mli.dataSource
-        wl_ref = item.show() if item.TYPE in ('episode', 'season') else item
-        watched = super(LibraryWindow, self).toggleWatched(item)
+        watched = super(LibraryWindow, self).toggleWatched(item, state=state, **kw)
         if watched is None:
             return
 
         if watched:
-            removeFromWatchlistBlind(wl_ref.guid, wl_ref)
+            autoRemoveFromWatchlist(item)
         self.updateUnwatchedAndProgress(mli)
 
     def itemOptions(self):
@@ -1514,9 +1515,9 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
         self.backgroundSet = False
 
         if self.section.TYPE in ('photo', 'photodirectory'):
-            self.fillPhotos()
+            return self.fillPhotos()
         else:
-            self.fillShows()
+            return self.fillShows()
 
     def getFilterOpts(self):
         if not self.filter:
@@ -1544,8 +1545,19 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
     def thumb_fallback(self):
         return 'script.plex/thumb_fallbacks/{0}.png'.format(TYPE_KEYS.get(self.section.type, TYPE_KEYS['movie'])['fallback'])
 
-    @busy.dialog()
     def fillShows(self):
+        try:
+            return self._fillShows()
+        except plexnet.exceptions.RateLimited as error:
+            self.setBoolProperty('content.filling', False)
+            self.refill = True
+            if not error.from_cooldown:
+                util.messageDialog(T(34000, 'Watchlist'),
+                                   T(35050, 'Plex is temporarily limiting Watchlist requests. Try again in {} seconds.').format(error.retry_after))
+            return False
+
+    @busy.dialog()
+    def _fillShows(self):
         self.setBoolProperty('no.content', False)
         self.setBoolProperty('no.content.filtered', False)
         self.setBoolProperty('content.filling', True)

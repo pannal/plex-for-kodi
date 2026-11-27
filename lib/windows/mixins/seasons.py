@@ -51,9 +51,10 @@ class SeasonsMixin(object):
                 watchedPerc += vPerc / season.leafCount.asFloat()
         return watchedPerc > 0 and math.ceil(watchedPerc) or 0
 
-    def fillSeasons(self, show, update=False, seasonsFilter=None, selectSeason=None, do_focus=True):
+    def fillSeasons(self, show, update=False, seasonsFilter=None, selectSeason=None, do_focus=True, seasons=None):
         try:
-            seasons = show.seasons()
+            if seasons is None:
+                seasons = show.seasons()
         except:
             raise util.NoDataException
 

@@ -125,6 +125,43 @@ def GUIDToRatingKey(guid):
     return guid.rsplit("/")[-1]
 
 
+def autoRemoveFromWatchlist(item, fully_watched=None):
+    """Use known session completion when supplied, otherwise verify show metadata."""
+    if (not util.getUserSetting('watchlist_auto_remove', True)
+            or not util.getUserSetting('use_watchlist', True) or pnUtil.ACCOUNT.isOffline):
+        return
+
+    try:
+        if fully_watched is not None:
+            if fully_watched and item.TYPE in ('show', 'movie'):
+                removeFromWatchlistBlind(item.guid, item)
+            return
+        ref = item
+        if item.TYPE in ('episode', 'season', 'show'):
+            key = (item.grandparentRatingKey if item.TYPE == 'episode' else
+                   item.parentRatingKey if item.TYPE == 'season' else item.ratingKey)
+            if not key:
+                return
+            # Episode.show() may be cached, and reload() preserves old data on
+            # failure. Require a fresh, matching show with its OnDeck progress.
+            data = item.server.query('/library/metadata/{}'.format(key), cachable=False, includeOnDeck=1)
+            if data is None or len(data) != 1:
+                return
+            snapshot = data[0]
+            if snapshot.get('type') != 'show' or snapshot.get('ratingKey') != str(key):
+                return
+            ref = plexobjects.buildItem(item.server, snapshot, initpath=None)
+            if ref.leafCount.asInt() <= 0:
+                return
+        elif item.TYPE != 'movie':
+            return
+
+        if ref.isFullyWatched:
+            removeFromWatchlistBlind(ref.guid, ref)
+    except Exception:
+        util.ERROR('Watchlist: Could not verify completion for automatic removal')
+
+
 def removeFromWatchlistBlind(guid, ref):
     if not util.getUserSetting("use_watchlist", True) or pnUtil.ACCOUNT.isOffline:
         return

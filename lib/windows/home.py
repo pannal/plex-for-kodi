@@ -26,7 +26,7 @@ from . import playlists
 from . import search
 from . import background
 from .mixins.spoilers import SpoilersMixin
-from .mixins.watchlist import removeFromWatchlistBlind
+from .mixins.watchlist import autoRemoveFromWatchlist
 from .mixins.common import CommonMixin
 
 
@@ -2059,9 +2059,13 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 if catalog_id not in enabled_catalog_ids:
                     continue
 
-                if catalog_id in seen_identifiers:
+                # Dedup on the hub itself, not on catalog_id: the clean identifier strips the
+                # numeric suffixes Plex uses to tell same-type sections apart, so two libraries'
+                # "Recently Added" home hubs share one catalog_id and the second would vanish.
+                dedup_key = (str(source_key), hub.hubIdentifier)
+                if dedup_key in seen_identifiers:
                     continue
-                seen_identifiers.add(catalog_id)
+                seen_identifiers.add(dedup_key)
 
                 hub._crossSectionSource = source_key
                 hub._catalogId = catalog_id
@@ -2342,6 +2346,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         plexapp.util.APP.off('change:hub_season_thumbnails', self.setDirty)
         plexapp.util.APP.off('change:use_watchlist', self.setDirty)
         plexapp.util.APP.off('change:hubs_linear', self.onLinearHubsChanged)
+        plexapp.util.APP.off('change:hubs_use_new_continue_watching', self.onContinueWatchingModeChanged)
         plexapp.util.APP.off('change:force_pd_mapping', self.setHostsDirty)
         plexapp.util.APP.off('change:debug', self.setDebugFlag)
         plexapp.util.APP.off('change:update_source', self.updateSourceChanged)
@@ -2801,12 +2806,12 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 return
             item = mli.dataSource
 
-        if super(HomeWindow, self).toggleWatched(item, state=state) is None:
+        watched = super(HomeWindow, self).toggleWatched(item, state=state)
+        if watched is None:
             return
 
-        if item.isFullyWatched:
-            ref = item.show() if item.TYPE in ('episode', 'season') else item
-            removeFromWatchlistBlind(ref.guid, ref)
+        if watched:
+            autoRemoveFromWatchlist(item)
         self._updateOnDeckHubs()
 
 
@@ -3454,7 +3459,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 self.toggleWatched(item=ds, state=True)
 
             elif choice["key"] == "mark_unwatched":
-                mli.dataSource.markUnwatched()
+                CommonMixin.toggleWatched(self, mli.dataSource, state=False, confirmed=True)
                 self._updateOnDeckHubs()
 
         elif choice["key"] == "remove_cw":
@@ -3886,10 +3891,18 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                 or ("/library/sections/watchlist" in self.librarySettings and self.librarySettings["/library/sections/watchlist"].get("show", True))):
             # get watchlist
             from plexnet import plexlibrary
-            wl = watchlist_section = plexlibrary.WatchlistSection(None, server=plexapp.SERVERMANAGER.getDiscoverServer())
-            if wl.has_data():
-                wl.title = T(34000, 'Watchlist')
-                sections.append(wl)
+            try:
+                wl = plexlibrary.WatchlistSection(None, server=plexapp.SERVERMANAGER.getDiscoverServer())
+            except plexnet.exceptions.RateLimited as error:
+                util.LOG('Watchlist temporarily unavailable: {}', error)
+                if not error.from_cooldown:
+                    util.showNotification(T(35050, 'Plex is temporarily limiting Watchlist requests. Try again in {} seconds.').format(error.retry_after),
+                                          header=T(34000, 'Watchlist'))
+            else:
+                watchlist_section = wl
+                if wl.has_data():
+                    wl.title = T(34000, 'Watchlist')
+                    sections.append(wl)
 
         if "playlists" not in self.librarySettings \
                 or ("playlists" in self.librarySettings and self.librarySettings["playlists"].get("show", True)):
@@ -4037,6 +4050,32 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
                     continue
                 mli.setBoolProperty('is.mapped.broken', section.mappingBroken)
 
+    def attributeCrossSectionHub(self, hub, section, is_home):
+        """Set _displayTitle on a hub shown outside its source section, naming the source.
+
+        A hub rendered in a foreign section is indistinguishable from a native one, so it
+        always gets its source library appended. A substring test is not enough to skip
+        that: a library named "Movies" also matches "Recently Released Movies", leaving
+        foreign hubs unattributed; only an outright identical title stays bare.
+        """
+        source_key = hub.__dict__.get('_crossSectionSource') if '_crossSectionSource' in hub.__dict__ else "__UNDEF__"
+        source_is_home = source_key is None
+        if not hub.title:
+            return
+
+        if source_key is None and hub.hubIdentifier:
+            parts = hub.hubIdentifier.rsplit('.', 2)
+            if len(parts) >= 2 and parts[-2].isdigit():
+                source_key = parts[-2]
+        if not source_is_home and source_key != "__UNDEF__" and section.key != source_key:
+            # hub's source is a different library than the current section
+            section_obj = self.allSections.get(str(source_key))
+            if section_obj and section_obj.title.lower() != hub.title.lower():
+                hub._displayTitle = u'{} — {}'.format(hub.title, section_obj.title)
+        elif source_is_home and not is_home:
+            # hub's source is Home
+            hub._displayTitle = u'{} — {}'.format(hub.title, T(32332, 'Home'))
+
     def showHubs(self, section=None, update=False, force=False, reselect_pos_dict=None):
         # Single choke point for all hub drawing. The lock (RLock) makes every
         # entry point — background callbacks AND the wake/tick/reinit/click paths
@@ -4155,21 +4194,7 @@ class HomeWindow(kodigui.BaseWindow, util.CronReceiver, CommonMixin, SpoilersMix
         linear_hubs = util.getSetting('hubs_linear', False)
         for hub in hubs:
             hub.__dict__.pop('_displayTitle', None)  # Clear stale display titles
-            source_key = hub.__dict__.get('_crossSectionSource') if '_crossSectionSource' in hub.__dict__ else "__UNDEF__"
-            source_is_home = source_key is None
-            if hub.title:
-                if source_key is None and hub.hubIdentifier:
-                    parts = hub.hubIdentifier.rsplit('.', 2)
-                    if len(parts) >= 2 and parts[-2].isdigit():
-                        source_key = parts[-2]
-                if not source_is_home and source_key != "__UNDEF__" and section.key != source_key:
-                    # hub's source is different to the current section
-                    section_obj = self.allSections.get(str(source_key))
-                    if section_obj and section_obj.title.lower() not in hub.title.lower():
-                        hub._displayTitle = u'{} \u2014 {}'.format(hub.title, section_obj.title)
-                elif source_is_home and not is_home:
-                    # hub's source is Home
-                    hub._displayTitle = u'{} \u2014 {}'.format(hub.title, T(32332, 'Home'))
+            self.attributeCrossSectionHub(hub, section, is_home)
 
             # Mark randomised hubs in the title when linear mode is off
             if hub.random == '1' and not linear_hubs:

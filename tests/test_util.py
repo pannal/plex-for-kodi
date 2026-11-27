@@ -12,6 +12,9 @@ instead of quietly asserting something nicer.
 from __future__ import absolute_import
 
 import os
+import datetime
+import sys
+from unittest import mock
 
 from kodienv import ENV
 
@@ -351,6 +354,39 @@ class ShortDateFormatTest(KodiTestCase):
     def test_explicit_format_is_translated_to_strftime(self):
         ENV.kodi_settings["locale.shortdateformat"] = "DD/MM/YYYY"
         self.assertEqual("%d/%m/%Y", util.getShortDateFormat())
+
+    def test_all_explicit_kodi_short_date_formats_render(self):
+        date = datetime.datetime(2022, 7, 9)
+        month = date.strftime("%b")
+        formats = (
+            ("DD/MM/YYYY", "09/07/2022"),
+            ("MM/DD/YYYY", "07/09/2022"),
+            ("YYYY/MM/DD", "2022/07/09"),
+            ("D/M/YYYY", "9/7/2022"),
+            ("DD-MM-YYYY", "09-07-2022"),
+            ("MM-DD-YYYY", "07-09-2022"),
+            ("YYYY-MM-DD", "2022-07-09"),
+            ("YYYY-M-D", "2022-7-9"),
+            ("DD.MM.YYYY", "09.07.2022"),
+            ("DD.M.YYYY", "09.7.2022"),
+            ("D.M.YYYY", "9.7.2022"),
+            ("D. M. YYYY", "9. 7. 2022"),
+            ("YYYY.MM.DD", "2022.07.09"),
+            ("D-mmm-YY", "9-{}-22".format(month)),
+            ("DD-mmm-YY", "09-{}-22".format(month)),
+            ("D mmm YY", "9 {} 22".format(month)),
+            ("DD mmm YY", "09 {} 22".format(month)),
+        )
+        for kodi_format, expected in formats:
+            with self.subTest(kodi_format=kodi_format):
+                ENV.kodi_settings["locale.shortdateformat"] = kodi_format
+                self.assertEqual(expected, date.strftime(util.getShortDateFormat()))
+
+    def test_unpadded_fields_use_platform_specific_modifiers(self):
+        ENV.kodi_settings["locale.shortdateformat"] = "D/M/YY"
+        for platform, expected in (("win32", "%#d/%#m/%y"), ("linux", "%-d/%-m/%y")):
+            with self.subTest(platform=platform), mock.patch.object(sys, "platform", platform):
+                self.assertEqual(expected, util.getShortDateFormat())
 
     def test_regional_comes_from_getregion(self):
         ENV.kodi_settings["locale.shortdateformat"] = "regional"

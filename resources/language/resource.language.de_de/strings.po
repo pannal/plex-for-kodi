@@ -3714,3 +3714,7 @@ msgstr "Unsichere Verbindungen aktiviert"
 msgctxt "#35049"
 msgid "Local mode reaches your server over plain HTTP, so \"Allow Insecure Connections\" has been set to \"Always\".\n\nYour server needs the matching setting: in Plex under Settings > Network, \"Secure connections\" has to be \"Preferred\" - with \"Required\" the server refuses these connections."
 msgstr "Der lokale Modus erreicht deinen Server über einfaches HTTP, daher wurde \"Unsichere Verbindungen erlauben\" auf \"Immer\" gesetzt.\n\nDein Server braucht die passende Einstellung: in Plex unter Einstellungen > Netzwerk muss \"Sichere Verbindungen\" auf \"Bevorzugt\" stehen - bei \"Erforderlich\" lehnt der Server diese Verbindungen ab."
+
+msgctxt "#35050"
+msgid "Plex is temporarily limiting Watchlist requests. Try again in {} seconds."
+msgstr "Plex begrenzt vorübergehend die Anfragen an die Watchlist. Versuche es in {} Sekunden erneut."

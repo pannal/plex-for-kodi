@@ -96,9 +96,11 @@ explicitly re-`load()` the singleton; see `tests/test_advancedsettings.py`.
 | plexnet play queue, video session helpers | `test_plexnet_playqueue.py` |
 | plexnet version handling | `test_plexnet_verlib.py` |
 
-`lib/windows/` (the GUI classes) is deliberately **not** covered — it needs a
-real `xbmcgui` window manager. Window logic that does not touch controls is
-reachable and would be the natural next step.
+Native window-manager behavior still needs Kodi. `test_playback_return.py`
+replays production movie/episode return methods with recording controls and
+blocked requests: local progress, manual watch-state overrides, owner-thread
+delivery, stale results, Back during I/O, retry after failure, and serialized
+background requests. These checks do not prove native GUI timing or device behavior.
 
 ## Watch out for: multi-line `.po` entries
 

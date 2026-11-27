@@ -48,7 +48,7 @@ PROFILE = translatePath(ADDON.getAddonInfo('profile'))
 
 
 DEF_THEME = "modern-colored"
-THEME_VERSION = 98
+THEME_VERSION = 102
 
 UI_INTERVAL = 1 / float(addonSettings.uiWaitRate)
 
@@ -594,7 +594,11 @@ def getShortDateFormat():
         if fromAPI == "regional":
             return xbmc.getRegion('dateshort').replace('%-d', '%d')
         else:
-            return fromAPI.replace("DD", "%d").replace("MM", "%m").replace("YYYY", "%Y")
+            nonPad = "%#" if sys.platform == "win32" else "%-"
+            tokens = {"DD": "%d", "D": nonPad + "d", "MM": "%m", "M": nonPad + "m",
+                      "mmm": "%b", "YYYY": "%Y", "YY": "%y"}
+            # Match longest tokens first, in one pass, without reprocessing strftime directives.
+            return re.sub(r"YYYY|YY|mmm|DD|D|MM|M", lambda match: tokens[match.group(0)], fromAPI)
     except:
         DEBUG_LOG("Couldn't get locale.shortdateformat setting, falling back to MM/DD/YYYY")
         return "%d/%m/%Y"
@@ -809,6 +813,44 @@ def backgroundFromArt(art, width=1920, height=1080, background=colors.noAlpha.Ba
     )
 
 
+# Below this width/height a logo reads as a badge rather than a wordmark, and stacked lockups get scaled
+# down until they're unreadable - the plain title looks better. "The Mandalorian and Grogu" is about 2:1.
+CLEAR_LOGO_MIN_RATIO = 2.5
+
+
+def clearLogoAspect(item, logo):
+    """
+    The logo's width/height, or None when it can't be measured.
+
+    Plex sends no dimensions with the Image element, so this asks the transcoder for a 64px copy - a couple
+    of kilobytes - and reads them straight out of the PNG header. Cached against the logo's own URL, which
+    carries the art's timestamp, so it costs one request the first time an item is seen, nothing afterwards,
+    and re-measures by itself when the artwork changes.
+    """
+    from lib.data_cache import dcm
+
+    cached = dcm.getCacheData('clear_logo_aspect', str(logo))
+    if cached:
+        return cached
+
+    try:
+        head = requests.get(logo.asTranscodedImageURL(64, 64, format='png', minSize=0),
+                            headers=plexnet.util.BASE_HEADERS.copy(), timeout=5).content[:24]
+        if head[:8] != b'\x89PNG\r\n\x1a\n':
+            return None
+        w, h = struct.unpack('>II', head[16:24])
+    except Exception:
+        DEBUG_LOG("Couldn't measure clear logo: {0}", lambda: str(logo))
+        return None
+
+    if not h:
+        return None
+
+    ratio = round(w / float(h), 3)
+    dcm.setCacheData('clear_logo_aspect', str(logo), ratio)
+    return ratio
+
+
 def clearLogoFrom(item, width, height):
     """
     The item's clear logo scaled to its control, or '' when it has none or the user doesn't want them.
@@ -826,7 +868,16 @@ def clearLogoFrom(item, width, height):
 
     # anything that isn't a Video (artists, albums) has no clearLogo and yields an empty PlexValue here
     logo = getattr(item, 'clearLogo', None)
-    return logo and logo.asTranscodedImageURL(width, height, format='png', minSize=0) or ''
+    if not logo:
+        return ''
+
+    # too square to read as a wordmark: fall back to the written title. Unmeasurable logos are shown, so a
+    # server that won't answer the probe costs nothing more than the odd squarish logo slipping through.
+    ratio = clearLogoAspect(item, logo)
+    if ratio is not None and ratio < CLEAR_LOGO_MIN_RATIO:
+        return ''
+
+    return logo.asTranscodedImageURL(width, height, format='png', minSize=0)
 
 
 def trackIsPlaying(track):

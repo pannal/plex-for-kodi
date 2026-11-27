@@ -98,6 +98,8 @@ class PhotoWindow(kodigui.BaseWindow):
         return True
 
     def osdTimerCallback(self):
+        if self._closing:
+            return
         self.setFocusId(self.OVERLAY_BUTTON_ID)
 
     def onAction(self, action):
@@ -239,6 +241,8 @@ class PhotoWindow(kodigui.BaseWindow):
         self.showPhoto()
 
     def fillPqueueList(self, **kwargs):
+        if self._closing:
+            return
         items = []
         for qi in self.playQueue.items():
             mli = kodigui.ManagedListItem(thumbnailImage=qi.thumb.asTranscodedImageURL(123, 123), data_source=qi)
@@ -388,6 +392,8 @@ class PhotoWindow(kodigui.BaseWindow):
         return tmpPath, tmpBgPath
 
     def _reallyShowPhoto(self, photo, path, background):
+        if self._closing:
+            return
         self.setRotation(0)
         self.setProperty('photo', path)
         self.setProperty('background', background)
@@ -421,6 +427,8 @@ class PhotoWindow(kodigui.BaseWindow):
         self.resetSlideshowTimeout()
 
     def updateProperties(self, **kwargs):
+        if self._closing:
+            return
         self.setProperty('pq.shuffled', self.playQueue.isShuffled and '1' or '')
         self.setProperty('pq.repeat', self.playQueue.isRepeat and '1' or '')
         if not self.getProperty('hide.prev') and not self.playQueue.hasPrev():
@@ -496,7 +504,15 @@ class PhotoWindow(kodigui.BaseWindow):
 
     def doClose(self, **kw):
         self.pause()
-        shutil.rmtree(self.tempFolder, ignore_errors=True)
+        self._closing = True
+        if self.playQueue is not None:
+            self.playQueue.off('items.changed', self.fillPqueueList)
+            self.playQueue.off('change', self.updateProperties)
+        if self.osdTimer:
+            self.osdTimer.close()
+            self.osdTimer = None
+        if self.tempFolder:
+            shutil.rmtree(self.tempFolder, ignore_errors=True)
 
         kodigui.BaseWindow.doClose(self)
 

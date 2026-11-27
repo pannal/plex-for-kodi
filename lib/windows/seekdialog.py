@@ -19,6 +19,7 @@ from lib import util
 from lib.kodijsonrpc import builtin
 from lib.util import T
 from lib.language_util import getNativeLanguages
+from lib.osd import markerNeedsOSD
 from . import busy
 from . import dropdown
 from . import kodigui
@@ -253,8 +254,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.showItemEndsInfo = util.addonSettings.showMediaEndsInfo
         self.showItemEndsLabel = util.addonSettings.showMediaEndsLabel
 
-        self.player.video.server.on("np:timelineResponse", self.timelineResponseCallback)
-        self.player.video.server.on("np:streamTerminated", self.streamTerminatedCallback)
+        self._timelineServer = self.player.video.server
+        self._timelineServer.on("np:timelineResponse", self.timelineResponseCallback)
+        self._timelineServer.on("np:streamTerminated", self.streamTerminatedCallback)
 
         if util.kodiSkipSteps and util.addonSettings.kodiSkipStepping and not self.handler.useAlternateSeek:
             self.skipSteps = {"negative": [], "positive": []}
@@ -276,6 +278,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         return self.handler.player
 
     def timelineResponseCallback(self, **kwargs):
+        if self._timelineServer is None:
+            return
         response = kwargs.get("response")
         self.lastTimelineResponse = response.getBodyXml()
 
@@ -284,7 +288,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         # shutdown, ...). Capture progress, suppress next-episode/post-play, stop
         # playback immediately instead of waiting for the buffer to drain, and tell
         # the user why.
-        if self._terminated:
+        if self._timelineServer is None or self._terminated:
             return
         self._terminated = True
 
@@ -368,6 +372,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self._currentMarker = None
         self._creditsAutoSkipped = False
         self.markers = None
+        self._updateOSDSignal()
 
     @property
     def DPPlayerOffset(self):
@@ -579,6 +584,12 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.isTranscoded = not self.isDirectPlay
         self.setProperty('video.title', title)
         self.setProperty('is.show', (self.player.video.type == 'episode') and '1' or '')
+        # set spoiler-relevant properties immediately; updateProperties() only runs after the window has rendered
+        # (fresh dialog) or possibly never (reused dialog without a playlist), which would briefly - or permanently -
+        # leak the episode title/times with the previous or empty property state (#279)
+        self.setBoolProperty('hide.title', self.player.video.type == 'episode'
+                             and 'no_unwatched_episode_titles' in (self.no_spoilers or ()))
+        self.setBoolProperty('no.osd.hide_info', self.no_time_no_osd_spoilers)
         self.setProperty('ep.year', (self.player.video.type == 'episode') and self.player.video.year or '')
         self.setProperty('has.playlist', self.handler.playlist and '1' or '')
         self.setProperty('shuffled', (self.handler.playlist and self.handler.playlist.isShuffled) and '1' or '')
@@ -662,9 +673,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
         self.stop()
 
     def onAction(self, action):
-        if xbmc.getCondVisibility('Window.IsActive(selectdialog)'):
-            if self.doKodiSelectDialogHack(action):
-                return
+        if kodigui.forwardSelectDialogAction(action):
+            return
 
         try:
             self.resetTimeout()
@@ -763,6 +773,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                             markerDef = self._currentMarker
                             if markerDef:
                                 markerDef["hidden"] = True
+                            self._updateOSDSignal()
                             return
 
                 if controlID == self.MAIN_BUTTON_ID:
@@ -985,23 +996,6 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
         kodigui.BaseDialog.onAction(self, action)
 
-    def doKodiSelectDialogHack(self, action):
-        command = {
-            xbmcgui.ACTION_MOVE_UP: "Up",
-            xbmcgui.ACTION_MOVE_DOWN: "Down",
-            xbmcgui.ACTION_MOVE_LEFT: "Right",  # Not sure if these are actually reversed or something else is up here
-            xbmcgui.ACTION_MOVE_RIGHT: "Left",
-            xbmcgui.ACTION_SELECT_ITEM: "Select",
-            xbmcgui.ACTION_PREVIOUS_MENU: "Back",
-            xbmcgui.ACTION_NAV_BACK: "Back"
-        }.get(action.getId())
-
-        if command is not None:
-            xbmc.executebuiltin('Action({0},selectdialog)'.format(command))
-            return True
-
-        return False
-
     def onFocus(self, controlID):
         lastFocusID = self.lastFocusID
         self.previousFocusID = self.lastFocusID
@@ -1036,7 +1030,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.updateProgress()
 
     def onClick(self, controlID):
-        if self._ignoreInput:
+        # Kodi can deliver a control click before onAction forwards Select to the chooser.
+        if self._ignoreInput or xbmc.getCondVisibility('Window.IsActive(selectdialog)'):
             return
 
         if controlID in (self.MAIN_BUTTON_ID, self.NO_OSD_BUTTON_ID):
@@ -1120,6 +1115,15 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
 
     def doClose(self, delete=False, **kw):
         util.DEBUG_LOG("SeekDialog: Closing")
+        if delete:
+            server = getattr(self, '_timelineServer', None)
+            self._timelineServer = None
+            if server is not None:
+                server.off('np:timelineResponse', self.timelineResponseCallback)
+                server.off('np:streamTerminated', self.streamTerminatedCallback)
+        if not self._closing:
+            self._closing = True
+            util.setGlobalProperty('osd_active', '')
         if self.handler.playlist:
             self.handler.playlist.off('change', self.updateProperties)
             self.handler.playlist.off('current.changed', self.updateProperties)
@@ -2524,8 +2528,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             # no marker to display, hide it
             self.setProperty('show.markerSkip', '')
             self.setProperty('show.markerSkip_OSDOnly', '')
-            if not self.getBoolProperty('show.OSD'):
-                util.setGlobalProperty('osd_active', '')
+            if not onlyReturnIntroMD:
+                self._updateOSDSignal()
 
             # this might be counter intuitive, but self._currentMarker is a reference to a dict
             if self._currentMarker:
@@ -2571,8 +2575,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             markerDef["hidden"] = True
             setattr(self, markerDef["markerAutoSkipShownTimer"], None)
             self.setProperty('show.markerSkip', '')
-            if not self.getBoolProperty('show.OSD'):
-                util.setGlobalProperty('osd_active', '')
+            if not onlyReturnIntroMD:
+                self._updateOSDSignal()
             return False
 
         autoSkippingNow = markerDef \
@@ -2590,8 +2594,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             setattr(self, markerDef["markerAutoSkipShownTimer"], None)
             self.setProperty('show.markerSkip', '')
             self.setProperty('show.markerSkip_OSDOnly', '')
-            if not self.getBoolProperty('show.OSD'):
-                util.setGlobalProperty('osd_active', '')
+            if not onlyReturnIntroMD:
+                self._updateOSDSignal()
             self.resetAutoSeekTimer(None)
             self.countingDownMarker = False
 
@@ -2624,7 +2628,6 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.setProperty('show.markerSkip', '1')
             if not markerDef["hidden"]:
                 self.setProperty('show.markerSkip_OSDOnly', '')
-                util.setGlobalProperty('osd_active', '1')
         # marker auto skip and already skipped, or no autoskip and manually skipped - hide in OSD
         else:
             self.setProperty('show.markerSkip_OSDOnly', '1')
@@ -2671,6 +2674,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 not self.getProperty('show.markerSkip_OSDOnly') and self.getProperty('show.markerSkip') \
                 and not markerAutoSkip:
             self.setFocusId(self.SKIP_MARKER_BUTTON_ID)
+        if not onlyReturnIntroMD:
+            self._updateOSDSignal()
 
     def tick(self, offset=None, waitForBuffer=False):
         """
@@ -2696,6 +2701,14 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                 self.pausedAt = None
                 return
 
+            # Seek callbacks report the requested target; keyframe playback may
+            # land earlier. Refresh before marker selection and countdown updates.
+            try:
+                self.offset = offset or int(self.handler.player.getTime() * 1000)
+            except RuntimeError:  # Playback has stopped
+                self.resetSeeking()
+                return
+
             if self.player.playState == self.player.STATE_PLAYING:
                 self.idleTime = None
 
@@ -2708,6 +2721,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             if (offset is None and not self.handler.seekOnStart and not self.handler.waitingForSOS
                     and not self.handler.seekBackTo and self.player.playState == self.player.STATE_PLAYING):
                 cancelTick = self.displayMarkers()
+            else:
+                # Paused frames can still change picture or animated button bounds.
+                self._updateOSDSignal()
 
             if cancelTick:
                 return
@@ -2727,11 +2743,8 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
                         self.hideOSD()
 
         if offset or self.initialized:
-            try:
-                self.offset = offset or int(self.handler.player.getTime() * 1000)
-            except RuntimeError:  # Playback has stopped
-                self.resetSeeking()
-                return
+            if not self.initialized:
+                self.offset = offset
 
             if offset or (self.autoSeekTimeout and time.time() >= self.autoSeekTimeout and
                           self.offset != self.selectedOffset):
@@ -2771,9 +2784,25 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     def osdVisible(self):
         return xbmc.getCondVisibility('Control.IsVisible(801)')
 
+    def _standaloneMarkerVisible(self):
+        return (self.getBoolProperty('initialized') and self.getBoolProperty('show.markerSkip') and
+                not self.getBoolProperty('show.markerSkip_OSDOnly'))
+
+    def _updateOSDSignal(self):
+        if self._closing:
+            return
+        needsMarker = True
+        if not self.getBoolProperty('show.OSD') and self._standaloneMarkerVisible():
+            needsMarker = markerNeedsOSD(self._winID, self.SKIP_MARKER_BUTTON_ID)
+        # Native label reads may yield while the dialog is being retired.
+        if self._closing:
+            return
+        active = self.getBoolProperty('show.OSD') or (self._standaloneMarkerVisible() and needsMarker)
+        util.setGlobalProperty('osd_active', '1' if active else '')
+
     def showOSD(self, focusButton=True):
         self.setProperty('show.OSD', '1')
-        util.setGlobalProperty('osd_active', '1')
+        self._updateOSDSignal()
         xbmc.executebuiltin('Dialog.Close(videoosd,true)')
         if xbmc.getCondVisibility('Player.showinfo'):
             xbmc.executebuiltin('Action(Info)')
@@ -2784,8 +2813,9 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
     def hideOSD(self, skipMarkerFocus=False, closing=False):
         util.DEBUG_LOG("SeekDialog: HideOSD: {}, {}", skipMarkerFocus, closing)
         self.setProperty('show.OSD', '')
-        util.setGlobalProperty('osd_active', '')
         if closing:
+            self._closing = True
+            util.setGlobalProperty('osd_active', '')
             return
 
         self.setFocusId(self.NO_OSD_BUTTON_ID)
@@ -2800,6 +2830,7 @@ class SeekDialog(kodigui.BaseDialog, windowutils.GoHomeMixin, PlexSubtitleDownlo
             self.playlistDialog.doClose()
             self.playlistDialogVisible = False
             self.playlistDialog = None
+        self._updateOSDSignal()
 
 
 class PlaylistDialog(kodigui.BaseDialog, SpoilersMixin):

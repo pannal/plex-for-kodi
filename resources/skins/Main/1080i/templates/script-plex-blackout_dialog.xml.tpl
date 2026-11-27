@@ -9,6 +9,7 @@
 <control type="group" id="804">
     <animation effect="fade" time="200" delay="200" end="0">WindowClose</animation>
     <control type="image">
+        <visible>!Window.IsVisible(selectdialog)</visible>
         <posx>0</posx>
         <posy>0</posy>
         <width>1920</width>

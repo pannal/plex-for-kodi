@@ -70,7 +70,7 @@ def defaultUserAgent():
     try:
         p_system = platform.system()
         p_release = platform.release()
-    except IOError:
+    except (IOError, AttributeError):  # AttributeError: Kodi for Xbox, see plexnet.util._safeUname
         p_system = 'Unknown'
         p_release = 'Unknown'
 

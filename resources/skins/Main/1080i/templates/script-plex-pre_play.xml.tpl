@@ -129,45 +129,41 @@
                     <aspectratio>scale</aspectratio>
                 </control>
             </control>
-            <control type="grouplist">
+            <!-- Fills the same box as the clear logo below, on the same baseline, so both variants put the
+                 title in one place at one weight. No grouplist any more: nothing shares this row since the
+                 resume pill moved to the poster, and a grouplist would clip the taller box. -->
+            <control type="label">
+                <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
                 <posx>466</posx>
                 <posy>0</posy>
-                <width>1226</width>
-                <!-- tall enough for the clear logo below: a grouplist hard-clips its children to its own
-                     bounds (GUIControlGroupList sets a clip region), so a 60 here shears the logo's bottom -->
-                <height>{{ vscale(72) }}</height>
+                <!-- 940, not the row's old 1226: this box reaches up into the ratings' band (x1426-1860,
+                     y4-36) and at font45 a title gets there easily; 466+940 stops 20px short -->
+                <width>940</width>
+                <height>{{ vscale(68) }}</height>
+                <font>font45</font>
                 <align>left</align>
-                <itemgap>0</itemgap>
+                <aligny>bottom</aligny>
                 <scroll>true</scroll>
                 <scrollspeed>35</scrollspeed>
+                <textcolor>FFFFFFFF</textcolor>
+                <label>$INFO[Window.Property(title)]</label>
+            </control>
+            <!-- Takes the watched/unwatched indicator's slot on the poster, flush to its top-right corner,
+                 which is free exactly when this is showing: isWatched is viewCount>0 OR viewOffset>0, so an
+                 in-progress movie gets no unwatched dot, and isFullyWatched needs viewOffset empty, so it
+                 gets no checkmark either. Right-aligned via a grouplist because the pill's width follows its
+                 text; its right edge lands on 60+347, the same anchor watched_indicator uses here. Keeping it
+                 off the title row is what lets that row be one label with no spacer for the logo's width. -->
+            <control type="grouplist">
+                <visible>!String.IsEmpty(Window.Property(remainingTime))</visible>
+                <posx>107</posx>
+                <posy>0</posy>
+                <width>300</width>
+                <height>{{ vscale(34) }}</height>
+                <align>right</align>
+                <itemgap>0</itemgap>
                 <orientation>horizontal</orientation>
-                <usecontrolcoords>true</usecontrolcoords>
-                <control type="label">
-                    <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
-                    <width>auto</width>
-                    <height>{{ vscale(60) }}</height>
-                    <font>font13</font>
-                    <align>left</align>
-                    <textcolor>FFFFFFFF</textcolor>
-                    <label>$INFO[Window.Property(title)]</label>
-                </control>
-                <!-- Fixed box because a grouplist can't size a control to its texture; narrow logos just leave
-                     some air before the remaining-time button. The box must NOT be lifted above the row: the
-                     content group starts at the window's y=155 and anything drawn above that is clipped, which
-                     shears the top off tall logos. It grows downward instead, into the gap the rows below were
-                     shifted by. With keep, a wide wordmark ends up width-limited and short while a squarish
-                     logo goes full height - which is the whole trick. -->
-                <control type="image">
-                    <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
-                    <width>380</width>
-                    <height>{{ vscale(72) }}</height>
-                    <aspectratio align="left" aligny="bottom">keep</aspectratio>
-                    <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
-                </control>
                 <control type="button">
-                    <visible>!String.IsEmpty(Window.Property(remainingTime))</visible>
-                    <posx>10</posx>
-                    <posy>6</posy>
                     <width>auto</width>
                     <height>{{ vscale(34) }}</height>
                     <font>font12</font>
@@ -176,10 +172,22 @@
                     <focusedcolor>FFE5A00D</focusedcolor>
                     <textcolor>FFE5A00D</textcolor>
                     <textoffsetx>15</textoffsetx>
-                    <texturefocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturefocus>
-                    <texturenofocus colordiffuse="40000000" border="8">script.plex/white-square-rounded-top-padded.png</texturenofocus>
+                    <texturefocus colordiffuse="CC000000" border="4">script.plex/white-square-bl-rounded.png</texturefocus>
+                    <texturenofocus colordiffuse="CC000000" border="4">script.plex/white-square-bl-rounded.png</texturenofocus>
                     <label>$INFO[Window.Property(remainingTime)]</label>
                 </control>
+            </control>
+            <!-- Outside the grouplist above on purpose: a grouplist clips its children to its own bounds and
+                 this box is taller than the row. Top sits on the artwork's baseline at 0, bottom at 68, which
+                 is as low as it can go before the meta row at 80 - the same box on all three detail screens. -->
+            <control type="image">
+                <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
+                <posx>466</posx>
+                <posy>0</posy>
+                <width>560</width>
+                <height>{{ vscale(68) }}</height>
+                <aspectratio align="left" aligny="bottom">keep</aspectratio>
+                <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
             </control>
             <control type="grouplist">
                 <posx>466</posx>
@@ -330,11 +338,13 @@
                             <label>[UPPERCASE]$ADDON[script.plexmod 32048][/UPPERCASE]</label>
                         </control>
                         <control type="label">
-                            <width>auto</width>
+                            <width max="1360">auto</width>
                             <height>{{ vscale(34) }}</height>
                             <font>font12</font>
                             <align>left</align>
                             <aligny>top</aligny>
+                            <scroll>true</scroll>
+                            <scrollspeed>25</scrollspeed>
                             <textcolor>FFFFFFFF</textcolor>
                             <label>$INFO[Window.Property(audio)]</label>
                         </control>

@@ -7,6 +7,7 @@ from kodi_six import xbmcgui
 from plexnet import plexplayer, media, plexobjects, util as pnUtil, plexapp, plexlibrary, playlist, playqueue
 
 from lib import metadata
+from lib import player
 from lib import util
 from lib.util import T
 from lib.language_util import getNativeLanguages
@@ -24,10 +25,11 @@ from . import windowutils
 from .mixins.ratings import RatingsMixin
 from .mixins.playbackbtn import PlaybackBtnMixin
 from .mixins.thememusic import ThemeMusicMixin
-from .mixins.watchlist import WatchlistUtilsMixin, removeFromWatchlistBlind
+from .mixins.watchlist import WatchlistUtilsMixin, autoRemoveFromWatchlist
 from .mixins.roles import RolesMixin
 from .mixins.common import CommonMixin
 from .mixins.tasks import TasksMixin
+from .mixins.playbackreturn import PlaybackReturnMixin
 
 VIDEO_RELOAD_KW = dict(includeExtras=1, includeExtrasCount=10, includeChapters=1, includeReviews=1)
 
@@ -85,7 +87,7 @@ class CollectionPaginator(pagination.BaseRelatedPaginator):
 
 
 class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixin, PlaybackBtnMixin, ThemeMusicMixin,
-                    RolesMixin, CommonMixin, WatchlistUtilsMixin, TasksMixin):
+                    RolesMixin, CommonMixin, WatchlistUtilsMixin, TasksMixin, PlaybackReturnMixin):
     xmlFile = 'script-plex-pre_play.xml'
     path = util.ADDON.getAddonInfo('path')
     theme = 'Main'
@@ -103,7 +105,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
     EXTRA_DIM = util.scaleResolution(329, 185)
     ROLES_DIM = util.scaleResolution(334, 334)
     PREVIEW_DIM = util.scaleResolution(343, 193)
-    CLEAR_LOGO_DIM = util.scaleResolution(380, 72)
+    CLEAR_LOGO_DIM = util.scaleResolution(560, 68)
 
     ROLES_LIST_ID = 400
     REVIEWS_LIST_ID = 401
@@ -134,6 +136,8 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         PlaybackBtnMixin.__init__(self)
         WatchlistUtilsMixin.__init__(self)
         TasksMixin.__init__(self)
+        PlaybackReturnMixin.__init__(self)
+        self._progressHooked = False
         self.video = kwargs.get('video')
         self.parentList = kwargs.get('parent_list')
         self.fromWatchlist = kwargs.get('from_watchlist', False)
@@ -151,14 +155,18 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.collectionPaginators = [None, None, None]
         self.openedWithAutoPlay = False
         self.fromPlayback = False
+        self._watchlistPlaybackScope = None
         self.useBGM = False
 
     def doClose(self, **kw):
+        self.invalidatePlaybackReturn(closed=True)
+        self._removeProgressHook()
         self.relatedPaginator = None
         TasksMixin.doClose(self)
         kodigui.ControlledWindow.doClose(self)
 
     def onFirstInit(self):
+        self._setupProgressHook()
         self.extraListControl = kodigui.ManagedControlList(self, self.EXTRA_LIST_ID, 5)
         self.relatedListControl = kodigui.ManagedControlList(self, self.RELATED_LIST_ID, 5)
         self.rolesListControl = kodigui.ManagedControlList(self, self.ROLES_LIST_ID, 5)
@@ -183,6 +191,16 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
     def onReInit(self):
         PlaybackBtnMixin.onReInit(self)
         self.themeMusicReinit(self.video)
+        if self.fromPlayback:
+            self.fromPlayback = False
+            self.applyPlaybackProgress(self.video)
+            self.refreshInfo(from_reinit=True)
+            self.initialized = True
+            state = self._returnProgress.get(str(self.video.ratingKey))
+            self.startPlaybackReturn([(self.video, dict(checkFiles=1, **VIDEO_RELOAD_KW))],
+                                     completed=(str(self.video.ratingKey),) if state is True else (),
+                                     watchlist_ref=self.video)
+            return
         self.initialized = False
         if util.getSetting("slow_connection"):
             self.progressImageControl.setWidth(1)
@@ -199,12 +217,40 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         self.initialized = True
 
     def onBlindClose(self):
+        self._removeProgressHook()
         if self.fromPlayback and self.openedWithAutoPlay and not self.started:
-            self.video.reload(checkFiles=1, fromMediaChoice=self.video.mediaChoice is not None, **VIDEO_RELOAD_KW)
-            if self.video.isFullyWatched:
-                removeFromWatchlistBlind(self.video.guid, self.video)
+            from lib import playback_sync
+            scope = (playback_sync.accountScope(), str(self.video.server.uuid), str(self.video.ratingKey),
+                     playback_sync.readRevision(self.video.server))
+            self.applyPlaybackProgress(self.video)
+            with self._returnLock:
+                complete = (self._watchlistPlaybackScope == scope
+                            and self._returnProgress.get(str(self.video.ratingKey)) is True)
+                self._watchlistPlaybackScope = None
+            autoRemoveFromWatchlist(self.video, fully_watched=complete)
+
+    def _setupProgressHook(self):
+        if not self._progressHooked:
+            player.PLAYER.on('video.progress', self.onVideoProgress)
+            self._progressHooked = True
+
+    def _removeProgressHook(self):
+        if self._progressHooked:
+            player.PLAYER.off('video.progress', self.onVideoProgress)
+            self._progressHooked = False
+
+    def onVideoProgress(self, data=None, **kwargs):
+        video = player.PLAYER.video
+        if (data and video and not self._returnClosed and str(data[2]) == str(self.video.ratingKey)
+                and str(video.server.uuid) == str(self.video.server.uuid)):
+            self.storePlaybackProgress(self.video, data[3])
+
+    def onPlaybackReturnMetadata(self, data):
+        if str(self.video.ratingKey) in data:
+            self.refreshInfo(from_reinit=True)
 
     def refreshInfo(self, from_reinit=False):
+        generation = self._returnGeneration
         oldFocusId = self.getFocusId()
 
         util.setGlobalProperty('hide.resume', '' if self.video.viewOffset.asInt() else '1')
@@ -220,6 +266,10 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.fillRelated()
         xbmc.sleep(100)
 
+        # Kodi sleep pumps callbacks, including Back and a new playback request.
+        if (self._closing or self._returnClosed or generation != self._returnGeneration
+                or not self.is_current_window):
+            return
         if oldFocusId == self.PLAY_BUTTON_ID:
             self.focusPlayButton()
 
@@ -497,6 +547,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         return True
 
     def next(self):
+        self.invalidatePlaybackReturn(clear_progress=True)
         if not self._next():
             return
         self.setup()
@@ -532,6 +583,7 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
         return True
 
     def prev(self):
+        self.invalidatePlaybackReturn(clear_progress=True)
         if not self._prev():
             return
         self.setup()
@@ -599,6 +651,11 @@ class PrePlayWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RatingsMixi
             self.playBtnClicked = True
 
         self.fromPlayback = True
+        self.invalidatePlaybackReturn(clear_progress=True)
+        from lib import playback_sync
+        self._watchlistPlaybackScope = (playback_sync.accountScope(), str(self.video.server.uuid),
+                                       str(self.video.ratingKey), playback_sync.readRevision(self.video.server))
+        self._setupProgressHook()
 
         preRoll = util.getUserSetting('preplay_preroll', False)
         preRollFirst = util.getUserSetting('preplay_preroll_first', True)

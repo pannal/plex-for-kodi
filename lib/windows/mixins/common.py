@@ -11,7 +11,7 @@ class CommonMixin(object):
     def isWatchedAction(cls, action):
         return action == xbmcgui.ACTION_NONE and action.getButtonCode() == 61527
 
-    def toggleWatched(self, item, state=None, **kw):
+    def toggleWatched(self, item, state=None, confirmed=False, **kw):
         """
 
         :param item:
@@ -22,7 +22,7 @@ class CommonMixin(object):
         if state is None:
             state = not item.isFullyWatched
 
-        if util.getSetting('home_confirm_actions') and item.TYPE in ('season', 'show'):
+        if not confirmed and util.getSetting('home_confirm_actions') and item.TYPE in ('season', 'show'):
             if item.TYPE == 'season':
                 title = u"{} - {}".format(item.parentTitle, item.title)
             else:
@@ -38,10 +38,20 @@ class CommonMixin(object):
                 return
 
         util.DEBUG_LOG("Toggling watched for {} to: {}", item, state)
+        state = bool(state)
+
+        before = getattr(self, 'beforeWatchedChange', None)
+        if before:
+            before(item, state)
+        is_video = item.TYPE in ('movie', 'episode', 'season', 'show')
+        if is_video:
+            from lib import playback_sync
+            context = playback_sync.supersedeWrites(item)
 
         if state:
             item.markWatched(**kw)
-            return True
         else:
             item.markUnwatched(**kw)
-            return False
+        if is_video:
+            playback_sync.finishWatchChange(item, state, context)
+        return state

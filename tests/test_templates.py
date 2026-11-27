@@ -143,6 +143,14 @@ class TemplateRenderTest(KodiTestCase):
                     self.assertIsNotNone(root.find("controls"),
                                          "{0} has no <controls> block".format(name))
 
+    def test_startup_blackouts_yield_while_kodis_select_dialog_is_visible(self):
+        rendered = render_theme(make_engine(self.mktemp()), "modern")
+        for name in ("blackout_dialog", "seek_dialog"):
+            with self.subTest(window=name):
+                root = ET.fromstring(rendered[name])
+                image = root.find(".//control[@id='804']/control[@type='image']")
+                self.assertEqual("!Window.IsVisible(selectdialog)", image.findtext("visible"))
+
     def test_no_template_syntax_survives_rendering(self):
         engine = make_engine(self.mktemp())
         for name, xml in sorted(render_theme(engine, "modern-colored").items()):
@@ -326,7 +334,8 @@ class ClearLogoTest(KodiTestCase):
             visible = control.findtext("visible") or ""
             if "clear.logo" not in visible:
                 continue
-            if control.get("type") == "label":
+            # the title is the label that actually renders text, not a spacer sized to the logo's width
+            if control.get("type") == "label" and control.findtext("label"):
                 title = control
             elif control.get("type") == "image":
                 logo = control
