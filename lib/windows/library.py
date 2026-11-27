@@ -1845,6 +1845,10 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
             if ITEM_TYPE == 'episode':
                 for offset, obj in enumerate(items):
+                    while pos >= self.showPanelControl.size():
+                        dummy = kodigui.ManagedListItem('')
+                        dummy.setProperty('index', str(self.showPanelControl.size()))
+                        self.showPanelControl.addItem(dummy)
                     mli = self.showPanelControl[pos]
                     if obj:
                         mli.dataSource = obj
@@ -1880,6 +1884,10 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
 
             elif ITEM_TYPE == 'album':
                 for offset, obj in enumerate(items):
+                    while pos >= self.showPanelControl.size():
+                        dummy = kodigui.ManagedListItem('')
+                        dummy.setProperty('index', str(self.showPanelControl.size()))
+                        self.showPanelControl.addItem(dummy)
                     mli = self.showPanelControl[pos]
                     if obj:
                         mli.dataSource = obj
@@ -1901,6 +1909,10 @@ class LibraryWindow(PlaybackBtnMixin, kodigui.MultiWindow, windowutils.UtilMixin
                     pos += 1
             else:
                 for offset, obj in enumerate(items):
+                    while pos >= self.showPanelControl.size():
+                        dummy = kodigui.ManagedListItem('')
+                        dummy.setProperty('index', str(self.showPanelControl.size()))
+                        self.showPanelControl.addItem(dummy)
 
                     try:
                         mli = self.showPanelControl[pos]
