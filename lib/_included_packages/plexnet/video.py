@@ -1171,6 +1171,23 @@ class Episode(PlayableVideo, SectionOnDeckMixin):
         self.transcodeSession = self._findTranscodeSession(data)
 
     @property
+    def title(self):
+        val = getattr(self, "_title", None)
+        if not val or not str(val).strip():
+            if self.grandparentTitle:
+                return self.grandparentTitle
+            if self.parentTitle:
+                return self.parentTitle
+            if self.index:
+                return T(32304, "Episode {}").format(self.index)
+            return ""
+        return val
+
+    @title.setter
+    def title(self, value):
+        self._title = value
+
+    @property
     def defaultTitle(self):
         return self.grandparentTitle or self.parentTitle or self.title
 
