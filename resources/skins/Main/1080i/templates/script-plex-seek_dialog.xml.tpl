@@ -10,6 +10,7 @@
     <visible>!String.IsEmpty(Window.Property(show.blackout))</visible>
     <animation effect="fade" time="200" delay="200" end="0">Hidden</animation>
     <control type="image">
+        <visible>!Window.IsVisible(selectdialog)</visible>
         <posx>0</posx>
         <posy>0</posy>
         <width>1920</width>
@@ -801,6 +802,23 @@
             <ondown>501</ondown>
             <texturefocus{% if theme.buttons.useFocusColor %} colordiffuse="{{ theme.buttons.focusColor|default("FFE5A00D") }}"{% endif %}>{{ theme.assets.buttons.base }}subtitle{{ theme.assets.buttons.focusSuffix }}.png</texturefocus>
             <texturenofocus{% if theme.buttons.useNoFocusColor %} colordiffuse="{{ theme.buttons.noFocusColor|default('99FFFFFF') }}"{% endif %}>{{ theme.assets.buttons.base }}subtitle.png</texturenofocus>
+            <label> </label>
+        </control>
+
+        <!-- VS10 mode switcher - CoreELEC/Amlogic only. Visibility controlled via nav.vs10 window property
+             set in seekdialog.py. To restrict to CoreELEC hardware once tested, change the Python side:
+             self.setBoolProperty('nav.vs10', xbmc.getCondVisibility('System.AddonIsEnabled(service.coreelec.settings)')) -->
+        <control type="button" id="413">
+            <visible>!String.IsEmpty(Window.Property(nav.vs10))</visible>
+            <hitrect x="28" y="28" w="69" h="45" />
+            <posx>0</posx>
+            <posy>0</posy>
+            <width>125</width>
+            <height>{{ vscale(101) }}</height>
+            <font>font12</font>
+            <ondown>501</ondown>
+            <texturefocus{% if theme.buttons.useFocusColor %} colordiffuse="{{ theme.buttons.focusColor|default("FFE5A00D") }}"{% endif %}>script.plex/buttons/player/modern/vs10.png</texturefocus>
+            <texturenofocus{% if theme.buttons.useNoFocusColor %} colordiffuse="{{ theme.buttons.noFocusColor|default('99FFFFFF') }}"{% endif %}>script.plex/buttons/player/modern/vs10.png</texturenofocus>
             <label> </label>
         </control>
     </control>

@@ -119,6 +119,12 @@ class HttpRequest(object):
         util.APP.delRequest(self)
 
     def startAsync(self, *args, **kwargs):
+        if util.urlBlockedInLocalMode(self.url):
+            # returning False routes the caller into the normal failure path (callback with an
+            # empty response), same as a timed-out request
+            util.LOG("[LOCAL] blocked request to {0}", util.cleanToken(self.url))
+            return False
+
         self.thread = threadutils.KillableThread(target=self._startAsync, args=args, kwargs=kwargs, name='HTTP-ASYNC:{0}'.format(self.url))
         self.thread.start()
         return True
@@ -196,6 +202,10 @@ class HttpRequest(object):
         if self._cancel:
             return
 
+        if util.urlBlockedInLocalMode(self.url):
+            util.LOG("[LOCAL] blocked request to {0}", util.cleanToken(self.url))
+            return None
+
         self.logRequest(body, timeout=timeout, _async=False)
         try:
             if self.method == 'PUT':
@@ -215,6 +225,11 @@ class HttpRequest(object):
                 return None
 
             util.LOG("Got a {0} from {1}", res.status_code, util.cleanToken(self.url))
+            if res.status_code >= 400:
+                try:
+                    util.LOG("Response body: {0}", res.text[:512])
+                except:
+                    pass
             # self.event = msg
             return res
         except Exception as e:

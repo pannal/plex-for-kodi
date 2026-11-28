@@ -4,6 +4,10 @@ from __future__ import absolute_import
 import time
 import re
 import json
+import math
+import threading
+from email.utils import parsedate_tz, mktime_tz
+from lib.monitor import MONITOR
 
 import six
 import urllib3.exceptions
@@ -20,6 +24,7 @@ from . import plexresource
 from . import plexlibrary
 from . import asyncadapter
 from six.moves import range
+from six.moves.urllib.parse import urlsplit, parse_qs
 
 # from plexapi.client import Client
 # from plexapi.playqueue import PlayQueue
@@ -29,11 +34,29 @@ TOTAL_QUERIES = 0
 DEFAULT_BASEURI = 'http://localhost:32400'
 
 CACHE_MAP = {}
+_RATE_LIMIT_UNTIL = {}
+_RATE_LIMIT_LOCK = threading.Lock()
+_cooldownTime = getattr(time, 'monotonic', time.time)
+
+
+def retryAfterSeconds(value, default=60):
+    """Honor Retry-After seconds/dates; use the supplied fallback only if invalid."""
+    try:
+        value = value.strip()
+        if re.match(r'^[0-9]+$', value):
+            return max(0, int(value))
+        date = parsedate_tz(value)
+        if date is not None:
+            return max(0, int(math.ceil(mktime_tz(date) - time.time())))
+    except (AttributeError, TypeError, ValueError, OverflowError):
+        pass
+    return default
 
 
 class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
     TYPE = 'PLEXSERVER'
     DEFER_HUBS = False
+    RATE_LIMIT_COOLDOWN = False
 
     def __init__(self, data=None):
         signalsmixin.SignalsMixin.__init__(self)
@@ -144,7 +167,7 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
     def getPrefs(self):
         return plexobjects.listItems(self, "/:/prefs", bytag=True, cachable=False, not_cachable=True)
 
-    def hubs(self, section=None, count=None, search_query=None, section_ids=None, ignore_hubs=None):
+    def hubs(self, section=None, count=None, search_query=None, section_ids=None):
         hubs = []
 
         params = {"includeMarkers": 1}
@@ -186,27 +209,23 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
             and not section
 
         if newCW:
-            # home, add continueWatching
             cq = '/hubs/continueWatching'
             if section_ids:
                 cq += util.joinArgs(params)
 
             cdata = self.query(cq, params=params)
-            ccontainer = plexobjects.PlexContainer(cdata, initpath=cq, server=self, address=cq)
-            self.currentHubs[cdata[0].attrib.get('hubIdentifier')] = cdata[0].attrib.get('title')
-            hubs.append(plexlibrary.Hub(cdata[0], server=self, container=ccontainer))
+            if cdata and len(cdata) > 0:
+                ccontainer = plexobjects.PlexContainer(cdata, initpath=cq, server=self, address=cq)
+                self.currentHubs[cdata[0].attrib.get('hubIdentifier')] = cdata[0].attrib.get('title')
+                hubs.append(plexlibrary.Hub(cdata[0], server=self, container=ccontainer))
 
         if data:
             for elem in data:
                 hubIdent = elem.attrib.get('hubIdentifier')
                 self.currentHubs["{}:{}".format(section, hubIdent)] = elem.attrib.get('title')
 
-                # if we've added continueWatching, which combines continue and ondeck, skip those two hubs
-                if newCW and hubIdent and \
-                        (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
-                    continue
-
-                if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:
+                # Skip old-style continue/ondeck hubs when using combined continueWatching
+                if newCW and hubIdent and (hubIdent.startswith('home.continue') or hubIdent.startswith('home.ondeck')):
                     continue
 
                 hubs.append(plexlibrary.Hub(elem, server=self, container=container))
@@ -278,6 +297,18 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
             util.MANAGER.refreshResources(True)
             return None
 
+        cooldown_key = None
+        if self.RATE_LIMIT_COOLDOWN:
+            parsed = urlsplit(url)
+            # Fresh Discover objects share the limit, but other users/origins do not.
+            token = parse_qs(parsed.query).get('X-Plex-Token', [None])[0]
+            cooldown_key = (parsed.scheme, parsed.netloc, token)
+            with _RATE_LIMIT_LOCK:
+                remaining = _RATE_LIMIT_UNTIL.get(cooldown_key, 0) - _cooldownTime()
+                if remaining > 0:
+                    raise exceptions.RateLimited(int(math.ceil(remaining)), from_cooldown=True)
+                _RATE_LIMIT_UNTIL.pop(cooldown_key, None)
+
         # add offset/limit
         offset = offset or 0
 
@@ -291,7 +322,30 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
 
         util.LOG('{0} (cache enabled: {2}) {1}', method.__name__.upper(), re.sub('X-Plex-Token=[^&]+', 'X-Plex-Token=****', url), with_cache)
         try:
-            response = method(url, **kwargs)
+            # Give Discover reads one quiet retry before entering the longer cooldown.
+            # Keep any wait bounded; an explicit longer Retry-After returns immediately.
+            retry_read = cooldown_key is not None and method.__name__.lower() == 'get'
+            for attempt in range(2 if retry_read else 1):
+                response = method(url, **kwargs)
+                if response.status_code != 429 or cooldown_key is None:
+                    break
+                first_attempt = retry_read and attempt == 0
+                delay = retryAfterSeconds(response.headers.get('Retry-After'), default=2 if first_attempt else 60)
+                if cooldown_key is not None:
+                    with _RATE_LIMIT_LOCK:
+                        until = _cooldownTime() + delay
+                        _RATE_LIMIT_UNTIL[cooldown_key] = max(until, _RATE_LIMIT_UNTIL.get(cooldown_key, 0))
+                if first_attempt and delay <= 5:
+                    util.LOG('Discover rate limited; retrying once in {0}s', delay)
+                    if MONITOR.waitForAbort(delay):
+                        raise asyncadapter.CanceledException()
+                    # Another in-flight request may have extended the shared cooldown.
+                    with _RATE_LIMIT_LOCK:
+                        remaining = _RATE_LIMIT_UNTIL.get(cooldown_key, 0) - _cooldownTime()
+                        if remaining > 0:
+                            raise exceptions.RateLimited(int(math.ceil(remaining)), from_cooldown=True)
+                    continue
+                raise exceptions.RateLimited(delay)
             if response.status_code not in (200, 201):
                 codename = http.status_codes.get(response.status_code, ['Unknown'])[0]
                 raise exceptions.BadRequest('({0}) {1}'.format(response.status_code, codename))
@@ -383,7 +437,30 @@ class PlexServer(plexresource.PlexResource, signalsmixin.SignalsMixin):
 
         return url.startswith(schemeAndHost)
 
+    def hasLocalModeConnection(self):
+        # whether this server is usable in local mode: only plain LAN connections count,
+        # plex.direct hostnames need public DNS
+        for i in range(len(self.connections)):
+            try:
+                conn = self.connections[i]
+            except IndexError:
+                continue
+            if conn.isLocal and ".plex.direct" not in conn.address:
+                return True
+        return False
+
     def getToken(self):
+        # local mode: per-user identity comes from the harvested per-server access token
+        # (the PMS validates those against its own DB; its transcoder rejects plex.tv
+        # account tokens of managed users), falling back to the account token; the stored
+        # connection tokens belong to whoever last fetched the plex.tv resources
+        if util.LOCAL_MODE and util.ACCOUNT:
+            token = (util.ACCOUNT.serverTokens or {}).get(self.uuid)
+            if token:
+                return token
+            if util.ACCOUNT.authToken:
+                return util.ACCOUNT.authToken
+
         # It's dangerous to use for each here, because it may reset the index
         # on self.connections when something else was in the middle of an iteration.
 

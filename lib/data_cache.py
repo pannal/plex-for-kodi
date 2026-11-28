@@ -35,8 +35,10 @@ class DataCacheManager(object):
         if xbmcvfs.exists(self.DC_PATH):
             try:
                 f = xbmcvfs.File(self.DC_PATH)
-                d = f.readBytes() if self.USE_GZ else f.read()
-                f.close()
+                try:
+                    d = f.readBytes() if self.USE_GZ else f.read()
+                finally:
+                    f.close()
 
                 tdc = json.loads(zlib.decompress(d).decode("utf-8") if self.USE_GZ else d)
                 old_ver = tdc["general"].get("version", 0)
@@ -109,12 +111,14 @@ class DataCacheManager(object):
         if self.DATA_CACHES and lu and self.DC_LAST_UPDATE != lu:
             try:
                 dcf = xbmcvfs.File(self.DC_PATH, "w")
-                self.dataCacheCleanup()
-                d = json.dumps(self.DATA_CACHES)
-                if self.USE_GZ:
-                    d = zlib.compress(d.encode("utf-8"))
-                dcf.write(d)
-                dcf.close()
+                try:
+                    self.dataCacheCleanup()
+                    d = json.dumps(self.DATA_CACHES)
+                    if self.USE_GZ:
+                        d = zlib.compress(d.encode("utf-8"))
+                    dcf.write(d)
+                finally:
+                    dcf.close()
                 LOG("Data cache written to: addon_data/script.plexmod/data_cache.json")
             except:
                 ERROR("Couldn't write data_cache.json")

@@ -71,19 +71,34 @@
         </control>
         {% include "includes/watched_indicator.xml.tpl" with itemref="Window" & xoff=347+60 & uw_size=48 & with_count=True & scale="large" %}
 
+        <!-- same box and baseline as the clear logo below it, so the two variants line up -->
         <control type="label">
+            <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
             <posx>466</posx>
             <posy>0</posy>
             <width>1360</width>
-            <height>{{ vscale(60) }}</height>
-            <font>font13</font>
+            <height>{{ vscale(68) }}</height>
+            <font>font45</font>
             <align>left</align>
+            <aligny>bottom</aligny>
+            <scroll>true</scroll>
+            <scrollspeed>25</scrollspeed>
             <textcolor>FFFFFFFF</textcolor>
             <label>$INFO[Window.Property(title)]</label>
         </control>
+        <!-- see the pre_play template: same box on all three detail screens, top on the artwork's baseline -->
+        <control type="image">
+            <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
+            <posx>466</posx>
+            <posy>0</posy>
+            <width>560</width>
+            <height>{{ vscale(68) }}</height>
+            <aspectratio align="left" aligny="bottom">keep</aspectratio>
+            <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
+        </control>
         <control type="grouplist">
             <posx>466</posx>
-            <posy>{{ vscale(70) }}</posy>
+            <posy>{{ vscale(82) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <align>left</align>
@@ -119,7 +134,7 @@
         <control type="grouplist">
             <visible>!String.IsEmpty(Window.Property(rating)) | !String.IsEmpty(Window.Property(rating2))</visible>
             <posx>1560</posx>
-            <posy>{{ vscale(70) }}</posy>
+            <posy>{{ vscale(82) }}</posy>
             <width>300</width>
             <height>{{ vscale(32) }}</height>
             <align>right</align>
@@ -166,7 +181,7 @@
         <control type="label">
             <visible>!String.IsEmpty(Window.Property(directors))</visible>
             <posx>466</posx>
-            <posy>{{ vscale(130) }}</posy>
+            <posy>{{ vscale(142) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <font>font12</font>
@@ -177,7 +192,7 @@
         <control type="label">
             <visible>!String.IsEmpty(Window.Property(writers))</visible>
             <posx>466</posx>
-            <posy>{{ vscale(165) }}</posy>
+            <posy>{{ vscale(177) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <font>font12</font>
@@ -187,7 +202,7 @@
         </control>
         <!-- <control type="grouplist">
             <posx>466</posx>
-            <posy>{{ vscale(225) }}</posy>
+            <posy>{{ vscale(237) }}</posy>
             <width>1360</width>
             <height>{{ vscale(30) }}</height>
             <align>left</align>
@@ -208,11 +223,13 @@
                 <label>AUDIO</label>
             </control>
             <control type="label">
-                <width>auto</width>
+                <width max="1360">auto</width>
                 <height>{{ vscale(30) }}</height>
                 <font>font12</font>
                 <align>left</align>
                 <aligny>center</aligny>
+                <scroll>true</scroll>
+                <scrollspeed>25</scrollspeed>
                 <textcolor>FFFFFFFF</textcolor>
                 <label>$INFO[Window.Property(audio)]</label>
             </control>
@@ -254,8 +271,11 @@
         </control> -->
         {% include "includes/wl_availability.xml.tpl" %}
         <control type="textbox">
+            <!-- Without availability text, start at 237: 60 below CAST at 177, matching STUDIO at 142
+                 below the length/genre row at 82. -->
+            <animation effect="slide" end="0,{{ vscale(-49) }}" time="0" condition="String.IsEmpty(Window.Property(wl_server_availability_verbose))">Conditional</animation>
             <posx>466</posx>
-            <posy>{{ vscale(274) }}</posy>
+            <posy>{{ vscale(286) }}</posy>
             <width>1360</width>
             <height>{{ vscale(179) }}</height>
             <font>font12</font>

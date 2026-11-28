@@ -59,11 +59,13 @@
         <onup condition="String.IsEqual(Window.Property(close.direction),top)">Close</onup>
         <onup condition="!String.IsEqual(Window.Property(close.direction),top)">noop</onup>
         <onleft condition="String.IsEqual(Window.Property(close.direction),left)">Close</onleft>
+        <onright condition="!String.IsEmpty(Window.Property(scroll))">1152</onright>
         <onright condition="String.IsEqual(Window.Property(close.direction),right)">Close</onright>
         <ondown condition="String.IsEqual(Window.Property(close.direction),down)">Close</ondown>
         <ondown condition="!String.IsEqual(Window.Property(close.direction),down)">noop</ondown>
         <scrolltime>200</scrolltime>
         <orientation>vertical</orientation>
+        <pagecontrol>1152</pagecontrol>
         <!-- ITEM LAYOUT ########################################## -->
         <itemlayout height="{{ vscale(66) }}">
             <control type="image">
@@ -128,7 +130,9 @@
             </control>
             <control type="group">
                 <visible>!String.IsEmpty(ListItem.Property(with.indicator))</visible>
+                <!-- Label: narrow when submenu chevron is shown, full-width otherwise -->
                 <control type="label">
+                    <visible>String.IsEmpty(ListItem.Property(has.submenu))</visible>
                     <posx>60</posx>
                     <posy>0</posy>
                     <width>520</width>
@@ -140,6 +144,30 @@
                     <scroll>true</scroll>
                     <scrollspeed>20</scrollspeed>
                     <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>60</posx>
+                    <posy>0</posy>
+                    <width>490</width>
+                    <height>{{ vscale(66) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FFFFFFFF</textcolor>
+                    <scroll>true</scroll>
+                    <scrollspeed>20</scrollspeed>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <!-- Submenu chevron -->
+                <control type="image">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>558</posx>
+                    <posy>{{ vscale(22) }}</posy>
+                    <width>18</width>
+                    <height>{{ vscale(22) }}</height>
+                    <texture colordiffuse="80FFFFFF">script.plex/indicators/chevron-white.png</texture>
+                    <aspectratio>keep</aspectratio>
                 </control>
                 <control type="image">
                     <posx>20</posx>
@@ -160,8 +188,9 @@
             </control>
         </itemlayout>
         <focusedlayout height="{{ vscale(66) }}">
+            <!-- Normal focused state (gold) - when not moving -->
             <control type="image">
-                <visible>!String.IsEmpty(ListItem.Property(first))</visible>
+                <visible>!String.IsEmpty(ListItem.Property(first)) + String.IsEmpty(ListItem.Property(moving))</visible>
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>600</width>
@@ -169,7 +198,7 @@
                 <texture colordiffuse="F3E5A00D" border="10">script.plex/white-square-top-rounded.png</texture>
             </control>
             <control type="image">
-                <visible>String.IsEmpty(ListItem.Property(first)) + String.IsEmpty(ListItem.Property(last)) + String.IsEmpty(ListItem.Property(only))</visible>
+                <visible>String.IsEmpty(ListItem.Property(first)) + String.IsEmpty(ListItem.Property(last)) + String.IsEmpty(ListItem.Property(only)) + String.IsEmpty(ListItem.Property(moving))</visible>
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>600</width>
@@ -177,7 +206,7 @@
                 <texture colordiffuse="F3E5A00D">script.plex/white-square.png</texture>
             </control>
             <control type="image">
-                <visible>!String.IsEmpty(ListItem.Property(last))</visible>
+                <visible>!String.IsEmpty(ListItem.Property(last)) + String.IsEmpty(ListItem.Property(moving))</visible>
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>600</width>
@@ -185,12 +214,45 @@
                 <texture flipy="true" colordiffuse="FFE5A00D" border="10">script.plex/white-square-top-rounded.png</texture>
             </control>
             <control type="image">
-                <visible>!String.IsEmpty(ListItem.Property(only))</visible>
+                <visible>!String.IsEmpty(ListItem.Property(only)) + String.IsEmpty(ListItem.Property(moving))</visible>
                 <posx>0</posx>
                 <posy>0</posy>
                 <width>600</width>
                 <height>{{ vscale(66) }}</height>
                 <texture colordiffuse="FFE5A00D" border="10">script.plex/white-square-rounded.png</texture>
+            </control>
+            <!-- Moving state (muted gray, more opaque to prevent orange flash during move) -->
+            <control type="image">
+                <visible>!String.IsEmpty(ListItem.Property(first)) + !String.IsEmpty(ListItem.Property(moving))</visible>
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>600</width>
+                <height>{{ vscale(66) }}</height>
+                <texture colordiffuse="CC555555" border="10">script.plex/white-square-top-rounded.png</texture>
+            </control>
+            <control type="image">
+                <visible>String.IsEmpty(ListItem.Property(first)) + String.IsEmpty(ListItem.Property(last)) + String.IsEmpty(ListItem.Property(only)) + !String.IsEmpty(ListItem.Property(moving))</visible>
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>600</width>
+                <height>{{ vscale(66) }}</height>
+                <texture colordiffuse="CC555555">script.plex/white-square.png</texture>
+            </control>
+            <control type="image">
+                <visible>!String.IsEmpty(ListItem.Property(last)) + !String.IsEmpty(ListItem.Property(moving))</visible>
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>600</width>
+                <height>{{ vscale(66) }}</height>
+                <texture flipy="true" colordiffuse="CC555555" border="10">script.plex/white-square-top-rounded.png</texture>
+            </control>
+            <control type="image">
+                <visible>!String.IsEmpty(ListItem.Property(only)) + !String.IsEmpty(ListItem.Property(moving))</visible>
+                <posx>0</posx>
+                <posy>0</posy>
+                <width>600</width>
+                <height>{{ vscale(66) }}</height>
+                <texture colordiffuse="CC555555" border="10">script.plex/white-square-rounded.png</texture>
             </control>
             <control type="label">
                 <visible>String.IsEmpty(ListItem.Property(with.indicator)) + String.IsEqual(ListItem.Property(align),center)</visible>
@@ -222,7 +284,9 @@
             </control>
             <control type="group">
                 <visible>!String.IsEmpty(ListItem.Property(with.indicator))</visible>
+                <!-- Label: narrow when submenu chevron is shown, full-width otherwise -->
                 <control type="label">
+                    <visible>String.IsEmpty(ListItem.Property(has.submenu))</visible>
                     <posx>60</posx>
                     <posy>0</posy>
                     <width>520</width>
@@ -234,6 +298,30 @@
                     <scroll>true</scroll>
                     <scrollspeed>20</scrollspeed>
                     <label>$INFO[ListItem.Label]</label>
+                </control>
+                <control type="label">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>60</posx>
+                    <posy>0</posy>
+                    <width>490</width>
+                    <height>{{ vscale(66) }}</height>
+                    <font>font12</font>
+                    <align>left</align>
+                    <aligny>center</aligny>
+                    <textcolor>FF000000</textcolor>
+                    <scroll>true</scroll>
+                    <scrollspeed>20</scrollspeed>
+                    <label>$INFO[ListItem.Label]</label>
+                </control>
+                <!-- Submenu chevron -->
+                <control type="image">
+                    <visible>!String.IsEmpty(ListItem.Property(has.submenu))</visible>
+                    <posx>558</posx>
+                    <posy>{{ vscale(22) }}</posy>
+                    <width>18</width>
+                    <height>{{ vscale(22) }}</height>
+                    <texture colordiffuse="80000000">script.plex/indicators/chevron-white.png</texture>
+                    <aspectratio>keep</aspectratio>
                 </control>
                 <control type="image">
                     <posx>20</posx>
@@ -253,6 +341,23 @@
                 <texture colordiffuse="FF000000">script.plex/white-square.png</texture>
             </control>
         </focusedlayout>
+    </control>
+    <control type="scrollbar" id="1152">
+        <hitrect x="600" y="0" w="50" h="{{ vscale(528) }}" />
+        <left>604</left>
+        <top>0</top>
+        <width>12</width>
+        <height>{{ vscale(528) }}</height>
+        <visible>true</visible>
+        <texturesliderbackground colordiffuse="40000000" border="5">script.plex/white-square-rounded.png</texturesliderbackground>
+        <texturesliderbar colordiffuse="77FFFFFF" border="5">script.plex/white-square-rounded.png</texturesliderbar>
+        <texturesliderbarfocus colordiffuse="FFE5A00D" border="5">script.plex/white-square-rounded.png</texturesliderbarfocus>
+        <textureslidernib>-</textureslidernib>
+        <textureslidernibfocus>-</textureslidernibfocus>
+        <pulseonselect>false</pulseonselect>
+        <orientation>vertical</orientation>
+        <showonepage>false</showonepage>
+        <onleft>250</onleft>
     </control>
 </control>
 {% endblock controls %}

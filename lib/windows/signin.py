@@ -71,9 +71,11 @@ class PreSignInWindow(kodigui.BaseWindow):
     height = 1080
 
     SIGNIN_BUTTON_ID = 100
+    LOCAL_BUTTON_ID = 101
 
     def __init__(self, *args, **kwargs):
         self.doSignin = False
+        self.goLocal = False
         kodigui.BaseWindow.__init__(self, *args, **kwargs)
 
     def onFirstInit(self):
@@ -81,7 +83,10 @@ class PreSignInWindow(kodigui.BaseWindow):
 
     def onAction(self, action):
         if action == xbmcgui.ACTION_SELECT_ITEM:
-            self.doSignin = True
+            if self.getFocusId() == self.LOCAL_BUTTON_ID:
+                self.goLocal = True
+            else:
+                self.doSignin = True
             self.doClose()
         elif action in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK):
             self.doClose()
@@ -89,6 +94,9 @@ class PreSignInWindow(kodigui.BaseWindow):
     def onClick(self, controlID):
         if controlID == self.SIGNIN_BUTTON_ID:
             self.doSignin = True
+            self.doClose()
+        elif controlID == self.LOCAL_BUTTON_ID:
+            self.goLocal = True
             self.doClose()
 
 

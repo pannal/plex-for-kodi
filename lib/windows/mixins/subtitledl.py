@@ -4,6 +4,7 @@ from six import ensure_str
 import lib.windows.dialog
 from lib import util
 from lib.i18n import T
+from lib.language_util import resolveLanguage
 from lib.windows import busy, kodigui
 from lib.windows.dialog import showOptionsDialog
 from plexnet import util as pnUtil
@@ -19,11 +20,20 @@ class PlexSubtitleDownloadMixin(object):
 
     @staticmethod
     def get_subtitle_language_tuple():
-        from iso639 import languages
-        lang_code_parse, lang_code = PLEX_LEGACY_LANGUAGE_MAP.get(pnUtil.ACCOUNT.subtitlesLanguage,
-                                                                  (pnUtil.ACCOUNT.subtitlesLanguage,
-                                                                   pnUtil.ACCOUNT.subtitlesLanguage))
-        language = languages.get(part1=lang_code_parse)
+        # subtitlesLanguage may be empty when the user has not set a preferred subtitle language;
+        # fall back to English so subtitle search still has a concrete language to query.
+        sub_language = pnUtil.ACCOUNT.subtitlesLanguage or 'en'
+        lang_code_parse, lang_code = PLEX_LEGACY_LANGUAGE_MAP.get(sub_language,
+                                                                  (sub_language, sub_language))
+        # resolveLanguage rather than languages.get(part1=...): Plex also hands out
+        # 3-letter and non-ISO codes (e.g. "pob"), which would raise KeyError here and
+        # break the whole subtitle download. Same English fallback as above.
+        language = resolveLanguage(lang_code_parse)
+        if language is None:
+            util.DEBUG_LOG("Couldn't resolve subtitle language {}, falling back to English",
+                           lang_code_parse)
+            language = resolveLanguage('en')
+            lang_code_parse = lang_code = 'en'
         return language, lang_code_parse, lang_code
 
 

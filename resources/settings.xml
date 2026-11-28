@@ -553,6 +553,11 @@
                     <default>true</default>
                     <control type="toggle"/>
                 </setting>
+                <setting id="periodic_reachability_check" type="boolean" label="34100" help="34101">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle"/>
+                </setting>
                 <setting id="use_cert_bundle" type="string" label="33051" help="33052">
                     <level>0</level>
                     <default>acme</default>

@@ -9,6 +9,7 @@ from plexnet import playlist, util as pnUtil, plexapp, plexlibrary
 from lib import metadata
 from lib import util
 from lib.util import T
+from lib.language_util import getNativeLanguages
 from . import busy
 from . import dropdown
 from . import episodes
@@ -51,6 +52,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
     EXTRA_DIM = util.scaleResolution(329, 185)
     RELATED_DIM = util.scaleResolution(268, 402)
     ROLES_DIM = util.scaleResolution(334, 334)
+    CLEAR_LOGO_DIM = util.scaleResolution(560, 68)
 
     SUB_ITEM_LIST_ID = 400
 
@@ -145,6 +147,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
     def updateProperties(self):
         self.setProperty('title', self.mediaItem.title)
+        self.setProperty('clear.logo', util.clearLogoFrom(self.mediaItem, *self.CLEAR_LOGO_DIM))
         self.setProperty('summary', self.mediaItem.summary)
         self.setProperty('thumb', self.mediaItem.defaultThumb.asTranscodedImageURL(*self.THUMB_DIMS[self.mediaItem.type]['main.thumb']))
         self.updateBackgroundFrom(self.mediaItem)
@@ -184,7 +187,7 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
 
         sss = self.mediaItem.selectedSubtitleStream(
             forced_subtitles_override=util.getSetting("forced_subtitles_override") and pnUtil.ACCOUNT.subtitlesForced == 0,
-            deselect_subtitles=util.getSetting("disable_subtitle_languages"))
+            deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or []))
         self.setProperty('subtitles', sss and sss.getTitle() or 'None')
 
         leafcount = self.mediaItem.leafCount.asFloat()
@@ -297,7 +300,10 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
                 mli = self.subItemListControl.getSelectedItem()
                 if not mli:
                     return
-                self.wl_item_opener(mli.dataSource, self.openItem)
+                if self.wl_availability:
+                    self.wl_item_opener(mli.dataSource, self.openItem)
+                else:
+                    self.openItem(item=mli.dataSource, inherit_from_watchlist=False)
         elif controlID == self.PLAYER_STATUS_BUTTON_ID:
             self.showAudioPlayer()
         elif controlID == self.EXTRA_LIST_ID:
@@ -305,9 +311,8 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
         elif controlID == self.RELATED_LIST_ID:
             self.openItem(self.relatedListControl)
         elif controlID == self.ROLES_LIST_ID:
-            if not self.fromWatchlist:
-                if not self.roleClicked():
-                    return
+            if not self.roleClicked():
+                return
         elif controlID == self.INFO_BUTTON_ID:
             self.infoButtonClicked()
         elif controlID == self.PLAY_BUTTON_ID:
@@ -497,6 +502,10 @@ class ShowWindow(kodigui.ControlledWindow, windowutils.UtilMixin, SeasonsMixin, 
             return
 
         items = self.mediaItem.all(unwatched=True)
+        if not shuffle and self.mediaItem.type == 'show':
+            items = playlist.reorder_with_specials(
+                items, mode=util.getSetting('tv_specials_order', 'default')
+            )
         pl = playlist.LocalPlaylist(items, self.mediaItem.getServer())
         resume = False
         if not shuffle and self.mediaItem.type == 'show':

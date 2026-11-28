@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MediaContainer size="1" allowSync="1" identifier="com.plexapp.plugins.library"
+                librarySectionID="1" librarySectionTitle="Movies"
+                librarySectionUUID="11111111-2222-3333-4444-555555555555"
+                mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1600000000">
+  <Video ratingKey="1234" key="/library/metadata/1234" guid="plex://movie/5d776831961905001eb90a12"
+         studio="Warner Bros." type="movie" title="The Dark Knight" titleSort="Dark Knight"
+         contentRating="PG-13" summary="Batman raises the stakes in his war on crime."
+         rating="9.0" audienceRating="9.4" year="2008" tagline="Why So Serious?"
+         thumb="/library/metadata/1234/thumb/1600000000"
+         art="/library/metadata/1234/art/1600000000" duration="9120000"
+         originallyAvailableAt="2008-07-18" addedAt="1600000000" updatedAt="1600000100"
+         viewOffset="1800000" viewCount="0" chapterSource="media">
+    <Media id="5678" duration="9120000" bitrate="24000" width="3840" height="2160"
+           aspectRatio="2.35" audioChannels="8" audioCodec="truehd" videoCodec="hevc"
+           videoResolution="4k" container="mkv" videoFrameRate="24p"
+           videoProfile="main 10" audioProfile="truehd">
+      <Part id="9012" key="/library/parts/9012/1600000000/file.mkv"
+            file="/data/Movies/The Dark Knight (2008)/The Dark Knight (2008) UHD.mkv"
+            duration="9120000" size="64424509440" container="mkv"
+            videoProfile="main 10" audioProfile="truehd" hasThumbnail="1">
+        <Stream id="1" streamType="1" default="1" codec="hevc" index="0" bitrate="20000"
+                bitDepth="10" chromaLocation="topleft" chromaSubsampling="4:2:0"
+                codedHeight="2160" codedWidth="3840" colorPrimaries="bt2020"
+                colorRange="tv" colorSpace="bt2020nc" colorTrc="smpte2084"
+                DOVIBLCompatID="1" DOVIBLPresent="1" DOVIELPresent="0" DOVILevel="6"
+                DOVIPresent="1" DOVIProfile="8" DOVIRPUPresent="1" DOVIVersion="1.0"
+                frameRate="23.976" height="2160" level="150" profile="main 10"
+                refFrames="1" width="3840" displayTitle="4K DoVi/HDR10 (HEVC Main 10)"
+                extendedDisplayTitle="4K DoVi/HDR10 (HEVC Main 10)"/>
+        <Stream id="2" streamType="2" selected="1" default="1" codec="truehd" index="1"
+                channels="8" bitrate="4000" audioChannelLayout="7.1"
+                samplingRate="48000" language="English" languageCode="eng"
+                languageTag="en" title="Surround 7.1"
+                displayTitle="English (TRUEHD 7.1)"
+                extendedDisplayTitle="Surround 7.1 (English TRUEHD 7.1)"/>
+        <Stream id="3" streamType="2" codec="eac3" index="2" channels="6" bitrate="768"
+                audioChannelLayout="5.1(side)" samplingRate="48000"
+                language="English" languageCode="eng" languageTag="en"
+                displayTitle="English (EAC3 5.1)"
+                extendedDisplayTitle="English (EAC3 5.1)"/>
+        <Stream id="4" streamType="3" codec="pgs" index="3" language="English"
+                languageCode="eng" languageTag="en" title="Full"
+                displayTitle="English (PGS)" extendedDisplayTitle="Full (English PGS)"/>
+        <Stream id="5" streamType="3" codec="srt" index="4" forced="1" language="English"
+                languageCode="eng" languageTag="en" title="Forced"
+                displayTitle="English (SRT Forced)"
+                extendedDisplayTitle="Forced (English SRT)"/>
+        <Stream id="6" streamType="3" codec="srt" index="5" hearingImpaired="1"
+                language="English" languageCode="eng" languageTag="en" title="SDH"
+                displayTitle="English (SRT SDH)"
+                extendedDisplayTitle="SDH (English SRT)"/>
+        <Stream id="7" streamType="3" codec="srt" key="/library/streams/7"
+                language="German" languageCode="deu" languageTag="de"
+                displayTitle="German (SRT External)"
+                extendedDisplayTitle="German (SRT External)"/>
+      </Part>
+    </Media>
+    <Genre id="1" tag="Action"/>
+    <Genre id="2" tag="Crime"/>
+    <Director id="10" tag="Christopher Nolan"/>
+    <Writer id="11" tag="Jonathan Nolan"/>
+    <Role id="20" tag="Christian Bale" role="Bruce Wayne"/>
+    <Role id="21" tag="Heath Ledger" role="Joker"/>
+    <Guid id="imdb://tt0468569"/>
+    <Guid id="tmdb://155"/>
+    <Guid id="tvdb://12345"/>
+  </Video>
+</MediaContainer>

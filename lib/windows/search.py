@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import json
 import threading
 import time
 
@@ -7,10 +8,21 @@ from kodi_six import xbmcgui, xbmc
 from plexnet import plexapp
 
 from lib import util
+from lib.util import T
 from lib.kodijsonrpc import rpc
 from . import kodigui
 from . import opener
+from . import optionsdialog
 from . import windowutils
+
+
+class HistoryItem(object):
+    TYPE = 'history'
+
+    def __init__(self, query, is_clear=False):
+        self.query = query
+        self.title = query
+        self.is_clear = is_clear
 
 
 class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
@@ -32,55 +44,9 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
 
     EDIT_CONTROL_ID = 650
     BUTTON_A_ID = 1001
-
-    HUB_POSTER_00 = 2100
-    HUB_SQUARE_01 = 2101
-    HUB_AR16X9_02 = 2102
-    HUB_CIRCLE_03 = 2103
-    HUB_POSTER_04 = 2104
-    HUB_SQUARE_05 = 2105
-    HUB_AR16X9_06 = 2106
-    HUB_CIRCLE_07 = 2107
-    HUB_POSTER_08 = 2108
-    HUB_SQUARE_09 = 2109
-    HUB_AR16X9_10 = 2110
-    HUB_CIRCLE_11 = 2111
-    HUB_POSTER_12 = 2112
-    HUB_SQUARE_13 = 2113
-    HUB_AR16X9_14 = 2114
-    HUB_CIRCLE_15 = 2115
-    HUB_POSTER_16 = 2116
-    HUB_SQUARE_17 = 2117
-    HUB_AR16X9_18 = 2118
-    HUB_CIRCLE_19 = 2119
-    HUB_POSTER_20 = 2120
-    HUB_SQUARE_21 = 2121
-    HUB_AR16X9_22 = 2122
-    HUB_CIRCLE_23 = 2123
-    HUB_POSTER_24 = 2124
-    HUB_SQUARE_25 = 2125
-    HUB_AR16X9_26 = 2126
-    HUB_CIRCLE_27 = 2127
-    HUB_POSTER_28 = 2128
-    HUB_SQUARE_29 = 2129
-    HUB_AR16X9_30 = 2130
-    HUB_CIRCLE_31 = 2131
-    HUB_POSTER_32 = 2132
-    HUB_SQUARE_33 = 2133
-    HUB_AR16X9_34 = 2134
-    HUB_CIRCLE_35 = 2135
-    HUB_POSTER_36 = 2136
-    HUB_SQUARE_37 = 2137
-    HUB_AR16X9_38 = 2138
-    HUB_CIRCLE_39 = 2139
-    HUB_POSTER_40 = 2140
-    HUB_SQUARE_41 = 2141
-    HUB_AR16X9_42 = 2142
-    HUB_CIRCLE_43 = 2143
-    HUB_POSTER_44 = 2144
-    HUB_SQUARE_45 = 2145
-    HUB_AR16X9_46 = 2146
-    HUB_CIRCLE_47 = 2147
+    SEARCH_HUB_COUNT = 12  # must match core.search_hub_count in lib/templating/context.py
+    HISTORY_LIST_ID = 2050
+    MAX_HISTORY_ITEMS = 10
 
     HUBMAP = {
         'track': {'type': 'square'},
@@ -118,80 +84,11 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
         self.useKodiKbd = util.getSetting('search_use_kodi_kbd')
 
     def onFirstInit(self):
-        self.hubControls = (
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_00, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_01, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_02, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_03, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_04, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_05, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_06, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_07, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_08, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_09, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_10, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_11, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_12, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_13, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_14, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_15, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_16, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_17, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_18, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_19, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_20, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_21, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_22, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_23, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_24, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_25, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_26, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_27, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_28, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_29, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_30, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_31, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_32, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_33, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_34, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_35, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_36, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_37, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_38, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_39, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_40, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_41, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_42, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_43, 5)
-            },
-            {
-                'poster': kodigui.ManagedControlList(self, self.HUB_POSTER_44, 5),
-                'square': kodigui.ManagedControlList(self, self.HUB_SQUARE_45, 5),
-                'ar16x9': kodigui.ManagedControlList(self, self.HUB_AR16X9_46, 5),
-                'circle': kodigui.ManagedControlList(self, self.HUB_CIRCLE_47, 5)
-            },
-        )
+        self.hubControls = [
+            kodigui.ManagedControlList(self, 2100 + i, 5)
+            for i in range(self.SEARCH_HUB_COUNT)
+        ]
+        self.historyList = kodigui.ManagedControlList(self, self.HISTORY_LIST_ID, self.MAX_HISTORY_ITEMS + 1)
 
         self.edit = kodigui.SafeControlEdit(self.EDIT_CONTROL_ID, 651, self, key_callback=self.updateFromEdit,
                                             grab_focus=True)
@@ -203,16 +100,43 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
         else:
             self.setFocusId(self.BUTTON_A_ID)
         self.setProperty('search.section', 'all')
-        self.updateQuery()
+        self.showSearchHistory()
+
+    def onReInit(self):
+        # Re-displayed (e.g. returning from an opened result): re-evaluate the view.
+        # onFirstInit only runs on the first init, so without this the history view
+        # never re-renders after the dialog is shown again.
+        if self.edit.getText():
+            self.updateResults()
+        else:
+            self.showSearchHistory()
 
     def onAction(self, action):
         try:
             if action in (xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_PREVIOUS_MENU):
                 self.isActive = False
+            elif action in (xbmcgui.ACTION_MOVE_DOWN, xbmcgui.ACTION_MOVE_UP):
+                if self._skipEmptyRow(action):
+                    return
         except:
             util.ERROR()
 
         kodigui.BaseDialog.onAction(self, action)
+
+    def _skipEmptyRow(self, action):
+        controlID = self.getFocusId()
+        if not (2100 <= controlID < 2100 + self.SEARCH_HUB_COUNT):
+            return False
+        idx = controlID - 2100
+        step = 1 if action == xbmcgui.ACTION_MOVE_DOWN else -1
+        nxt = idx + step
+        while 0 <= nxt < self.SEARCH_HUB_COUNT:
+            control = self.hubControls[nxt]
+            if control and control.size() > 0:
+                self.setFocusId(2100 + nxt)
+                return True
+            nxt += step
+        return False
 
     def onClick(self, controlID):
         if 1000 < controlID < 1037:
@@ -227,10 +151,12 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
             self.clearClicked()
         elif 2099 < controlID < 2200:
             self.hubItemClicked(controlID)
+        elif controlID == self.HISTORY_LIST_ID:
+            self.historyItemClicked()
 
     def onFocus(self, controlID):
         if 2099 < controlID < 2200:
-            self.setProperty('hub.focus', str(controlID - 2099))
+            self.setProperty('hub.focus', str(controlID - 2100))
 
     def updateFromEdit(self, actionID, oldVal, newVal):
         if actionID == xbmcgui.ACTION_PREVIOUS_MENU:
@@ -262,7 +188,7 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
                 hubs = plexapp.SERVERMANAGER.selectedServer.hubs(count=10, search_query=query, section=self.sectionID)
                 self.showHubs(hubs)
         else:
-            self.clearHubs()
+            self.showSearchHistory()
 
     def sectionClicked(self, controlID):
         section = self.SECTION_BUTTONS[controlID]
@@ -284,14 +210,91 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
         self.edit.setText('')
         self.updateQuery()
 
+    def _historyKey(self):
+        server = plexapp.SERVERMANAGER.selectedServer
+        if not server:
+            return None
+        return 'search.history.{0}.{1}'.format(server.uuid[-8:], plexapp.ACCOUNT.ID)
+
+    def loadSearchHistory(self):
+        key = self._historyKey()
+        if not key:
+            return []
+        try:
+            return json.loads(util.getSetting(key, '[]'))[:self.MAX_HISTORY_ITEMS]
+        except Exception:
+            util.ERROR()
+            return []
+
+    def saveSearchHistory(self, history):
+        key = self._historyKey()
+        if not key:
+            return
+        try:
+            util.setSetting(key, json.dumps(history[:self.MAX_HISTORY_ITEMS]))
+        except Exception:
+            util.ERROR()
+
+    def addToHistory(self, title):
+        if not title or not title.strip():
+            return
+        title = title.strip()
+        history = self.loadSearchHistory()
+        if title in history:
+            history.remove(title)
+        history.insert(0, title)
+        self.saveSearchHistory(history)
+
+    def clearSearchHistory(self):
+        key = self._historyKey()
+        if key:
+            try:
+                util.setSetting(key, '[]')
+            except Exception:
+                util.ERROR()
+
+    def showSearchHistory(self):
+        self.clearHubs()
+        history = self.loadSearchHistory()
+        if not history:
+            self.setProperty('show.history', '')
+            return
+        items = []
+        for query in history:
+            mli = kodigui.ManagedListItem(query, data_source=HistoryItem(query))
+            mli.setProperty('icon', 'script.plex/buttons/search.png')
+            items.append(mli)
+        clear_label = T(35005, 'Clear search history')
+        clear_mli = kodigui.ManagedListItem(clear_label, data_source=HistoryItem(clear_label, is_clear=True))
+        clear_mli.setProperty('icon', 'script.plex/indicators/remove.png')
+        items.append(clear_mli)
+        self.historyList.reset()
+        self.historyList.addItems(items)
+        self.setProperty('show.history', '1')
+
+    def historyItemClicked(self):
+        mli = self.historyList.getSelectedItem()
+        if not mli:
+            return
+        item = mli.dataSource
+        if getattr(item, 'is_clear', False):
+            button = optionsdialog.show(
+                T(35005, 'Clear search history'),
+                T(35006, 'Clear all search history?'),
+                T(32328, 'Yes'),
+                T(32329, 'No'),
+            )
+            if button == 0:
+                self.clearSearchHistory()
+                self.showSearchHistory()
+            return
+        self.edit.setText(item.query)
+        self.updateQuery()
+
     def hubItemClicked(self, hubControlID):
-        for controls in self.hubControls:
-            for control in controls.values():
-                if control.controlID == hubControlID:
-                    break
-            else:
-                continue
-            break
+        for control in self.hubControls:
+            if control.controlID == hubControlID:
+                break
         else:
             return
 
@@ -305,6 +308,7 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
             util.DEBUG_LOG('Search: Playlist does not exist - probably wrong user')
             return
 
+        self.addToHistory(self.edit.getText())
         self.doClose()
         try:
             command = opener.open(hubItem)
@@ -371,6 +375,8 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
                 continue
 
             if h.size.asInt() > 0:
+                if i >= self.SEARCH_HUB_COUNT:
+                    break
                 self.opaqueBackground()
                 cid = self.showHub(h, i)
                 controlID = controlID or cid
@@ -388,31 +394,34 @@ class SearchDialog(kodigui.BaseDialog, windowutils.UtilMixin):
             util.DEBUG_LOG('Unhandled hub type: {0}', hub.type)
             return
 
-        itemListControl = self.hubControls[idx][info['type']]
-        if itemListControl is None:
-            util.DEBUG_LOG('No control defined')
-            return
+        hub_id = 2100 + idx
+        control = self.hubControls[idx]
 
-        self.setProperty('hub.{0}'.format(itemListControl.controlID), hub.title)
+        self.setProperty('hub.display.{0}'.format(hub_id), info['type'])
+        self.setProperty('hub.{0}'.format(hub_id), hub.title)
 
         items = []
         for hubItem in hub.items:
             mli = self.createListItem(hubItem)
-            items.append(mli)
+            if mli:
+                items.append(mli)
 
-        itemListControl.reset()
-        itemListControl.addItems(items)
+        control.reset()
+        control.addItems(items)
 
-        return itemListControl.controlID
+        return control.controlID
 
     def clearHubs(self):
         self.opaqueBackground(on=False)
         self.setProperty('no.results', '')
-        for controls in self.hubControls:
-            for control in controls.values():
-                if control:
-                    control.reset()
+        for i, control in enumerate(self.hubControls):
+            control.reset()
+            hub_id = 2100 + i
+            self.setProperty('hub.{0}'.format(hub_id), '')
+            self.setProperty('hub.display.{0}'.format(hub_id), '')
         self.setProperty('hub.focus', '')
+        self.historyList.reset()
+        self.setProperty('show.history', '')
 
     def opaqueBackground(self, on=True):
         self.parentWindow.setProperty('search.dialog.hasresults', on and '1' or '')

@@ -164,8 +164,10 @@ class PlaybackManager(object):
         if os.path.isfile(self.dataPath):
             try:
                 f = xbmcvfs.File(self.dataPath)
-                obj = json.loads(f.read())
-                f.close()
+                try:
+                    obj = json.loads(f.read())
+                finally:
+                    f.close()
 
                 version = obj["version"]
                 data = obj["data"]
@@ -218,8 +220,10 @@ class PlaybackManager(object):
     def save(self, data=None):
         try:
             f = xbmcvfs.File(self.dataPath, "w")
-            f.write(json.dumps({"version": self.version, "data": data or self._data}))
-            f.close()
+            try:
+                f.write(json.dumps({"version": self.version, "data": data or self._data}))
+            finally:
+                f.close()
         except:
             util.ERROR("Couldn't write playback_settings.json")
             return

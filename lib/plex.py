@@ -70,7 +70,7 @@ def defaultUserAgent():
     try:
         p_system = platform.system()
         p_release = platform.release()
-    except IOError:
+    except (IOError, AttributeError):  # AttributeError: Kodi for Xbox, see plexnet.util._safeUname
         p_system = 'Unknown'
         p_release = 'Unknown'
 
@@ -152,6 +152,16 @@ class PlexInterface(plexapp.AppInterface):
                 continue
             port = util.getSetting('manual_port_{0}'.format(i), 32400)
             conns.append({'connection': ip, 'port': port})
+
+        # servers added via the local mode bootstrap; may carry a token and a name
+        try:
+            stored = json.loads(util.getSetting('local_servers_json', '') or '[]')
+        except ValueError:
+            stored = []
+        for conn in stored:
+            if isinstance(conn, dict) and conn.get('connection'):
+                conns.append(conn)
+
         return json.dumps(conns)
 
     def setPreference(self, pref, value):
@@ -351,6 +361,11 @@ def onManualIPChange(**kwargs):
     plexapp.refreshResources(True)
 
 
+def onLocalModeChange(value=None, **kwargs):
+    plexnet_util.LOCAL_MODE = bool(value)
+    plexapp.refreshResources(True)
+
+
 PLEX_INTERFACE = PlexInterface()
 plexapp.util.setInterface(PLEX_INTERFACE)
 plexapp.util.INTERFACE.playbackManager = PlaybackManager()
@@ -361,6 +376,7 @@ plexapp.util.APP.on('change:manual_ip_0', onManualIPChange)
 plexapp.util.APP.on('change:manual_ip_1', onManualIPChange)
 plexapp.util.APP.on('change:manual_port_0', onManualIPChange)
 plexapp.util.APP.on('change:manual_port_1', onManualIPChange)
+plexapp.util.APP.on('change:local_mode', onLocalModeChange)
 
 plexapp.util.CHECK_LOCAL = util.getSetting('smart_discover_local')
 plexapp.util.LOCAL_OVER_SECURE = util.getSetting('prefer_local')
@@ -397,6 +413,7 @@ plexnet_util.DEFAULT_SETTINGS = util.DEFAULT_SETTINGS
 plexnet_util.TEMP_PATH = asyncadapter.TEMP_PATH = util.translatePath("special://temp/")
 plexnet_util.SKIP_HOST_CHECK = pdm.getOrigHosts()
 plexnet_util.NO_HOST_CHECK = util.getSetting('handle_plexdirect') == "never"
+plexnet_util.LOCAL_MODE = util.getSetting('local_mode', False)
 
 
 class CallbackEvent(plexapp.util.CompatEvent):
@@ -444,17 +461,19 @@ class CallbackEvent(plexapp.util.CompatEvent):
         self.context.off(self.signal, self.set)
 
 
-def init():
+def init(local=False):
     util.DEBUG_LOG('Initializing...')
 
     PLEX_INTERFACE.prepareCache()
+
+    plexnet_util.LOCAL_MODE = bool(local)
 
     timed_out = False
     retries = 0
     while retries == 0 or (retries < asyncadapter.MAX_RETRIES and timed_out):
         with CallbackEvent(plexapp.util.APP, 'init', timeout=plexapp.util.PLEXTV_TIMEOUT_READ) as cb:
             util.DEBUG_LOG('Waiting for plexapp initialization... {}'.format(retries+1))
-            plexapp.init()
+            plexapp.init(local=local)
 
         timed_out = cb.timed_out
         retries += 1
@@ -464,13 +483,28 @@ def init():
     if not timed_out:
         util.DEBUG_LOG('Account initialized: {}', plexapp.ACCOUNT.ID)
 
+    if local:
+        # no plex.tv resources will arrive; kick the server search from stored/manual/GDM data
+        plexapp.SERVERMANAGER.startSelectedServerSearch(reset=True)
+        plexapp.refreshResources(True)
+
     retry = True
 
     while retry:
         retry = False
         if not plexapp.ACCOUNT.authToken:
+            if local:
+                util.DEBUG_LOG('Local mode: continuing without an account')
+                return True
+
             util.DEBUG_LOG("No auth token, authorizing")
             token = authorize()
+
+            if token == 'go_local':
+                from . import localmode
+                if localmode.bootstrap():
+                    return init(local=True)
+                return False
 
             if not token:
                 util.DEBUG_LOG('FAILED TO AUTHORIZE')
@@ -522,6 +556,9 @@ def authorize():
 
     pre = signin.PreSignInWindow.open()
     try:
+        if pre.goLocal:
+            back.doClose()
+            return 'go_local'
         if not pre.doSignin:
             return None
     finally:

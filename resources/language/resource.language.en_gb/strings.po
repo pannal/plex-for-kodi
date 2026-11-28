@@ -85,6 +85,8 @@ msgctxt "#32017"
 msgid "26 Mbps"
 msgstr ""
 
+# Unused: 32018-32019 (2 IDs)
+
 msgctxt "#32020"
 msgid "Local Quality"
 msgstr ""
@@ -277,6 +279,8 @@ msgctxt "#32067"
 msgid "Only force multichannel audio to AC3"
 msgstr ""
 
+# Unused: 32068-32099 (32 IDs)
+
 msgctxt "#32100"
 msgid "Skip user selection and pin entry on startup."
 msgstr ""
@@ -296,6 +300,8 @@ msgstr ""
 msgctxt "#32104"
 msgid "When to connect to servers with no secure connections.[CR][CR]* [B]Never[/B]: Never connect to a server insecurely[CR]* [B]On Same Network[/B]: Allow if on the same network[CR]* [B]Always[/B]: Allow same network and remote connections"
 msgstr ""
+
+# Unused: 32105-32200 (96 IDs)
 
 msgctxt "#32201"
 msgid "Trailer"
@@ -344,6 +350,8 @@ msgstr ""
 msgctxt "#32212"
 msgid "Other"
 msgstr ""
+
+# Unused: 32213-32299 (87 IDs)
 
 msgctxt "#32300"
 msgid "Go to Album"
@@ -1033,6 +1041,8 @@ msgctxt "#32471"
 msgid "Use Plex/Kodi steps for timeline"
 msgstr ""
 
+# Unused: 32472-32479 (8 IDs)
+
 msgctxt "#32480"
 msgid "Theme music"
 msgstr ""
@@ -1056,6 +1066,8 @@ msgstr ""
 msgctxt "#32485"
 msgid "Go back instantly with the previous menu action in scrolled views"
 msgstr ""
+
+# Unused: 32486
 
 msgctxt "#32487"
 msgid "Seek Delay"
@@ -1082,8 +1094,10 @@ msgid "Kodi Subtitle Settings"
 msgstr ""
 
 msgctxt "#32493"
-msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible."
+msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible. This is skipped when the audio is one of your Native languages, so forced subtitles are kept in that case."
 msgstr ""
+
+# Unused: 32494
 
 msgctxt "#32495"
 msgid "Skip intro"
@@ -1093,6 +1107,7 @@ msgctxt "#32496"
 msgid "Skip credits"
 msgstr ""
 
+# Unused: 32497-32499 (3 IDs)
 
 msgctxt "#32500"
 msgid "Always show post-play screen (even for short videos)"
@@ -1102,9 +1117,13 @@ msgctxt "#32501"
 msgid "Time-to-wait between videos on post-play"
 msgstr ""
 
+# Unused: 32502-32504 (3 IDs)
+
 msgctxt "#32505"
 msgid "Visit media in video playlist instead of playing it"
 msgstr ""
+
+# Unused: 32506-32520 (15 IDs)
 
 msgctxt "#32521"
 msgid "Skip Intro Button Timeout"
@@ -1138,6 +1157,8 @@ msgctxt "#32528"
 msgid "Set how long the skip credits button shows for."
 msgstr ""
 
+# Unused: 32529-32539 (11 IDs)
+
 msgctxt "#32540"
 msgid "Show when the current video will end in player"
 msgstr ""
@@ -1154,6 +1175,8 @@ msgctxt "#32543"
 msgid "Ends at"
 msgstr ""
 
+# Unused: 32544-32600 (57 IDs)
+
 msgctxt "#32601"
 msgid "AV1"
 msgstr ""
@@ -1161,6 +1184,8 @@ msgstr ""
 msgctxt "#32602"
 msgid "Enable this if your hardware can handle AV1. Disable it to force transcoding."
 msgstr ""
+
+# Unused: 32603-32630 (28 IDs)
 
 msgctxt "#33101"
 msgid "By Audience Rating"
@@ -1194,6 +1219,8 @@ msgctxt "#33108"
 msgid "Critic Rating"
 msgstr ""
 
+# Unused: 33109-33199 (91 IDs)
+
 msgctxt "#33200"
 msgid "Background Color"
 msgstr ""
@@ -1210,6 +1237,8 @@ msgctxt "#33203"
 msgid "Specify your own background color in AARRGGBB format"
 msgstr ""
 
+# Unused: 33204-33399 (196 IDs)
+
 msgctxt "#33400"
 msgid "Use old compatibility profile"
 msgstr ""
@@ -1217,6 +1246,8 @@ msgstr ""
 msgctxt "#33401"
 msgid "Uses the Chrome client profile instead of the custom one. Might fix rare issues with 3D playback."
 msgstr ""
+
+# Unused: 33402-33500 (99 IDs)
 
 msgctxt "#33501"
 msgid "Video played threshold"
@@ -1258,6 +1289,8 @@ msgctxt "#33510"
 msgid "When showing the intro skip button early, only do so if the intro occurs within the first X seconds."
 msgstr ""
 
+# Unused: 33511-33599 (89 IDs)
+
 msgctxt "#33600"
 msgid "System"
 msgstr ""
@@ -1284,6 +1317,10 @@ msgstr ""
 
 msgctxt "#35002"
 msgid "Combine video & virtual chapters when both are available."
+msgstr ""
+
+msgctxt "#35003"
+msgid "Stream Stopped by Server"
 msgstr ""
 
 msgctxt "#33605"
@@ -1390,9 +1427,13 @@ msgctxt "#33630"
 msgid "Intro/credits markers might be a little early in Plex. When auto skipping add (or subtract) this many seconds from the marker. This avoids cutting off content, while possibly skipping the marker a little late."
 msgstr ""
 
+# Unused: 33631
+
 msgctxt "#32631"
 msgid "Playback (user-specific)"
 msgstr ""
+
+# Unused: 32632-32699 (68 IDs)
 
 msgctxt "#33632"
 msgid "Server connectivity check timeout (seconds)"
@@ -1434,6 +1475,8 @@ msgctxt "#32705"
 msgid "CEC Standby"
 msgstr ""
 
+# Unused: 32706-32799 (94 IDs)
+
 msgctxt "#32800"
 msgid "Skipping intro"
 msgstr ""
@@ -1441,6 +1484,8 @@ msgstr ""
 msgctxt "#32801"
 msgid "Skipping credits"
 msgstr ""
+
+# Unused: 32802-32899 (98 IDs)
 
 msgctxt "#32900"
 msgid "While playing back an item and seeking on the seekbar, automatically seek to the selected position after a delay instead of having to confirm the selection."
@@ -1481,6 +1526,8 @@ msgstr ""
 msgctxt "#32909"
 msgid "When auto-skipping a marker with a timer, allow skipping immediately by pressing OK/SELECT."
 msgstr ""
+
+# Unused: 32910-32911 (2 IDs)
 
 msgctxt "#32912"
 msgid "Show buffer-state on timeline"
@@ -1641,6 +1688,8 @@ msgstr ""
 msgctxt "#32951"
 msgid "When displaying subtitles use the extendedDisplayTitle Plex exposes."
 msgstr ""
+
+# Unused: 32952
 
 msgctxt "#32953"
 msgid "Reviews"
@@ -2230,6 +2279,8 @@ msgctxt "#33099"
 msgid "Controls how often certain ticks are performed on GUI windows and the SeekDialog/VideoPlayer and how fast certain events are handled. Can be expensive when bigger than 1 Hz (once per second), can cause quirks when lower than 1 Hz (less than once per second). Depends on the hardware. Default: 1 Hz, Max: 10 Hz (every 100 ms), Sane highest and old default: 10 Hz (every 100 ms)"
 msgstr ""
 
+# Unused: 33100
+
 msgctxt "#33636"
 msgid "Plex server read timeout"
 msgstr ""
@@ -2325,7 +2376,7 @@ msgid "Disable Auto-Sync"
 msgstr ""
 
 msgctxt "#33659"
-msgid "Hide hub: {}"
+msgid "Disable Hub: {}"
 msgstr ""
 
 msgctxt "#33660"
@@ -2458,7 +2509,7 @@ msgid "Native languages"
 msgstr ""
 
 msgctxt "#33692"
-msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages."
+msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled. Your Plex \"Preferred Audio Language\" is added to this list automatically while your Plex subtitle auto-select mode is \"Shown with foreign audio\"; forced subtitles are always kept."
 msgstr ""
 
 msgctxt "#33693"
@@ -2659,6 +2710,8 @@ msgstr ""
 msgctxt "#33741"
 msgid "Use season thumbnails/posters when displaying episodes in hubs instead of the TV show's."
 msgstr ""
+
+# Unused: 33742-33999 (258 IDs)
 
 msgctxt "#34000"
 msgid "Watchlist"
@@ -2981,4 +3034,329 @@ msgstr ""
 
 msgctxt "#34079"
 msgid "How long should we wait when executing Seek back on start, after having seeked forwards temporarily, before seeking back? Setting this higher could resolve decoder initialisation issues. Default: 500ms"
+msgstr ""
+
+msgctxt "#34080"
+msgid "Manage Hubs"
+msgstr ""
+
+msgctxt "#34081"
+msgid "Reset to Default"
+msgstr ""
+
+msgctxt "#34082"
+msgid "Manage Hubs: {}"
+msgstr ""
+
+msgctxt "#34083"
+msgid "Move Up"
+msgstr ""
+
+msgctxt "#34084"
+msgid "Move Down"
+msgstr ""
+
+msgctxt "#34085"
+msgid "Disable"
+msgstr ""
+
+msgctxt "#34086"
+msgid "Choose action"
+msgstr ""
+
+msgctxt "#34089"
+msgid "Move"
+msgstr ""
+
+msgctxt "#34090"
+msgid "VS10 Mode"
+msgstr ""
+
+msgctxt "#34087"
+msgid "Hub Count"
+msgstr ""
+
+msgctxt "#34088"
+msgid "Number of hub rows displayed on the home screen. More rows require more memory."
+msgstr ""
+
+msgctxt "#34091"
+msgid "Linear Hubs"
+msgstr ""
+
+msgctxt "#34092"
+msgid "Certain hubs, such as Top Unwatched Movies, are randomized by Plex by default, making sequentially consuming content practically impossible. Prevent this and use linearly sorted variants."
+msgstr ""
+
+msgctxt "#34093"
+msgid "Refresh Hub List"
+msgstr ""
+
+msgctxt "#34094"
+msgid "Audio Playlists"
+msgstr ""
+
+msgctxt "#34095"
+msgid "Video Playlists"
+msgstr ""
+
+msgctxt "#34096"
+msgid "Refresh Hubs"
+msgstr ""
+
+msgctxt "#34097"
+msgid "Go Home"
+msgstr ""
+
+msgctxt "#34098"
+msgid "Honor external audio files"
+msgstr ""
+
+msgctxt "#34099"
+msgid "When external audio files are found alongside the video (e.g. a separate .dts or .ac3 file), use them. A single external audio file is always used. When multiple are present, the Plex-selected audio language is preferred, then native languages. Selectable in preplay and playback audio settings. Only for mapped Direct Play."
+msgstr ""
+
+msgctxt "#34100"
+msgid "Periodically check server connections"
+msgstr ""
+
+msgctxt "#34101"
+msgid "Re-test server connection reachability every 10 minutes to detect network changes (e.g. WiFi to mobile). Useful on mobile devices. Default: Off"
+msgstr ""
+
+msgctxt "#34102"
+msgid "Categories"
+msgstr ""
+
+msgctxt "#34103"
+msgid "Specials in episode queue"
+msgstr ""
+
+msgctxt "#34104"
+msgid "Library default keeps Plex's order in the queue, with specials at the front - playback skips past them and starts at the first regular episode, so they appear in the queue but won't play. Interleave inserts each special by its original air date and plays them between regular episodes."
+msgstr ""
+
+msgctxt "#34105"
+msgid "Library default"
+msgstr ""
+
+msgctxt "#34107"
+msgid "Interleave by air date"
+msgstr ""
+
+# Unused: 34106, 34110-35000 (892 IDs)
+
+msgctxt "#32473"
+msgid "Actor"
+msgstr ""
+
+msgctxt "#32474"
+msgid "Director"
+msgstr ""
+
+msgctxt "#32476"
+msgid "Movies & Shows in Media Libraries"
+msgstr ""
+
+msgctxt "#32478"
+msgid "No items found in your library"
+msgstr ""
+
+msgctxt "#32479"
+msgid "Not in Library"
+msgstr ""
+
+msgctxt "#34108"
+msgid "Unknown"
+msgstr ""
+
+msgctxt "#34109"
+msgid "Choose Version"
+msgstr ""
+
+msgctxt "#35004"
+msgid "History"
+msgstr ""
+
+msgctxt "#35005"
+msgid "Clear search history"
+msgstr ""
+
+msgctxt "#35006"
+msgid "Clear all search history?"
+msgstr ""
+
+msgctxt "#35007"
+msgid "Home: Disable exit on Back"
+msgstr ""
+
+msgctxt "#35008"
+msgid "When enabled, pressing Back on the Home screen no longer shows the exit prompt and will not exit Plex. You can still exit from the Exit option in your username menu."
+msgstr ""
+
+msgctxt "#35009"
+msgid "Shuffle Mode"
+msgstr ""
+
+msgctxt "#35010"
+msgid "Unwatched"
+msgstr ""
+
+msgctxt "#35011"
+msgid "Rewatch"
+msgstr ""
+
+msgctxt "#35012"
+msgid "Catchup"
+msgstr ""
+
+msgctxt "#35013"
+msgid "No matching items are available for this shuffle mode."
+msgstr ""
+
+msgctxt "#35014"
+msgid "Shuffle Catchup: number of series"
+msgstr ""
+
+msgctxt "#35015"
+msgid "How many series to queue in Catchup shuffle mode."
+msgstr ""
+
+msgctxt "#35016"
+msgid "Shuffle Catchup: max unwatched episodes per series"
+msgstr ""
+
+msgctxt "#35017"
+msgid "Only include a series in Catchup mode when it has this many or fewer unwatched episodes left."
+msgstr ""
+
+msgctxt "#35018"
+msgid "Shuffle All"
+msgstr ""
+
+msgctxt "#35019"
+msgid "Go local"
+msgstr ""
+
+msgctxt "#35020"
+msgid "Go online"
+msgstr ""
+
+msgctxt "#35021"
+msgid "Local mode (no plex.tv)"
+msgstr ""
+
+msgctxt "#35022"
+msgid "Use a local server"
+msgstr ""
+
+msgctxt "#35023"
+msgid "Local server IP or hostname"
+msgstr ""
+
+msgctxt "#35024"
+msgid "Local server port"
+msgstr ""
+
+msgctxt "#35025"
+msgid "Plex token (optional)"
+msgstr ""
+
+msgctxt "#35026"
+msgid "Could not reach a Plex Media Server at {0}."
+msgstr ""
+
+msgctxt "#35027"
+msgid "Authentication required"
+msgstr ""
+
+msgctxt "#35028"
+msgid "The server requires authentication. Enter a Plex token for it, or add this device's network to the server's \"List of IP addresses and networks that are allowed without auth\" setting."
+msgstr ""
+
+msgctxt "#35029"
+msgid "Only talk to local Plex Media Servers and never contact plex.tv. Best enabled via \"Go local\" in the user menu, which prepares local user switching while plex.tv is still reachable. Watchlist, Discover and other plex.tv-based features are disabled. Takes full effect after a restart of the addon."
+msgstr ""
+
+msgctxt "#35030"
+msgid "No local server found"
+msgstr ""
+
+msgctxt "#35031"
+msgid "No local Plex Media Server was reachable. Add one by IP address?"
+msgstr ""
+
+msgctxt "#35032"
+msgid "Try again"
+msgstr ""
+
+msgctxt "#35033"
+msgid "Add anyway"
+msgstr ""
+
+msgctxt "#35034"
+msgid "Path mapping"
+msgstr ""
+
+msgctxt "#35035"
+msgid "Mapped path unavailable: {}"
+msgstr ""
+
+msgctxt "#35036"
+msgid "Mapped file missing, streaming from the server instead"
+msgstr ""
+
+msgctxt "#35037"
+msgid "Path mapping unavailable for: {}"
+msgstr ""
+msgctxt "#35038"
+msgid "Which users do you want to use on this device?"
+msgstr ""
+
+msgctxt "#35039"
+msgid "Plex token for {0} (optional)"
+msgstr ""
+
+msgctxt "#35040"
+msgid "That token does not belong to {0}."
+msgstr ""
+
+msgctxt "#35041"
+msgid "The server did not accept that token."
+msgstr ""
+
+msgctxt "#35042"
+msgid "Local users"
+msgstr ""
+
+msgctxt "#35043"
+msgid "{} Collections"
+msgstr ""
+
+msgctxt "#35044"
+msgid "Pin collections to the top bar"
+msgstr ""
+
+msgctxt "#35045"
+msgid "Unpin collections from the top bar"
+msgstr ""
+
+msgctxt "#35046"
+msgid "Show title logos on detail screens"
+msgstr ""
+
+msgctxt "#35047"
+msgid "Replace the written title with the logo image your server has stored for the item. Items without a logo keep their written title."
+msgstr ""
+
+msgctxt "#35048"
+msgid "Insecure connections enabled"
+msgstr ""
+
+msgctxt "#35049"
+msgid "Local mode reaches your server over plain HTTP, so \"Allow Insecure Connections\" has been set to \"Always\".\n\nYour server needs the matching setting: in Plex under Settings > Network, \"Secure connections\" has to be \"Preferred\" - with \"Required\" the server refuses these connections."
+msgstr ""
+
+msgctxt "#35050"
+msgid "Plex is temporarily limiting Watchlist requests. Try again in {} seconds."
 msgstr ""

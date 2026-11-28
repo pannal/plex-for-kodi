@@ -46,13 +46,17 @@ class TasksMixin(object):
     def doClose(self):
         if self.tasks:
             try:
+                log.DEBUG_LOG("Killing {} tasks".format(len(self.tasks)))
                 windowutils.HOME.stopRetryingRequests()
                 self.tasks.kill()
 
                 if any(not t.finished for t in self.tasks):
                     log.DEBUG_LOG("Still waiting for tasks to finish")
-                while any(not t.finished for t in self.tasks):
+
+                waited = 0
+                while any(not t.finished for t in self.tasks) and waited < monitor.MONITOR.waitAmount(1):
                     monitor.MONITOR.waitFor()
+                    waited += 1
 
                 self.tasks = None
             except:

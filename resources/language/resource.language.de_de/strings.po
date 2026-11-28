@@ -1288,8 +1288,8 @@ msgstr "Kodi-Untertiteleinstellungen"
 
 #:
 msgctxt "#32493"
-msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible."
-msgstr "Hat eine Mediendatei erzwungenge Untertitel für eine Sprache, bei der Untertitel erwünscht sind, wählt der Plex Media Server diesen standardmäßig aus. Das Verhalten ist normalerweise unerwünscht und nicht konfigurierbar. Diese Einstellung behebt das Problem, indem versucht wird, einen Untertitel der selben Sprache ohne Erzwungen-Markierung zu wählen."
+msgid "When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex Media Server preselects it. This behaviour is usually not necessary and not configurable. This setting fixes that by ignoring the PMSs decision and selecting the same language without a forced flag if possible. This is skipped when the audio is one of your Native languages, so forced subtitles are kept in that case."
+msgstr "Hat eine Mediendatei erzwungenge Untertitel für eine Sprache, bei der Untertitel erwünscht sind, wählt der Plex Media Server diesen standardmäßig aus. Das Verhalten ist normalerweise unerwünscht und nicht konfigurierbar. Diese Einstellung behebt das Problem, indem versucht wird, einen Untertitel der selben Sprache ohne Erzwungen-Markierung zu wählen. Dies wird übersprungen, wenn der Ton einer deiner Muttersprachen entspricht; erzwungene Untertitel bleiben dann erhalten."
 
 #: 
 msgctxt "#32495"
@@ -2918,8 +2918,8 @@ msgid "Disable Auto-Sync"
 msgstr "Auto-Sync deakt."
 
 msgctxt "#33659"
-msgid "Hide hub: {}"
-msgstr "Hub verstecken: {}"
+msgid "Disable Hub: {}"
+msgstr "Hub entfernen: {}"
 
 msgctxt "#33660"
 msgid "Disable HDR"
@@ -3051,8 +3051,8 @@ msgid "Native languages"
 msgstr "Muttersprachen"
 
 msgctxt "#33692"
-msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages."
-msgstr "Schaust Du normalerweise in einer anderen Sprache mit Untertiteln, bist aber Muttersprachler anderer Sprachen, für die Du keine Untertitel benötigst, halte Plex davon ab, Untertitel für diese Sprachen automatisch auszuwählen."
+msgid "When you usually watch things in a different language with subtitles, but are a native speaker of other languages, which you don't need subtitles for, prevent Plex from auto-selecting subtitles for those languages. Also used to match external audio files when that setting is enabled. Your Plex \"Preferred Audio Language\" is added to this list automatically while your Plex subtitle auto-select mode is \"Shown with foreign audio\"; forced subtitles are always kept."
+msgstr "Schaust Du normalerweise in einer anderen Sprache mit Untertiteln, bist aber Muttersprachler anderer Sprachen, für die Du keine Untertitel benötigst, halte Plex davon ab, Untertitel für diese Sprachen automatisch auszuwählen. Wird auch zum Abgleich externer Audiodateien verwendet, wenn diese Einstellung aktiviert ist. Deine Plex-„Bevorzugte Ton-Sprache“ wird dieser Liste automatisch hinzugefügt, solange der „Modus zur Automatischen Auswahl der Untertitel“ auf „bei fremdsprachigem Ton“ steht; erzwungene Untertitel bleiben immer erhalten."
 
 msgctxt "#33693"
 msgid "Download subtitles using"
@@ -3433,8 +3433,8 @@ msgid "UI wait poll rate (Hz)"
 msgstr "UI Warteabtastrate (Hz)"
 
 msgctxt "#34045"
-msgid "When waiting for certain events to occur, poll this often. Default: 10 Hz. With a decent device try 100 Hz, it should feel snappier in certain situations."
-msgstr "Warten wir auf bestimmte Ereignisse, frage so häufig ab. Standard: 10 Hz. Mit einem leistungsfähigen Gerät, versuche 100 Hz, was sich in bestimmten Situationen schneller anfühlen sollte."
+msgid "When waiting for certain events to occur, wait this long. Default: 10 Hz. With a decent device try 100 Hz, it should feel snappier in certain situations."
+msgstr "Beim Warten auf bestimmte Ereignisse so lange warten. Standard: 10 Hz. Mit einem leistungsfähigen Gerät versuche 100 Hz, was sich in bestimmten Situationen schneller anfühlen sollte."
 
 msgctxt "#34046"
 msgid "Fade theme music in/out"
@@ -3571,3 +3571,150 @@ msgstr "Zurückspringen beim Start Wartezeit zwischen Sprüngen"
 msgctxt "#34079"
 msgid "How long should we wait when executing Seek back on start, after having seeked forwards temporarily, before seeking back? Setting this higher could resolve decoder initialisation issues. Default: 500ms"
 msgstr "Wie lange soll nach dem ersten Vorwärtsspringen bei \"Zurückspringen beim Start\" gewartet werden, bevor rückwärts gesprungen wird? Durch höhere Werte könnten Dekodierer-Initialisierungs-Probleme behoben werden. Standard: 500ms"
+
+msgctxt "#34097"
+msgid "Go Home"
+msgstr "Zum Hauptmenü"
+
+msgctxt "#34098"
+msgid "Honor external audio files"
+msgstr "Externe Audiodateien berücksichtigen"
+
+msgctxt "#34099"
+msgid "When external audio files are found alongside the video (e.g. a separate .dts or .ac3 file), use them. A single external audio file is always used. When multiple are present, the Plex-selected audio language is preferred, then native languages. Selectable in preplay and playback audio settings. Only for mapped Direct Play."
+msgstr "Wenn externe Audiodateien neben dem Video gefunden werden (z.B. eine separate .dts- oder .ac3-Datei), diese verwenden. Eine einzelne externe Audiodatei wird immer verwendet. Bei mehreren wird die von Plex gewählte Audiosprache bevorzugt, dann Muttersprachen. Auswählbar in Vorschau- und Wiedergabe-Audioeinstellungen. Nur für zugeordnetes Direct Play."
+
+msgctxt "#34100"
+msgid "Periodically check server connections"
+msgstr "Server-Verbindungen regelmäßig prüfen"
+
+msgctxt "#34101"
+msgid "Re-test server connection reachability every 10 minutes to detect network changes (e.g. WiFi to mobile). Useful on mobile devices. Default: Off"
+msgstr "Erreichbarkeit der Server-Verbindungen alle 10 Minuten erneut prüfen, um Netzwerkänderungen zu erkennen (z.B. WLAN zu Mobilfunk). Nützlich auf mobilen Geräten. Standard: Aus"
+
+msgctxt "#35019"
+msgid "Go local"
+msgstr "Lokal gehen"
+
+msgctxt "#35020"
+msgid "Go online"
+msgstr "Online gehen"
+
+msgctxt "#35021"
+msgid "Local mode (no plex.tv)"
+msgstr "Lokaler Modus (ohne plex.tv)"
+
+msgctxt "#35022"
+msgid "Use a local server"
+msgstr "Lokalen Server verwenden"
+
+msgctxt "#35023"
+msgid "Local server IP or hostname"
+msgstr "IP oder Hostname des lokalen Servers"
+
+msgctxt "#35024"
+msgid "Local server port"
+msgstr "Port des lokalen Servers"
+
+msgctxt "#35025"
+msgid "Plex token (optional)"
+msgstr "Plex-Token (optional)"
+
+msgctxt "#35026"
+msgid "Could not reach a Plex Media Server at {0}."
+msgstr "Unter {0} wurde kein Plex Media Server gefunden."
+
+msgctxt "#35027"
+msgid "Authentication required"
+msgstr "Authentifizierung erforderlich"
+
+msgctxt "#35028"
+msgid "The server requires authentication. Enter a Plex token for it, or add this device's network to the server's \"List of IP addresses and networks that are allowed without auth\" setting."
+msgstr "Der Server erfordert Authentifizierung. Bitte einen Plex-Token angeben oder das Netzwerk dieses Geräts in der Server-Einstellung \"Liste der IP-Adressen und Netzwerke, die ohne Authentifizierung erlaubt sind\" eintragen."
+
+msgctxt "#35029"
+msgid "Only talk to local Plex Media Servers and never contact plex.tv. Best enabled via \"Go local\" in the user menu, which prepares local user switching while plex.tv is still reachable. Watchlist, Discover and other plex.tv-based features are disabled. Takes full effect after a restart of the addon."
+msgstr "Kommuniziert ausschließlich mit lokalen Plex Media Servern und kontaktiert plex.tv nie. Am besten über \"Lokal gehen\" im Benutzermenü aktivieren; dies bereitet den lokalen Benutzerwechsel vor, solange plex.tv noch erreichbar ist. Watchlist, Discover und andere plex.tv-Funktionen sind deaktiviert. Wird nach einem Neustart des Addons vollständig wirksam."
+
+msgctxt "#35030"
+msgid "No local server found"
+msgstr "Kein lokaler Server gefunden"
+
+msgctxt "#35031"
+msgid "No local Plex Media Server was reachable. Add one by IP address?"
+msgstr "Es war kein lokaler Plex Media Server erreichbar. Einen per IP-Adresse hinzufügen?"
+
+msgctxt "#35032"
+msgid "Try again"
+msgstr "Erneut versuchen"
+
+msgctxt "#35033"
+msgid "Add anyway"
+msgstr "Trotzdem hinzufügen"
+
+msgctxt "#35034"
+msgid "Path mapping"
+msgstr "Pfadzuordnung"
+
+msgctxt "#35035"
+msgid "Mapped path unavailable: {}"
+msgstr "Zugeordneter Pfad nicht erreichbar: {}"
+
+msgctxt "#35036"
+msgid "Mapped file missing, streaming from the server instead"
+msgstr "Zugeordnete Datei fehlt, es wird stattdessen vom Server gestreamt"
+
+msgctxt "#35037"
+msgid "Path mapping unavailable for: {}"
+msgstr "Pfadzuordnung nicht verfügbar für: {}"
+msgctxt "#35038"
+msgid "Which users do you want to use on this device?"
+msgstr "Welche Benutzer möchtest du auf diesem Gerät verwenden?"
+
+msgctxt "#35039"
+msgid "Plex token for {0} (optional)"
+msgstr "Plex-Token für {0} (optional)"
+
+msgctxt "#35040"
+msgid "That token does not belong to {0}."
+msgstr "Dieses Token gehört nicht zu {0}."
+
+msgctxt "#35041"
+msgid "The server did not accept that token."
+msgstr "Der Server hat dieses Token nicht akzeptiert."
+
+msgctxt "#35042"
+msgid "Local users"
+msgstr "Lokale Benutzer"
+
+msgctxt "#35043"
+msgid "{} Collections"
+msgstr "Sammlungen: {}"
+
+msgctxt "#35044"
+msgid "Pin collections to the top bar"
+msgstr "Sammlungen an die obere Leiste anheften"
+
+msgctxt "#35045"
+msgid "Unpin collections from the top bar"
+msgstr "Sammlungen von der oberen Leiste lösen"
+
+msgctxt "#35046"
+msgid "Show title logos on detail screens"
+msgstr "Titel-Logos auf Detailseiten anzeigen"
+
+msgctxt "#35047"
+msgid "Replace the written title with the logo image your server has stored for the item. Items without a logo keep their written title."
+msgstr "Ersetzt den geschriebenen Titel durch das Logo, das dein Server für den Eintrag hinterlegt hat. Einträge ohne Logo behalten ihren geschriebenen Titel."
+
+msgctxt "#35048"
+msgid "Insecure connections enabled"
+msgstr "Unsichere Verbindungen aktiviert"
+
+msgctxt "#35049"
+msgid "Local mode reaches your server over plain HTTP, so \"Allow Insecure Connections\" has been set to \"Always\".\n\nYour server needs the matching setting: in Plex under Settings > Network, \"Secure connections\" has to be \"Preferred\" - with \"Required\" the server refuses these connections."
+msgstr "Der lokale Modus erreicht deinen Server über einfaches HTTP, daher wurde \"Unsichere Verbindungen erlauben\" auf \"Immer\" gesetzt.\n\nDein Server braucht die passende Einstellung: in Plex unter Einstellungen > Netzwerk muss \"Sichere Verbindungen\" auf \"Bevorzugt\" stehen - bei \"Erforderlich\" lehnt der Server diese Verbindungen ab."
+
+msgctxt "#35050"
+msgid "Plex is temporarily limiting Watchlist requests. Try again in {} seconds."
+msgstr "Plex begrenzt vorübergehend die Anfragen an die Watchlist. Versuche es in {} Sekunden erneut."

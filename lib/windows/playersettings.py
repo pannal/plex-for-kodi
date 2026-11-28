@@ -7,6 +7,7 @@ from kodi_six import xbmcgui
 from lib import metadata
 from lib import util
 from lib.util import T
+from lib.language_util import getNativeLanguages
 from . import kodigui
 from .dialog import showOptionsDialog
 from .mixins.subtitledl import PlexSubtitleDownloadMixin
@@ -258,7 +259,7 @@ def showSubtitlesDialog(video, non_playback=False, session_id=None):
     idx = None
     sss = video.selectedSubtitleStream(
         forced_subtitles_override=util.getSetting("forced_subtitles_override") and plexnet.util.ACCOUNT.subtitlesForced == 0,
-        deselect_subtitles=util.getSetting("disable_subtitle_languages")
+        deselect_subtitles=getNativeLanguages(util.getSetting("disable_subtitle_languages") or [])
     )
     for i, s in enumerate(video.subtitleStreams):
         if s == sss:

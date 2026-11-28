@@ -508,11 +508,6 @@ class Settings(object):
                     T(33712, 'When playback of an in-progress media is requested, resume it by default instead'
                              ' of asking whether to resume or start from the beginning.')
                 ),
-                BoolSetting(
-                    'home_inprogress_resume', T(33713, 'Home: Resume in-progress items'), False
-                ).description(
-                    T(33714, 'Resume in-progress items directly instead of visiting the media.')
-                ),
             )
         ),
         'video': (
@@ -610,8 +605,18 @@ class Settings(object):
                 ).description(
                     T(33692, "When you usually watch things in a different language with subtitles, but are a"
                              " native speaker of other languages, which you don't need subtitles for, prevent Plex "
-                             "from auto-selecting subtitles for those languages.")
+                             "from auto-selecting subtitles for those languages. Also used to match external audio "
+                             "files when that setting is enabled. Your Plex \"Preferred Audio Language\" is added to "
+                             "this list automatically while your Plex subtitle auto-select mode is \"Shown with "
+                             "foreign audio\"; forced subtitles are always kept.")
                 ),
+                BoolSetting('use_external_audio', T(34098, 'Honor external audio files'), False)
+                .description(T(34099, 'When external audio files are found alongside the video '
+                                      '(e.g. a separate .dts or .ac3 file), use them. A single external '
+                                      'audio file is always used. When multiple are present, the '
+                                      'Plex-selected audio language is preferred, then native languages. '
+                                      'Selectable in preplay and playback audio settings. '
+                                      'Only for mapped Direct Play.')),
                 OptionsSetting(
                     'subtitle_download_from',
                     T(33693, 'Download subtitles using'),
@@ -653,7 +658,8 @@ class Settings(object):
                     T(32493, 'When a media file has a forced/foreign subtitle for a subtitle-enabled language, the Plex'
                              ' Media Server preselects it. This behaviour is usually not necessary and not configurable'
                              '. This setting fixes that by ignoring the PMSs decision and selecting the same language '
-                             'without a forced flag if possible.')
+                             'without a forced flag if possible. This is skipped when the audio is one of your Native '
+                             'languages, so forced subtitles are kept in that case.')
                 ),
                 BoolSetting('calculate_oshash', T(32958, 'Calculate OpenSubtitles.com hash'),
                             False).description(
@@ -699,6 +705,21 @@ class Settings(object):
                     'scale_indicators', T(33077, ''), True, theme_relevant=True
                 ).description(
                     T(33078, "")
+                ),
+                OptionsSetting(
+                    'hub_count',
+                    T(34087, 'Hub Count'),
+                    8,
+                    ((6, '6'), (8, '8'), (10, '10'), (12, '12'), (16, '16')),
+                    theme_relevant=True
+                ).description(
+                    T(34088, 'Number of hub rows displayed on the home screen. More rows require more memory.')
+                ),
+                BoolSetting(
+                    'clear_logos', T(35046, 'Show title logos on detail screens'), True
+                ).description(
+                    T(35047, "Replace the written title with the logo image your server has stored for the "
+                             "item. Items without a logo keep their written title.")
                 ),
                 BoolUserSetting(
                     'use_watchlist', T(34007, 'Use Watchlist'), True
@@ -750,15 +771,17 @@ class Settings(object):
                     [(g, g) for g in genres.GENRES_TV]
                 ).description(T(33017, "")),
                 BoolSetting(
-                    'hubs_use_new_continue_watching', T(32998, ''), True
-                ).description(
-                    T(32999, "")
-                ),
-                BoolSetting(
                     'home_confirm_actions', T(33663, 'Home: Confirm item actions'), True
                 ).description(
                     T(33664, "When acting on items in the Home view, such as mark played, hide from continue "
                              "watching etc., show a confirmation dialog.")
+                ),
+                BoolSetting(
+                    'disable_exit_on_back', T(35007, 'Home: Disable exit on Back'), False
+                ).description(
+                    T(35008, "When enabled, pressing Back on the Home screen no longer shows the "
+                             "exit prompt and will not exit Plex. You can still exit from the Exit "
+                             "option in your username menu.")
                 ),
                 BoolSetting(
                     'hub_season_thumbnails', T(33740, 'Home: Episodes season thumbnails'), True
@@ -767,9 +790,27 @@ class Settings(object):
                              "the TV show's.")
                 ),
                 BoolSetting(
+                    'home_inprogress_resume', T(33713, 'Home: Resume in-progress items'), False
+                ).description(
+                    T(33714, 'Resume in-progress items directly instead of visiting the media.')
+                ),
+                BoolSetting(
+                    'hubs_use_new_continue_watching', T(32998, 'Use new Continue Watching hub on Home'), False
+                ).description(
+                    T(32999, "Instead of separating Continue Watching and On Deck hubs, behave like the modern "
+                             "Plex clients, which combine those two types of hubs into one Continue Watching hub.")
+                ),
+                BoolSetting(
                     'hubs_round_robin', T(33043, ''), False
                 ).description(
                     T(33044, "").format(util.addonSettings.hubsRrMax)
+                ),
+                BoolSetting(
+                    'hubs_linear', T(34091, 'Linear Hubs'), False
+                ).description(
+                    T(34092, "Certain hubs, such as Top Unwatched Movies, are randomized by Plex by default, "
+                             "making sequentially consuming content practically impossible. Prevent this and "
+                             "use linearly sorted variants.")
                 ),
                 BoolSetting(
                     'hubs_bifurcation_lines', T(32961, 'Show hub bifurcation lines'), False
@@ -803,7 +844,7 @@ class Settings(object):
                     T(33005, '')),
                 MultiUAOptionsSetting(
                     'player_show_buttons', T(33057, 'Show buttons'),
-                    ['subtitle_downloads', 'skip_intro', 'skip_credits'],
+                    ['subtitle_downloads', 'skip_intro', 'skip_credits'] + (['video_show_vs10'] if util.CE_VS10 else []),
                     (
                         ('subtitle_downloads', T(32932, 'Show subtitle quick-actions button')),
                         ('video_show_ffwdrwd', T(32933, 'Show FFWD/RWD buttons')),
@@ -811,6 +852,8 @@ class Settings(object):
                         ('video_show_shuffle', T(32935, 'Show shuffle button')),
                         ('skip_intro', T(32495, 'Skip Intro')),
                         ('skip_credits', T(32496, 'Skip Credits')),
+                    ) + (
+                        (('video_show_vs10', T(34090, 'VS10 Mode')),) if util.CE_VS10 else ()
                     )
                 ).description(T(32939, 'Only applies to video player UI')),
                 MultiUAOptionsSetting(
@@ -950,10 +993,45 @@ class Settings(object):
                              '\nCan be disabled/enabled per TV show. Doesn\'t override enabled binge mode. '
                              'Overrides the Post Play setting.')
                 ),
+                OptionsSetting(
+                    'tv_specials_order',
+                    T(34103, 'Specials in episode queue'),
+                    'default',
+                    (
+                        ('default', T(34105, 'Library default')),
+                        ('interleave', T(34107, 'Interleave by air date')),
+                    )
+                ).description(
+                    T(34104, "Library default keeps Plex's order in the queue, with specials at the "
+                             "front - playback skips past them and starts at the first regular episode, "
+                             "so they appear in the queue but won't play. "
+                             "Interleave inserts each special by its original air date and plays them "
+                             "between regular episodes.")
+                ),
+                IntegerSetting(
+                    'shuffle_catchup_series_count', T(35014, 'Shuffle Catchup: number of series'), 5
+                ).description(
+                    T(35015, 'How many series to queue in Catchup shuffle mode.')
+                ),
+                IntegerSetting(
+                    'shuffle_catchup_episode_threshold',
+                    T(35016, 'Shuffle Catchup: max unwatched episodes per series'), 3
+                ).description(
+                    T(35017, 'Only include a series in Catchup mode when it has this many or fewer '
+                             'unwatched episodes left.')
+                ),
             )
         ),
         'network': (
             T(33624, 'Network'), (
+                BoolSetting('local_mode', T(35021, 'Local mode (no plex.tv)'), False)
+                    .description(
+                    T(35029, "Only talk to local Plex Media Servers and never contact plex.tv. "
+                             "Best enabled via \"Go local\" in the user menu, which prepares local user "
+                             "switching while plex.tv is still reachable. Watchlist, Discover and other "
+                             "plex.tv-based features are disabled. Takes full effect after a restart of "
+                             "the addon.")
+                ),
                 OptionsSetting(
                     'allow_insecure', T(32032), 'never',
                     (('never', T(32033)), ('same_network', T(32034)), ('always', T(32035)))
@@ -1060,7 +1138,7 @@ class Settings(object):
                                        "wait for item refreshes and waits for the buffer to fill when starting "
                                        "playback.")),
                 BoolSetting(
-                    'onss_library_back_home', T(34064, 'Return to Home on Screensaver'), True
+                    'onss_library_back_home', T(34064, 'Return to Home on Screensaver'), util.CE_NEEDS_HOME_ON_SCREENSAVER
                 ).description(T(34065, 'When Kodi starts its screensaver, and we are in a library view, '
                                        'return to home. This saves idle energy as the library views are very heavy '
                                        'on the CPU even on idle due to a Kodi bug.'),),
@@ -1069,7 +1147,7 @@ class Settings(object):
                     T(32700, 'Action on Sleep event'),
                     'none',
                     (('none', T(32702, 'Nothing')), ('stop', T(32703, 'Stop playback')),
-                     ('home', T(34066, 'Go Home')),
+                     ('home', T(34097, 'Go Home')),
                      ('quit', T(32704, 'Quit Kodi')), ('reboot', T(32426, 'Reboot')),
                      ('shutdown', T(32423, 'Shutdown')),
                      ('hibernate', T(32425, 'Hibernate')), ('suspend', T(32424, 'Suspend')),

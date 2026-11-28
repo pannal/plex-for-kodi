@@ -1,5 +1,7 @@
+# coding=utf-8
 from __future__ import absolute_import
 import datetime
+import os
 
 from functools import wraps
 
@@ -15,7 +17,19 @@ from . import mediachoice
 from .mixins import AudioCodecMixin
 
 from lib.data_cache import dcm
+
+
+def _audioSelectionCacheId(rating_key):
+    """Build a user-scoped identifier for the audio selection cache.
+
+    dcm already scopes by server UUID; prefix the user ID so switching Plex
+    users doesn't bleed selections across accounts.
+    """
+    from . import plexapp
+    user_id = str(plexapp.ACCOUNT.ID or '') if plexapp.ACCOUNT else ''
+    return "{}_{}".format(user_id, rating_key)
 from lib.util import T, shortDF, durationToShortText
+from lib.language_util import getNativeLanguages
 
 
 class PlexVideoItemList(plexobjects.PlexItemList):
@@ -92,6 +106,18 @@ class Video(media.MediaItem, AudioCodecMixin):
     def __repr__(self):
         return '<%s:%s>' % (self.__class__.__name__, self.ratingKey)
 
+    def _setData(self, data):
+        media.MediaItem._setData(self, data)
+        self.images = plexobjects.PlexItemList(data, media.Image, media.Image.TYPE, server=self.server)
+
+    @property
+    def clearLogo(self):
+        for image in self.images:
+            if image.type == 'clearLogo':
+                return image.url
+
+        return None
+
     @property
     def settings(self):
         if not self._settings:
@@ -143,13 +169,21 @@ class Video(media.MediaItem, AudioCodecMixin):
                                fallback=False, ref="_current_subtitle_idx", force_from_plex=False):
         if ref:
             sidx = getattr(self, ref)
-            if sidx:
+            if sidx is not None:
                 try:
-                    return self.subtitleStreams[sidx]
+                    stream = self.subtitleStreams[sidx]
+                    self.current_subtitle_is_embedded = stream.embedded
+                    return stream
                 except IndexError:
                     pass
 
         selas = self.selectedAudioStream()
+
+        # The user understands this audio language (native-languages setting), so subtitles for it
+        # are not wanted. This is the stronger, more specific signal: it gates the forced->full
+        # override below (upgrading forced subs to full dialogue is meaningless when you follow the
+        # audio), while the forced carve-out further down still lets forced/foreign-passage subs survive.
+        audio_is_native = bool(deselect_subtitles and selas and str(selas.languageCode) in deselect_subtitles)
 
         if self.subtitleStreams:
             for stream in self.subtitleStreams:
@@ -161,14 +195,14 @@ class Video(media.MediaItem, AudioCodecMixin):
                         return stream
 
                     sel_stream = stream
-                    stream_forced = sel_stream.forced.asBool()
-                    if forced_subtitles_override and \
+                    stream_forced = sel_stream.forced_subtitle
+                    if forced_subtitles_override and not audio_is_native and \
                             stream_forced and self.manually_selected_sub_stream != sel_stream.id:
                         # try finding a non-forced variant of this stream
                         possible_alt = None
                         for alt_stream in self.subtitleStreams:
                             if alt_stream.language == stream.language and alt_stream != stream \
-                                    and not alt_stream.forced.asBool():
+                                    and not alt_stream.forced_subtitle:
                                 if possible_alt and not possible_alt.key and alt_stream.key:
                                     possible_alt = alt_stream
                                     break
@@ -182,8 +216,7 @@ class Video(media.MediaItem, AudioCodecMixin):
 
                             sel_stream = possible_alt
                     if (not self.manually_selected_sub_stream or self.manually_selected_sub_stream != sel_stream.id) and \
-                        deselect_subtitles and selas and str(selas.languageCode) in deselect_subtitles and \
-                          not stream_forced:
+                        audio_is_native and not stream_forced:
                         util.DEBUG_LOG("Not selecting {} subtitle stream because audio is {}",
                                        sel_stream.languageCode, selas.languageCode)
                         self._current_subtitle_idx = None
@@ -195,7 +228,7 @@ class Video(media.MediaItem, AudioCodecMixin):
                     return sel_stream
             if fallback:
                 stream = self.subtitleStreams[0]
-                if deselect_subtitles and selas and str(selas.languageCode) in deselect_subtitles and not stream.forced.asBool():
+                if audio_is_native and not stream.forced_subtitle:
                     return
                 if self._current_subtitle_idx != stream.typeIndex:
                     self._current_subtitle_idx = stream.typeIndex
@@ -212,7 +245,8 @@ class Video(media.MediaItem, AudioCodecMixin):
 
     @forceMediaChoice
     def selectStream(self, stream, _async=True, from_session=False, session_id=None, sync_to_server=True):
-        if sync_to_server:
+        # don't sync external streams to Plex server — it doesn't know about them
+        if sync_to_server and not getattr(stream, 'isExternal', False):
             self.mediaChoice.part.setSelectedStream(stream.streamType.asInt(), stream.id, _async, from_session=from_session,
                                                     session_id=session_id, video=self)
         # Update any affected streams
@@ -222,6 +256,19 @@ class Video(media.MediaItem, AudioCodecMixin):
                     audioStream.setSelected(True)
                 elif audioStream.isSelected():
                     audioStream.setSelected(False)
+
+            # remember user-initiated audio choices when external audio is in play, so the
+            # selection survives video reloads (Plex doesn't track external streams).
+            # Store only plain strings to avoid holding references to PlexObject-derived values.
+            if sync_to_server and self._externalAudioStreams:
+                rating_key = str(self.ratingKey) if self.ratingKey else None
+                if rating_key:
+                    if getattr(stream, 'isExternal', False):
+                        data = ['external', str(stream.languageCode or ''), str(stream.codec or '')]
+                    else:
+                        data = ['embedded', str(stream.id)]
+                    dcm.setCacheData('audio_selection', _audioSelectionCacheId(rating_key), data)
+                    util.DEBUG_LOG('Cached audio selection for {}: {}', rating_key, data)
         elif stream.streamType.asInt() == plexstream.PlexStream.TYPE_SUBTITLE:
             self._current_subtitle_idx = None
             self.current_subtitle_is_embedded = False
@@ -579,6 +626,7 @@ class PlayableVideo(CachableItemsMixin, Video, media.RelatedMixin):
     _videoStreams = None
     _audioStreams = None
     _subtitleStreams = None
+    _externalAudioStreams = None
     _current_subtitle_idx = None
     isExtra = False
 
@@ -608,6 +656,7 @@ class PlayableVideo(CachableItemsMixin, Video, media.RelatedMixin):
         self._videoStreams = None
         self._audioStreams = None
         self._subtitleStreams = None
+        self._externalAudioStreams = None
 
     def reload(self, *args, **kwargs):
         if not kwargs.get('_soft'):
@@ -637,7 +686,7 @@ class PlayableVideo(CachableItemsMixin, Video, media.RelatedMixin):
                 else:
                     subtitleStream = self.selectedSubtitleStream(fallback=False,
                                                                  forced_subtitles_override=self.settings.getPreference("forced_subtitles_override", False) and util.ACCOUNT.subtitlesForced == 0,
-                                                                 deselect_subtitles=self.settings.getPreference("disable_subtitle_languages", []))
+                                                                 deselect_subtitles=getNativeLanguages(self.settings.getPreference("disable_subtitle_languages", [])))
                 videoStream = self.selectedVideoStream(fallback=True)
                 audioStream = self.selectedAudioStream(fallback=True)
                 streamIDs = []
@@ -760,10 +809,164 @@ class Movie(PlayableVideo):
         return self._videoStreams
 
     @property
+    def embeddedAudioStreamCount(self):
+        """Number of embedded (Plex-known) audio streams, excluding external."""
+        if self._audioStreams is None:
+            self._audioStreams = self._findStreams(plexstream.PlexStream.TYPE_AUDIO)
+        return len(self._audioStreams)
+
+    @property
     def audioStreams(self):
         if self._audioStreams is None:
             self._audioStreams = self._findStreams(plexstream.PlexStream.TYPE_AUDIO)
+        if self._externalAudioStreams:
+            return self._audioStreams + self._externalAudioStreams
         return self._audioStreams
+
+    EXTERNAL_AUDIO_EXTENSIONS = frozenset((
+        'ac3', 'dts', 'dca', 'eac3', 'aac', 'm4a', 'flac', 'mp3',
+        'opus', 'ogg', 'truehd', 'pcm', 'wav', 'wma', 'mka',
+    ))
+
+    def setExternalAudioStreams(self, streams):
+        """Set external audio streams. Assigns typeIndex continuing from embedded."""
+        if not streams:
+            self._externalAudioStreams = None
+            return
+
+        base_idx = self.embeddedAudioStreamCount
+        for i, stream in enumerate(streams):
+            stream.typeIndex = base_idx + i
+        self._externalAudioStreams = streams
+        util.DEBUG_LOG("Set {} external audio stream(s) on video (base typeIndex: {})", len(streams), base_idx)
+
+    def _matchExternalAudio(self, ext_streams):
+        """Find the best matching external audio stream.
+
+        Single stream: always match. Multiple: prefer Plex-selected language, then native languages.
+        """
+        if not ext_streams:
+            return None
+
+        if len(ext_streams) == 1:
+            return ext_streams[0]
+
+        # prefer Plex-selected audio language first
+        sas = self.selectedAudioStream()
+        plex_lang = sas.languageCode if sas and sas.languageCode else None
+        if plex_lang:
+            for s in ext_streams:
+                if s.languageCode == plex_lang:
+                    return s
+
+        # fall back to native languages
+        native_codes = self.settings.getPreference('disable_subtitle_languages', [])
+        for s in ext_streams:
+            if s.languageCode in native_codes:
+                return s
+
+        return None
+
+    def discoverExternalAudioStreams(self):
+        """Scan the filesystem for external audio files alongside the video.
+
+        Uses path mapping to find the local file, then looks for audio files with
+        the same base name. Can be called at preplay time (no playback required).
+        Returns the list of ExternalAudioStream objects, or empty list.
+        """
+        if self._externalAudioStreams is not None:
+            return self._externalAudioStreams
+
+        if not self.mediaChoice or not self.mediaChoice.part:
+            return []
+
+        mapped_url = self.mediaChoice.part.getPathMappedUrl()
+        if not mapped_url:
+            return []
+
+        video_dir = os.path.dirname(mapped_url)
+        video_base = os.path.splitext(os.path.basename(mapped_url))[0]
+
+        try:
+            from kodi_six import xbmcvfs
+            dirs, files = xbmcvfs.listdir(video_dir)
+        except:
+            return []
+
+        ext_streams = []
+        kodi_idx = self.embeddedAudioStreamCount
+        for f in sorted(files):
+            if not f.startswith(video_base + '.'):
+                continue
+
+            # strip the video base name prefix to get e.g. "sv.dts" or just "dts"
+            remainder = f[len(video_base) + 1:]
+            parts = remainder.rsplit('.', 1)
+            if len(parts) < 1:
+                continue
+
+            ext = parts[-1].lower()
+            if ext not in self.EXTERNAL_AUDIO_EXTENSIONS:
+                continue
+
+            # parse language: "sv.dts" → lang="sv", or just "dts" → no lang
+            lang_code = ''
+            if len(parts) == 2 and parts[0]:
+                raw_lang = parts[0].split('.')[-1]  # handle "Movie.stuff.sv.dts"
+                if len(raw_lang) <= 3:
+                    try:
+                        from iso639 import languages
+                        if len(raw_lang) == 2:
+                            lang_code = languages.get(part1=raw_lang).part2t
+                        else:
+                            lang_code = languages.get(part2b=raw_lang).part2t
+                    except:
+                        lang_code = raw_lang
+
+            stream = plexstream.ExternalAudioStream(
+                language_code=lang_code,
+                codec=ext,
+                channels=0,
+                kodi_index=kodi_idx,
+                filename=f
+            )
+            ext_streams.append(stream)
+            util.DEBUG_LOG('Discovered external audio from filesystem: {} (lang: {}, codec: {})', f, lang_code, ext)
+            kodi_idx += 1
+
+        self.setExternalAudioStreams(ext_streams if ext_streams else None)
+
+        # preselect based on user's previous choice (if cached) or auto-match
+        if ext_streams and util.INTERFACE.getPreference('use_external_audio', False):
+            match = None
+            rating_key = str(self.ratingKey) if self.ratingKey else None
+            cached = dcm.getCacheData('audio_selection', _audioSelectionCacheId(rating_key)) if rating_key else None
+
+            if cached:
+                kind = cached[0]
+                if kind == 'external':
+                    _, lang, codec = cached
+                    for s in ext_streams:
+                        if str(s.languageCode or '') == lang and str(s.codec or '') == codec:
+                            match = s
+                            break
+                elif kind == 'embedded':
+                    # user previously chose an embedded stream — don't preselect external
+                    stream_id = cached[1]
+                    for s in self._audioStreams or []:
+                        if str(s.id) == stream_id:
+                            self.selectStream(s, sync_to_server=False)
+                            util.DEBUG_LOG('Restored cached embedded audio selection for {}: id={}', rating_key, stream_id)
+                            return ext_streams
+
+            if match is None:
+                match = self._matchExternalAudio(ext_streams)
+
+            if match:
+                util.DEBUG_LOG('Pre-selecting external audio: {} (cached: {})', match, bool(cached))
+                self.selectStream(match, sync_to_server=False)
+
+        return ext_streams
 
     @property
     def subtitleStreams(self):

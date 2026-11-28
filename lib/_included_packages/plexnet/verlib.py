@@ -112,6 +112,11 @@ class NormalizedVersion(object):
         # prerelease
         prerel = groups.get('prerel')
         if prerel is not None:
+            # 'rc' is an alias for 'c' (see VERSION_RE). Store the canonical
+            # letter: kept verbatim, 'rc' sorts above the final marker 'f', so
+            # 1.0rc1 would compare as NEWER than 1.0.
+            if prerel == 'rc':
+                prerel = 'c'
             block = [prerel]
             block += self._parse_numdots(groups.get('prerelversion'), s,
                                          pad_zeros_length=1)
@@ -198,6 +203,11 @@ class NormalizedVersion(object):
         if not isinstance(other, NormalizedVersion):
             self._cannot_compare(other)
         return self.parts == other.parts
+
+    def __hash__(self):
+        # defining __eq__ drops the inherited __hash__ on Python 3, which would
+        # make versions unusable as dict keys or set members
+        return hash(self.parts)
 
     def __lt__(self, other):
         if not isinstance(other, NormalizedVersion):

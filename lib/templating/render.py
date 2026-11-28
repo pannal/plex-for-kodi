@@ -32,8 +32,10 @@ def render_templates(theme=None, templates=None, force=False):
     if xbmcvfs.exists(custom_context_data_fn):
         try:
             f = xbmcvfs.File(custom_context_data_fn)
-            data = f.read()
-            f.close()
+            try:
+                data = f.read()
+            finally:
+                f.close()
             if data:
                 js = json.loads(data)
                 deep_update(context, js)
@@ -59,10 +61,13 @@ def render_templates(theme=None, templates=None, force=False):
 
             # get template overrides
             watch_state_type = getSetting('watched_indicators', 'modern_2024')
+            hub_count = getSetting('hub_count', 8)
+
             overrides = {
                 "core": {
                     "resolution": DISPLAY_RESOLUTION,
-                    "needs_scaling": NEEDS_SCALING
+                    "needs_scaling": NEEDS_SCALING,
+                    "hub_count": hub_count,
                 },
                 "indicators": {
                     "START": {

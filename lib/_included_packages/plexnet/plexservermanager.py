@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 import json
 
+import six.moves.urllib.parse
+
 from . import http
 from . import plexconnection
 from . import plexresource
@@ -375,9 +377,33 @@ class PlexServerManager(signalsmixin.SignalsMixin):
                 if conn['address'].endswith(":None"):
                     continue
 
+                address = conn['address']
+
+                # local mode only considers direct LAN connections; plex.direct needs public DNS
+                if util.LOCAL_MODE and (not conn['isLocal'] or ".plex.direct" in address):
+                    if not conn['isLocal'] or ".plex.direct" not in address:
+                        continue
+
+                    # local plex.direct hostnames embed the LAN IP; synthesize a direct
+                    # connection from it, so servers that were never GDM-discovered and have
+                    # no manual IP (e.g. the server sits on another subnet - GDM broadcasts
+                    # don't cross those) still survive going local. Plain http, so servers
+                    # requiring secure connections won't accept it - same limitation as
+                    # manually added IPs.
+                    try:
+                        pUrl = six.moves.urllib.parse.urlparse(address)
+                        address = 'http://{0}:{1}'.format(util.parsePlexDirectHost(pUrl.hostname), pUrl.port)
+                        util.DEBUG_LOG("[LOCAL] synthesized {0} from {1}", address, conn['address'])
+                    except:
+                        continue
+
+                # synthesized connections can collide with a stored plain one (and vice versa)
+                if any(c.address == address for c in server.connections):
+                    continue
+
                 isFallback = hasSecureConn and conn['address'][:5] != "https" and not util.LOCAL_OVER_SECURE
                 sources = plexconnection.PlexConnection.SOURCE_BY_VAL[conn['sources']]
-                connection = plexconnection.PlexConnection(sources, conn['address'], conn['isLocal'], conn['token'], isFallback)
+                connection = plexconnection.PlexConnection(sources, address, conn['isLocal'], conn['token'], isFallback)
 
                 # Keep the secure connection on top
                 if connection.isSecure and not util.LOCAL_OVER_SECURE:
@@ -386,6 +412,10 @@ class PlexServerManager(signalsmixin.SignalsMixin):
                     server.connections.insert(0, connection)
                 else:
                     server.connections.append(connection)
+
+            if util.LOCAL_MODE and not server.connections:
+                util.DEBUG_LOG("[LOCAL] skipping server {0} (no local connections)", repr(server.name))
+                continue
 
             self.serversByUuid[server.uuid] = server
 
@@ -579,9 +609,44 @@ class PlexServerManager(signalsmixin.SignalsMixin):
         self.deferReachabilityTimer = None
         self.updateReachability(True, False, False)
 
+    def periodicReachabilityCheck(self):
+        """Re-test reachability on the selected server to detect network changes (e.g. WiFi -> mobile)."""
+        if not plexapp.ACCOUNT.isAuthenticated or not self.selectedServer:
+            return
+
+        server = self.selectedServer
+        oldConn = server.activeConnection
+        oldAddr = oldConn and oldConn.address or None
+
+        util.LOG("Periodic reachability check for {0}", repr(server.name))
+        server.resetLastTest()
+        server.updateReachability(True)
+
+        # Log if the connection changed immediately (synchronous connections).
+        # Most changes will be detected asynchronously via onReachabilityResult.
+        newConn = server.activeConnection
+        newAddr = newConn and newConn.address or None
+        if oldAddr and newAddr and oldAddr != newAddr:
+            util.LOG("Periodic reachability: active connection changed from {0} to {1}", oldAddr, newAddr)
+
     def resetLastTest(self):
         for uuid in list(self.serversByUuid.keys()):
             self.serversByUuid[uuid].resetLastTest()
+
+    def resetReachabilityState(self):
+        # clear stale pending flags left behind by reachability requests that died without
+        # ever delivering a response (e.g. connection timeouts cut short by a re-init)
+        for uuid in list(self.serversByUuid.keys()):
+            server = self.serversByUuid[uuid]
+            server.pendingReachabilityRequests = 0
+            server.pendingSecureRequests = 0
+            for i in range(len(server.connections)):
+                try:
+                    conn = server.connections[i]
+                except IndexError:
+                    continue
+                conn.hasPendingRequest = False
+                conn.lastTestedAt = None
 
     def clearServers(self):
         self.cancelReachability()
@@ -642,6 +707,8 @@ class PlexServerManager(signalsmixin.SignalsMixin):
             context.address = conn.connection
             context.proto = proto
             context.port = port
+            context.token = conn.token
+            context.name = conn.name
             util.APP.startRequest(request, context)
 
     def onManualConnectionsResponse(self, request, response, context):
@@ -654,12 +721,13 @@ class PlexServerManager(signalsmixin.SignalsMixin):
             util.DEBUG_LOG("Received manual connection response for {0}", serverAddress)
 
             machineID = data.attrib.get('machineIdentifier')
-            name = context.address
+            name = context.name or context.address
             if not name or not machineID:
                 return
 
             # TODO(rob): Do we NOT want to consider manual connections local?
-            conn = plexconnection.PlexConnection(plexresource.ResourceConnection.SOURCE_MANUAL, serverAddress, True, None)
+            conn = plexconnection.PlexConnection(plexresource.ResourceConnection.SOURCE_MANUAL, serverAddress, True,
+                                                 context.token)
             server = plexserver.createPlexServerForConnection(conn)
             server.uuid = machineID
             server.name = name

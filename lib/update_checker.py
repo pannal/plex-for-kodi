@@ -13,7 +13,7 @@ from lib.properties import IPCTimeoutException, waitForGPEmpty, setGlobalPropert
 from lib.updater import get_updater, UpdateException, UpdaterSkipException
 from lib.addonsettings import addonSettings
 from lib.i18n import T
-from lib.logging import service_log as log
+from lib.logging import service_log as log, paramify
 
 class ServiceMonitor(xbmc.Monitor):
     def __init__(self, *args, **kwargs):
@@ -224,10 +224,11 @@ def update_loop():
 
                 except Exception as e:
                     log(traceback.format_exc(), xbmc.LOGERROR)
-                    xbmc.executebuiltin('Notification({0},"{1}",{2},{3})'.format("Update",
-                                                                               "Update failed, see log, not starting.",
-                                                                               5000,
-                                                                               ICON_PATH))
+                    xbmc.executebuiltin('Notification({0},{1},{2},{3})'.format(
+                        paramify("Update"),
+                        paramify("Update failed, see log, not starting."),
+                        5000,
+                        paramify(ICON_PATH)))
 
                 finally:
                     setGlobalProperty('update_response', '')

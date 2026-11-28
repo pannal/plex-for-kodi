@@ -18,6 +18,26 @@ from plexnet import plexapp
 MONITOR = None
 
 
+def forwardSelectDialogAction(action):
+    # A playback overlay opened after Kodi's chooser can receive its remote input.
+    if not xbmc.getCondVisibility('Window.IsActive(selectdialog)'):
+        return False
+
+    command = {
+        xbmcgui.ACTION_MOVE_UP: 'Up',
+        xbmcgui.ACTION_MOVE_DOWN: 'Down',
+        xbmcgui.ACTION_MOVE_LEFT: 'Right',  # Preserve the seek dialog's horizontal navigation.
+        xbmcgui.ACTION_MOVE_RIGHT: 'Left',
+        xbmcgui.ACTION_SELECT_ITEM: 'Select',
+        xbmcgui.ACTION_PREVIOUS_MENU: 'Back',
+        xbmcgui.ACTION_NAV_BACK: 'Back',
+    }.get(action.getId())
+    if command is None:
+        return False
+    xbmc.executebuiltin('Action({0},selectdialog)'.format(command))
+    return True
+
+
 class BaseFunctions(object):
     xmlFile = ''
     path = ''
@@ -425,7 +445,7 @@ class BaseWindow(XMLBase, xbmcgui.WindowXML, BaseFunctions):
 
 
 class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
-    __slots__ = ("_closing", "_winID", "started", "isOpen", "_errored", "_closeSignalled")
+    __slots__ = ("_closing", "_winID", "started", "isOpen", "_errored", "_closeSignalled", "dialogProps")
 
     def __init__(self, *args, **kwargs):
         BaseFunctions.__init__(self)
@@ -436,6 +456,7 @@ class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
         self.started = False
 
         carryProps = kwargs.get("dialog_props", None)
+        self.dialogProps = carryProps
         if carryProps:
             self.setProperties(list(carryProps.keys()), list(carryProps.values()))
         self.setBoolProperty('is_plextuary', util.SKIN_PLEXTUARY)
@@ -445,7 +466,11 @@ class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
         self.doClose()
 
     def _onInit(self):
-        self._winID = xbmcgui.getCurrentWindowDialogId()
+        # Re-showing a registered dialog does not make it topmost. During Next,
+        # the startup blackout can be above a retained seek dialog; its ID must
+        # not replace the identity established on this dialog's first init.
+        if not self.started:
+            self._winID = xbmcgui.getCurrentWindowDialogId()
         BaseFunctions.lastDialogID = self._winID
         if self.started:
             self.onReInit()
@@ -469,11 +494,9 @@ class BaseDialog(XMLBase, xbmcgui.WindowXMLDialog, BaseFunctions):
         if self._closing:
             return
 
-        if not self._winID:
-            self._winID = xbmcgui.getCurrentWindowId()
-
         try:
-            xbmcgui.Window(self._winID).setProperty(key, value)
+            # The native object owns its properties, including before show().
+            # A sampled window ID may belong to another window or be retired.
             xbmcgui.WindowXMLDialog.setProperty(self, key, value)
         except RuntimeError:
             xbmc.log('kodigui.BaseDialog.setProperty: Missing window', xbmc.LOGDEBUG)
@@ -500,17 +523,36 @@ class ControlledBase:
 
     def wait(self):
         while not self._closing and not MONITOR.waitFor():
-            pass
+            deliver = getattr(self, 'processPendingPlaybackReturn', None)
+            if deliver and not self._closing:
+                try:
+                    deliver()
+                except Exception:
+                    util.ERROR('Playback return: could not deliver background result')
 
     def close(self):
         self._closing = True
 
 
 class ControlledWindow(ControlledBase, BaseWindow):
+    # opt-in: actively dismiss the Kodi window on a genuine back-out (see onAction). Off by
+    # default; ControlledBase.close() only flips a flag, so non-opted windows keep relying on
+    # GC/parent re-activate and windows with their own teardown (video player) stay untouched.
+    dismissOnClose = False
+
     def onAction(self, action):
         try:
             if action in (xbmcgui.ACTION_PREVIOUS_MENU, xbmcgui.ACTION_NAV_BACK):
                 self.doClose()
+                if self.dismissOnClose:
+                    # genuine NAV_BACK on an opted-in window: the wait()-loop close only sets a
+                    # flag, so the window can linger on the stack and swallow input. Force the
+                    # real Kodi dismiss. Scoped to back-out, so go-home/playback teardown paths
+                    # (different actions / non-opted windows) are never force-closed.
+                    try:
+                        xbmcgui.WindowXML.close(self)
+                    except Exception:
+                        pass
                 return
         except:
             traceback.print_exc()
@@ -561,7 +603,7 @@ class ManagedListItem(object):
     def __init__(self, label='', label2='', iconImage='', thumbnailImage='', path='', data_source=None,
                  properties=None):
         self._listItem = xbmcgui.ListItem(label, label2, path=path)
-        self._listItem.setArt({"thumb": thumbnailImage, "icon": iconImage})
+        self.setArt({"thumb": thumbnailImage, "icon": iconImage})
         self.dataSource = data_source
         self.properties = {}
         self.label = label
@@ -611,7 +653,7 @@ class ManagedListItem(object):
         self.listItem.setProperty('__ID__', self._ID)
         self.listItem.setLabel(self.label)
         self.listItem.setLabel2(self.label2)
-        self.listItem.setArt({"thumb": self.thumbnailImage, "icon": self.iconImage})
+        self.setArt({"thumb": self.thumbnailImage, "icon": self.iconImage})
         self.listItem.setPath(self.path)
         for k in self._manager._properties.keys():
             self.listItem.setProperty(k, self.properties.get(k) or '')
@@ -662,11 +704,13 @@ class ManagedListItem(object):
         return self.listItem.select(selected)
 
     def setArt(self, values):
-        return self.listItem.setArt(values)
+        # Missing artwork must be an empty string at Kodi's native boundary.
+        return self.listItem.setArt({key: '' if value is None else value
+                                     for key, value in values.items()})
 
     def setIconImage(self, icon):
         self.iconImage = icon
-        return self.listItem.setArt({"icon": self.iconImage})
+        return self.setArt({"icon": self.iconImage})
 
     def setInfo(self, itype, infoLabels):
         return self.listItem.setInfo(itype, infoLabels)
@@ -710,7 +754,7 @@ class ManagedListItem(object):
 
     def setThumbnailImage(self, thumb):
         self.thumbnailImage = thumb
-        return self.listItem.setArt({"thumb": self.thumbnailImage})
+        return self.setArt({"thumb": self.thumbnailImage})
 
     def onDestroy(self):
         pass

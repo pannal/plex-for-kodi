@@ -78,6 +78,16 @@ class UserSelectWindow(kodigui.BaseWindow):
 
             # refresh clicked
             elif not item.dataSource:
+                from lib import localmode
+                if localmode.isAccountLess():
+                    # account-less: no plex.tv user list to refresh - re-pick the local profiles
+                    localmode.seedUsersFromServer(reselect=True)
+                    with self.propertyContext('busy'):
+                        self.userList.reset()
+                        self.setProperty('initialized', '')
+                        self.start(with_busy=False)
+                    return
+
                 # refresh user list
                 with self.propertyContext('busy'):
                     self.userList.reset()
@@ -85,6 +95,10 @@ class UserSelectWindow(kodigui.BaseWindow):
                     plexapp.ACCOUNT.updateHomeUsers(refreshSubscription=True)
                     self.start(with_busy=False)
             else:
+                from lib import localmode
+                # dialogs must not run inside userSelected's busy dialog
+                if localmode.needsProfileToken(item.dataSource):
+                    localmode.promptProfileToken(item.dataSource)
                 self.userSelected(item)
         elif 200 < controlID < 212:
             self.pinEntryClicked(controlID)
@@ -105,7 +119,8 @@ class UserSelectWindow(kodigui.BaseWindow):
             items = []
             selectIndex = None
             for idx, user in enumerate(users):
-                mli = kodigui.ManagedListItem(user.title, user.title[0].upper(), thumbnailImage=user.thumb,
+                thumb = plexapp.ACCOUNT.safeUserThumb(user.id, thumb=user.thumb)
+                mli = kodigui.ManagedListItem(user.title, user.title[0].upper(), thumbnailImage=thumb,
                                               data_source=user)
                 mli.setProperty('back.image', user.id)
                 mli.setProperty('pin', user.title)

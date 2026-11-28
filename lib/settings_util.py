@@ -74,7 +74,9 @@ def setSetting(key, value, addon=ADDON):
 
 def _processSettingForWrite(value):
     if isinstance(value, list):
-        value = binascii.hexlify(json.dumps(value))
+        # hexlify needs bytes, and getSetting() unhexlifies a str back, so
+        # encode on the way in and decode on the way out
+        value = binascii.hexlify(json.dumps(value).encode('utf-8')).decode('ascii')
     elif isinstance(value, bool):
         value = value and 'true' or 'false'
     elif isinstance(value, datetime.datetime):

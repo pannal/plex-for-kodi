@@ -263,6 +263,13 @@ class Version(NativeVersion):      # type: ignore
 
 def version_compare(a, b):
     # type: (Any, Any) -> int
+    # A missing version is older than any real one. Without this, Version(None)
+    # parses the literal string "None" and sorts *above* a numeric version.
+    if a is None or b is None:
+        if a is None and b is None:
+            return 0
+        return -1 if a is None else 1
+
     va = Version(a)
     vb = Version(b)
     if va < vb:

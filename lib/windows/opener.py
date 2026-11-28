@@ -73,13 +73,16 @@ def handleOpen(winclass, **kwargs):
         if autoPlay and winclass.supportsAutoPlay:
             # create but don't open window
             w = winclass.create(show=False, **kwargs)
-            if autoPlayOpen and w.doAutoPlay(blind=not autoPlayOpen):
-                # open window after autoPlay to be able to return to it after playback
-                w.modal()
-            else:
-                # just autoPlay and don't open the window
-                w.doAutoPlay()
-                w.onBlindClose()
+            try:
+                if autoPlayOpen and w.doAutoPlay(blind=not autoPlayOpen):
+                    # open window after autoPlay to be able to return to it after playback
+                    w.modal()
+                else:
+                    # just autoPlay and don't open the window
+                    w.doAutoPlay()
+            finally:
+                if not w.started:
+                    w.onBlindClose()
         else:
             w = winclass.open(**kwargs)
         return w.exitCommand or ''
@@ -155,7 +158,9 @@ def collectionClicked(collection, **kwargs):
 
 def sectionClicked(section, filter_=None, **kwargs):
     from . import library
-    library.ITEM_TYPE = section.TYPE
+    # a section pinned to the top bar as an item-type view opens in that type; __dict__ is
+    # deliberate, PlexObject.__getattr__ invents an empty attribute for anything asked of it
+    library.ITEM_TYPE = section.__dict__.get('itemType') or section.TYPE
     key = section.key
     if not key.isdigit():
         key = section.getLibrarySectionId()
@@ -179,12 +184,10 @@ def genreClicked(genre, **kwargs):
 
 
 def directorClicked(director, **kwargs):
-    section = plexlibrary.LibrarySection.fromFilter(director)
-    filter_ = {'type': director.FILTER, 'display': 'Director', 'sub': {'val': director.id, 'display': director.tag}}
-    return sectionClicked(section, filter_, **kwargs)
+    from . import person as person_window
+    return handleOpen(person_window.DirectorWindow, role=director, **kwargs)
 
 
 def actorClicked(actor, **kwargs):
-    section = plexlibrary.LibrarySection.fromFilter(actor)
-    filter_ = {'type': actor.FILTER, 'display': 'Actor', 'sub': {'val': actor.id, 'display': actor.tag}}
-    return sectionClicked(section, filter_, ignoreLibrarySettings=True, **kwargs)
+    from . import person as person_window
+    return handleOpen(person_window.ActorWindow, role=actor, **kwargs)

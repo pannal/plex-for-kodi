@@ -205,6 +205,8 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
 
                 self.cancelTimer()
                 self.resetPassoutProtection()
+                # user input means someone's actually watching
+                util.MONITOR.tv_standby = False
                 if action in(xbmcgui.ACTION_NAV_BACK, xbmcgui.ACTION_CONTEXT_MENU):
                     if not xbmc.getCondVisibility('ControlGroup({0}).HasFocus(0)'.format(self.OPTIONS_GROUP_ID)):
                         if not util.addonSettings.fastBack or action == xbmcgui.ACTION_CONTEXT_MENU:
@@ -518,6 +520,10 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
             util.DEBUG_LOG('Post play auto-play disabled')
             return
 
+        if util.MONITOR.tv_standby:
+            util.DEBUG_LOG('Post play auto-play skipped: TV in standby')
+            return
+
         if not self.next:
             return
 
@@ -542,6 +548,10 @@ class VideoPlayerWindow(kodigui.ControlledWindow, windowutils.UtilMixin, RolesMi
 
     def countdown(self):
         while self.timeout and not util.MONITOR.waitForAbort(0.1):
+            if util.MONITOR.tv_standby:
+                util.DEBUG_LOG('Post-play timer canceled: TV in standby')
+                self.cancelTimer()
+                break
             now = time.time()
             if self.timeout and now > self.timeout:
                 self.timeout = None

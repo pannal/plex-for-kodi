@@ -216,6 +216,14 @@ class PlexConnection(object):
         self.getScore(True)
 
     def testReachability(self, server, allowFallback=False):
+        # local mode: never test (and thereby never activate) non-LAN or plex.direct connections
+        if util.LOCAL_MODE and (not self.isLocal or ".plex.direct" in self.address):
+            if self.state == self.STATE_REACHABLE:
+                self.state = self.STATE_UNKNOWN
+            if server.activeConnection is self:
+                server.activeConnection = None
+            return False
+
         # Check if we will allow the connection test. If this is a fallback connection,
         # then we will defer it until we "allowFallback" (test insecure connections
         # after secure tests have completed and failed). Insecure connections will be
@@ -303,7 +311,12 @@ class PlexConnection(object):
             # for this server have one. That will let us use a plex.tv token for
             # something like a manually configured connection.
 
-            token = self.token or server.getToken()
+            if util.LOCAL_MODE:
+                # per-user identity in local mode lives in the account token (see
+                # PlexServer.getToken); the per-connection token is the fallback
+                token = server.getToken() or self.token
+            else:
+                token = self.token or server.getToken()
 
             if token:
                 url = http.addUrlParam(url, "X-Plex-Token=" + token)
@@ -311,7 +324,10 @@ class PlexConnection(object):
         return url
 
     def simpleBuildUrl(self, server, path):
-        token = (self.token or server.getToken())
+        if util.LOCAL_MODE:
+            token = server.getToken() or self.token
+        else:
+            token = (self.token or server.getToken())
         param = ''
         if token:
             param = '&X-Plex-Token={0}'.format(token)

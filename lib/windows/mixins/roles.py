@@ -32,25 +32,9 @@ class RolesMixin(object):
         if not mli:
             return
 
-        sectionRoles = busy.widthDialog(mli.dataSource.sectionRoles, '', delay=True)
-
-        if not sectionRoles:
-            util.DEBUG_LOG('No sections found for actor')
+        role = mli.dataSource
+        if not role:
             return
 
-        if len(sectionRoles) > 1:
-            x, y = self.getRoleItemDDPosition()
-            if x == -1:
-                return
-
-            options = [{'role': r, 'display': r.reasonTitle} for r in sectionRoles]
-            choice = dropdown.showDropdown(options, (x, y), pos_is_bottom=False)
-
-            if not choice:
-                return
-
-            role = choice['role']
-        else:
-            role = sectionRoles[0]
-
+        # Open the actor detail window directly
         self.processCommand(opener.open(role))

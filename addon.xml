@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <addon id="script.plexmod"
        name="Plex"
-       version="1.3.19"
+       version="1.17.15"
        provider-name="pannal">
     <requires>
         <import addon="xbmc.python" version="2.26.0"/>
@@ -34,7 +34,21 @@
         <source>https://github.com/pannal/plex-for-kodi</source>
         <platform>all</platform>
         <news>
-- for changelog see forum thread or github
+- Detail screens: improve clear-logo sizing and alignment, with text titles for overly square logos
+- Episodes: tidy headings, date formats, summary spacing and resume indicators
+- Home: preserve distinct hubs with similar identifiers and correctly label hubs from other libraries
+- Watchlist: handle rate limits with retries and cooldowns
+- Watchlist: fix premature removal after manual watched-state changes and cleanup after autoplay
+- Playback: keep the interface responsive while synchronizing progress and watched status after playback
+- Playback: fix season refreshes and episode lists after playback
+- Player: prevent spoiler titles and time information flashing at playback start
+- Player: fix autoplay initialization, skip-marker timing and playback controls between episodes
+- Player: keep Kodi's playback chooser visible during initial seeks
+- Player: fix blackout cleanup and stale callbacks after stopping or abandoning playback
+- Core: release closed playback windows and discard abandoned background callbacks
+- Core: handle missing list-item artwork
+- Xbox: fix startup failure after recent system updates
+- CoreELEC/p3i: improve skip-marker OSD signalling and playback initialization; skip automatic detection for Direct Streaming and transcoding
         </news>
         <assets>
             <icon>icon2.png</icon>

@@ -1,3 +1,4 @@
+# coding=utf-8
 from __future__ import absolute_import
 from . import plexobjects
 from . import plexstream
@@ -285,6 +286,430 @@ class Role(MediaTag):
 
         return roles or None
 
+    def getDetails(self):
+        """
+        Fetch full actor metadata including biography, birth date, photo, etc.
+        Uses /library/people/{personId} endpoint per Plex API docs.
+        The personId can be either the PMS tag id or the tagKey (hex portion of plex guid).
+        Returns a dict with actor details.
+        """
+        if not self.tag:
+            return self._getBasicDetails()
+
+        # Start with basic info that we'll augment
+        result = self._getBasicDetails()
+        tag_key = None
+
+        try:
+            # Try using the tag id first (this is typically available from Role objects)
+            person_id = self.id
+            
+            # If we have a tagKey (from newer API responses), that's preferred
+            if hasattr(self, 'tagKey') and self.tagKey:
+                person_id = self.tagKey
+                tag_key = self.tagKey
+            
+            path = '/library/people/{0}'.format(person_id)
+            data = self.server.query(path)
+            
+            if data is not None:
+                # Debug: Log the raw response structure
+                util.DEBUG_LOG('Actor API response tag: {0}, attribs: {1}'.format(data.tag, list(data.attrib.keys())))
+                for child in data:
+                    util.DEBUG_LOG('  Child element: {0}, attribs: {1}'.format(child.tag, dict(child.attrib)))
+                
+                # The response contains a Directory element with person details
+                for directory in data.findall('Directory'):
+                    util.DEBUG_LOG('Found actor details for {0} via /library/people endpoint'.format(self.tag))
+                    # Get tagKey from response if we don't have it
+                    if not tag_key:
+                        tag_key = directory.get('tagKey', '')
+                    result = {
+                        'id': directory.get('ratingKey', directory.get('id', self.id)),
+                        'name': directory.get('tag', directory.get('title', self.tag)),
+                        'thumb': directory.get('thumb', str(self.thumb) if self.thumb else ''),
+                        'summary': directory.get('summary', ''),
+                        'birthDate': directory.get('birthDate', ''),
+                        'deathDate': directory.get('deathDate', ''),
+                        'birthPlace': directory.get('birthPlace', ''),
+                        'role': getattr(self, 'role', ''),
+                        'tagKey': tag_key or '',
+                    }
+                    break
+                
+        except Exception as e:
+            util.DEBUG_LOG('Failed to fetch actor details from local PMS for {0}: {1}'.format(self.tag, e))
+
+        # If local PMS didn't yield a tagKey (actor not in library), resolve via Discover people search
+        if not tag_key and not util.LOCAL_MODE:
+            tag_key = self._resolveTagKeyViaDiscover(self.tag)
+            if tag_key:
+                result['tagKey'] = tag_key
+
+        # If we have a tagKey and no biography yet, try the online metadata provider
+        # (never in local mode; these use requests directly and bypass the transport block)
+        if tag_key and not result.get('summary') and not util.LOCAL_MODE:
+            try:
+                # Query the metadata provider for rich actor details
+                # The tagKey is the actor's GUID on plex.tv
+                from . import plexapp
+                account = plexapp.ACCOUNT
+                if account and account.authToken:
+                    import requests
+                    
+                    # Try multiple possible endpoints
+                    endpoints = [
+                        'https://discover.provider.plex.tv/library/people/{0}'.format(tag_key),
+                        'https://metadata.provider.plex.tv/library/metadata/{0}'.format(tag_key),
+                        'https://discover.provider.plex.tv/library/metadata/{0}'.format(tag_key),
+                    ]
+                    
+                    headers = {
+                        'X-Plex-Token': account.authToken,
+                        'Accept': 'application/xml'
+                    }
+                    
+                    for url in endpoints:
+                        util.DEBUG_LOG('Trying actor metadata from: {0}'.format(url))
+                        try:
+                            response = requests.get(url, headers=headers, timeout=5)
+                            
+                            if response.status_code == 200:
+                                import xml.etree.ElementTree as ET
+                                data = ET.fromstring(response.content)
+                                util.DEBUG_LOG('Metadata response from {0}: tag={1}, children={2}'.format(
+                                    url.split('/')[2], data.tag, [c.tag for c in data]))
+                                
+                                for elem in list(data.findall('Directory')) + list(data.findall('Metadata')) + list(data):
+                                    if elem.get('summary') or elem.get('birthDate'):
+                                        util.DEBUG_LOG('Found rich actor metadata!')
+                                        result['summary'] = elem.get('summary', result.get('summary', ''))
+                                        result['birthDate'] = elem.get('birthDate', result.get('birthDate', ''))
+                                        result['deathDate'] = elem.get('deathDate', result.get('deathDate', ''))
+                                        result['birthPlace'] = elem.get('birthPlace', result.get('birthPlace', ''))
+                                        if elem.get('thumb'):
+                                            result['thumb'] = elem.get('thumb')
+                                        break
+                                
+                                # If we found data, stop trying other endpoints
+                                if result.get('summary') or result.get('birthDate'):
+                                    break
+                            else:
+                                util.DEBUG_LOG('  Status {0}'.format(response.status_code))
+                        except Exception as e:
+                            util.DEBUG_LOG('  Error: {0}'.format(e))
+                            continue
+                            
+            except Exception as e:
+                util.DEBUG_LOG('Failed to fetch actor metadata from plex.tv for {0}: {1}'.format(self.tag, e))
+
+        return result
+
+    def _resolveTagKeyViaDiscover(self, name):
+        """
+        Resolve an actor's tagKey via Plex Discover people search.
+        Returns the tagKey of the highest-score result, or None.
+        """
+        if not name or util.LOCAL_MODE:
+            return None
+        try:
+            from . import plexapp
+            account = plexapp.ACCOUNT
+            if not account or not account.authToken:
+                return None
+
+            import requests
+            url = 'https://discover.provider.plex.tv/library/search'
+            params = {
+                'query': name,
+                'searchTypes': 'people',
+                'searchProviders': 'discover',
+                'limit': 5,
+            }
+            headers = {
+                'X-Plex-Token': account.authToken,
+                'Accept': 'application/json',
+            }
+            response = requests.get(url, params=params, headers=headers, timeout=5)
+            if response.status_code != 200:
+                util.DEBUG_LOG('_resolveTagKeyViaDiscover: status {0} for {1}', response.status_code, name)
+                return None
+
+            data = response.json()
+            container = data.get('MediaContainer', {})
+            results = container.get('SearchResult', []) or container.get('SearchResults', [])
+
+            best = None
+            best_score = -1.0
+            for sr in results:
+                try:
+                    score = float(sr.get('score', 0) or 0)
+                except (TypeError, ValueError):
+                    score = 0.0
+                candidates = []
+                if isinstance(sr.get('Metadata'), dict):
+                    candidates.append(sr['Metadata'])
+                elif isinstance(sr.get('Metadata'), list):
+                    candidates.extend(sr['Metadata'])
+                if isinstance(sr.get('Directory'), dict):
+                    candidates.append(sr['Directory'])
+                elif isinstance(sr.get('Directory'), list):
+                    candidates.extend(sr['Directory'])
+                if not candidates:
+                    candidates.append(sr)
+                for entry in candidates:
+                    tk = entry.get('tagKey') or entry.get('metadataId') or entry.get('id')
+                    if tk and score > best_score:
+                        best = tk
+                        best_score = score
+                        break
+
+            if best:
+                util.DEBUG_LOG('_resolveTagKeyViaDiscover: resolved tagKey {0} for {1} (score={2})',
+                               best, name, best_score)
+            else:
+                util.DEBUG_LOG('_resolveTagKeyViaDiscover: no match for {0}', name)
+            return best
+        except Exception as e:
+            util.DEBUG_LOG('_resolveTagKeyViaDiscover: failed for {0}: {1}', name, e)
+            return None
+
+    def _getBasicDetails(self):
+        """Return basic info from the Role object when API call fails or is unavailable."""
+        return {
+            'id': self.id,
+            'name': self.tag,
+            'thumb': str(self.thumb) if self.thumb else '',
+            'summary': '',
+            'birthDate': '',
+            'deathDate': '',
+            'birthPlace': '',
+            'role': getattr(self, 'role', ''),
+        }
+
+    def getFilmography(self, media_type=None, start=None, size=None):
+        """
+        Get movies/shows this actor appears in from your library.
+        Uses /library/people/{personId}/media endpoint per Plex API docs.
+        
+        Args:
+            media_type: 'movie', 'show', or None for all
+            start: Starting offset for pagination (X-Plex-Container-Start)
+            size: Number of items to fetch (X-Plex-Container-Size)
+        
+        Returns:
+            dict with 'items', 'offset', 'size', 'totalSize', and 'more' keys
+        
+        Note: The Plex discover API does not provide an endpoint for actor filmography,
+        so only local library content is returned.
+        """
+        items = []
+        result = {
+            'items': items,
+            'offset': start or 0,
+            'size': 0,
+            'totalSize': 0,
+            'more': False
+        }
+        
+        try:
+            # Use the proper people media endpoint
+            person_id = self.id
+            if hasattr(self, 'tagKey') and self.tagKey:
+                person_id = self.tagKey
+            
+            path = '/library/people/{0}/media'.format(person_id)
+            
+            # Add pagination headers as query params
+            args = {}
+            if size is not None:
+                args['X-Plex-Container-Start'] = start if start is not None else 0
+                args['X-Plex-Container-Size'] = size
+            
+            if args:
+                path += util.joinArgs(args)
+            
+            data = self.server.query(path)
+            
+            if data is not None:
+                # Get pagination info from response
+                result['offset'] = int(data.get('offset', start or 0))
+                result['size'] = int(data.get('size', 0))
+                result['totalSize'] = int(data.get('totalSize', 0))
+                
+                # Debug: Log the raw response structure
+                util.DEBUG_LOG('Filmography API response: offset={0}, size={1}, totalSize={2}'.format(
+                    result['offset'], result['size'], result['totalSize']))
+                
+                from . import video  # Import here to avoid circular imports
+                
+                # Look for Video elements (what the API actually returns) AND Metadata elements
+                for elem in list(data.findall('Video')) + list(data.findall('Metadata')) + list(data.findall('Directory')):
+                    item_type = elem.get('type', '')
+                    
+                    # Filter by media type if specified
+                    if media_type:
+                        if media_type == 'movie' and item_type != 'movie':
+                            continue
+                        if media_type == 'show' and item_type != 'show':
+                            continue
+                    
+                    # Only include movies and shows
+                    if item_type in ('movie', 'show'):
+                        # Create appropriate media object
+                        if item_type == 'movie':
+                            item = video.Movie(elem, self.initpath, self.server)
+                        else:
+                            item = video.Show(elem, self.initpath, self.server)
+                        items.append(item)
+                
+                # Calculate if there are more items
+                result['size'] = len(items)
+                result['more'] = (result['offset'] + result['size']) < result['totalSize']
+                
+                util.DEBUG_LOG('Found {0} filmography items for {1} (more={2})'.format(
+                    len(items), self.tag, result['more']))
+        except Exception as e:
+            util.DEBUG_LOG('Failed to fetch filmography for {0}: {1}'.format(self.tag, e))
+            # Fallback to search-based approach
+            fallback_items = self._getFilmographyViaSearch(media_type)
+            result['items'] = fallback_items
+            result['size'] = len(fallback_items)
+            result['totalSize'] = len(fallback_items)
+            result['more'] = False
+        
+        return result
+    
+    def _getFilmographyViaSearch(self, media_type=None):
+        """Fallback filmography fetch using hub search."""
+        hubs = self.server.hubs(count=50, search_query=self.tag)
+        items = []
+
+        for hub in hubs:
+            if media_type:
+                if media_type == 'movie' and hub.type != 'movie':
+                    continue
+                if media_type == 'show' and hub.type != 'show':
+                    continue
+
+            if hub.type in ('movie', 'show'):
+                for item in hub.items:
+                    items.append(item)
+
+        return items
+
+    def getDiscoverCredits(self, credit_type=None):
+        """
+        Fetch full filmography from Plex's discover API (not just local library).
+
+        Args:
+            credit_type: None to return all credit groups, or a string like
+                         'actor', 'director', 'producer' to filter to one group.
+
+        Returns:
+            When credit_type is None: list of (type_name, credits) tuples for each
+            group the API returns, in API order.
+            When credit_type is set: flat list of credit dicts for that type only.
+            Returns empty list if tagKey is not available or request fails.
+        """
+        tag_key = getattr(self, 'tagKey', None)
+        if not tag_key:
+            util.DEBUG_LOG('getDiscoverCredits: No tagKey available for {0}'.format(self.tag))
+            return []
+
+        if util.LOCAL_MODE:
+            return []
+
+        try:
+            from . import plexapp
+            account = plexapp.ACCOUNT
+            if not account or not account.authToken:
+                util.DEBUG_LOG('getDiscoverCredits: No auth token available')
+                return []
+
+            import requests
+            url = 'https://discover.provider.plex.tv/library/people/{0}/credits'.format(tag_key)
+            headers = {
+                'X-Plex-Token': account.authToken,
+                'Accept': 'application/json'
+            }
+
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code != 200:
+                util.DEBUG_LOG('getDiscoverCredits: Status {0} for {1}'.format(response.status_code, self.tag))
+                return []
+
+            data = response.json()
+            container = data.get('MediaContainer', {})
+            credit_groups = container.get('CreditGroup', [])
+
+            if credit_type is not None:
+                # Legacy single-type mode
+                for group in credit_groups:
+                    if group.get('type', '').lower() == credit_type.lower():
+                        credits = group.get('Credit', [])
+                        util.DEBUG_LOG('getDiscoverCredits: Found {0} {1} credits for {2}'.format(
+                            len(credits), credit_type, self.tag))
+                        return credits
+                return []
+
+            # Return all groups as (type, credits) tuples
+            result = []
+            for group in credit_groups:
+                group_type = group.get('type', '')
+                credits = group.get('Credit', [])
+                if credits:
+                    result.append((group_type, credits))
+            util.DEBUG_LOG('getDiscoverCredits: Found {0} credit groups for {1}: {2}'.format(
+                len(result), self.tag, [r[0] for r in result]))
+            return result
+
+        except Exception as e:
+            util.DEBUG_LOG('getDiscoverCredits: Failed for {0}: {1}'.format(self.tag, e))
+            return []
+
+    @staticmethod
+    def checkLibraryPresence(server, guids):
+        """
+        Batch-check which plex GUIDs exist in the user's library.
+
+        Args:
+            server: PlexServer instance to query
+            guids: list of plex GUIDs (e.g. ['plex://movie/5d7769d0...', ...])
+
+        Returns:
+            set of GUIDs that ARE in the library
+        """
+        from .compat import quote_plus
+
+        present = set()
+        # Batch in groups of 10 (matching Plex Web's behaviour)
+        batch_size = 10
+        for i in range(0, len(guids), batch_size):
+            batch = guids[i:i + batch_size]
+            # URL-encode each GUID and join with commas
+            encoded = ','.join(quote_plus(g) for g in batch)
+            path = '/library/metadata/{0}'.format(encoded)
+            try:
+                data = server.query(path)
+                if data is not None:
+                    # 200 response — all items in this batch are in the library
+                    # Extract the GUIDs from the response to be precise
+                    for elem in data:
+                        guid = elem.get('guid', '')
+                        if guid:
+                            present.add(guid)
+                    # If no guid attributes in response, assume all batch GUIDs are present
+                    if not present.intersection(set(batch)):
+                        present.update(batch)
+            except Exception:
+                # 404 or error — none of these items are in the library
+                pass
+
+        util.DEBUG_LOG('checkLibraryPresence: {0}/{1} GUIDs found in library'.format(
+            len(present), len(guids)))
+        return present
+
 
 class Similar(MediaTag):
     TYPE = 'Similar'
@@ -326,6 +751,18 @@ class Bandwidth(plexobjects.PlexObject):
     TYPE = 'Bandwidth'
 
 
+class Image(plexobjects.PlexObject):
+    """
+    Image variants the server offers for an item; carries alt, type and url. Known types are coverPoster, snapshot,
+    background, clearLogo and backgroundSquare. For episodes and seasons the server already points clearLogo at the
+    show, so no parent lookup is necessary.
+    """
+    TYPE = 'Image'
+
+    def __repr__(self):
+        return '<%s:%s:%s>' % (self.__class__.__name__, self.type, self.url)
+
+
 class Marker(MediaTag):
     TYPE = 'Marker'
     FILTER = 'Marker'
@@ -361,7 +798,7 @@ class RelatedMixin(object):
         if self._relatedCount is None:
             related = self.getRelated(0, 0 if self.related_source == "similar" else 36)
             if related is not None:
-                self._relatedCount = related.totalSize
+                self._relatedCount = related.totalSize.asInt()
             else:
                 self._relatedCount = 0
 

@@ -22,6 +22,7 @@ from kodi_six import xbmc
 sys.modules['_asyncio'] = None
 
 from . import plex
+from . import localmode
 
 from plexnet import plexapp
 from .templating import render_templates
@@ -102,6 +103,11 @@ def realExit():
 
 def signout():
     util.setSetting('auth.token', '')
+    # signing out always leaves local mode - staying in it would bounce us straight
+    # back into an account-less local session, making the sign-out a visual no-op
+    if util.getSetting('local_mode', False):
+        util.setSetting('local_mode', False)
+        plexapp.util.LOCAL_MODE = False
     util.DEBUG_LOG('Main: Signing out...')
     plexapp.ACCOUNT.signOut()
 
@@ -143,6 +149,7 @@ def main(force_render=False):
         try:
             util.setGlobalProperty('ignore_spinner', '')
             util.setGlobalProperty('is_active', '')
+            util.setGlobalProperty('osd_active', '')
         except:
             pass
 
@@ -186,12 +193,12 @@ def _main():
 
     try:
         while not util.MONITOR.abortRequested():
-            if plex.init():
+            if plex.init(local=util.getSetting('local_mode', False)):
                 background.setSplash(False)
                 fromSwitch = False
                 while not util.MONITOR.abortRequested():
                     if (
-                        not plexapp.ACCOUNT.isOffline and not
+                        (not plexapp.ACCOUNT.isOffline or plexapp.util.LOCAL_MODE) and not
                         plexapp.ACCOUNT.isAuthenticated and
                         (len(plexapp.ACCOUNT.homeUsers) > 1 or plexapp.ACCOUNT.isProtected)
 
@@ -251,7 +258,23 @@ def _main():
                             finally:
                                 background.setBusy(False)
 
+                        # local mode: nothing reachable - offer manual server entry instead of
+                        # silently landing on an empty home
+                        while plexapp.util.LOCAL_MODE and not selectedServer and localmode.offerServerIfNoneFound():
+                            background.setBusy()
+                            try:
+                                plexapp.SERVERMANAGER.refreshManualConnections()
+                                plex.CallbackEvent(plexapp.util.APP, 'change:selectedServer', timeout=15).wait()
+                                selectedServer = plexapp.SERVERMANAGER.checkSelectedServerSearch(
+                                    skip_preferred=True, skip_owned=True)
+                            finally:
+                                background.setBusy(False)
+
                         util.DEBUG_LOG('Main: STARTING WITH SERVER: {0}', selectedServer)
+
+                        # account-less local mode: offer user profiles known to the PMS
+                        if plexapp.util.LOCAL_MODE and not plexapp.ACCOUNT.isSignedIn and selectedServer:
+                            localmode.seedUsersFromServer(selectedServer)
 
                         windowutils.HOME = home.HomeWindow.create()
 
@@ -274,6 +297,17 @@ def _main():
 
                         if closeOption == 'signout':
                             signout()
+                            break
+                        elif closeOption == 'go_local':
+                            util.DEBUG_LOG('Main: Going local...')
+                            # harvest per-user tokens while plex.tv is still reachable
+                            plexapp.ACCOUNT.harvestLocalUsers()
+                            localmode.ensureInsecureConnectionsAllowed()
+                            util.setSetting('local_mode', True)
+                            break
+                        elif closeOption == 'go_online':
+                            util.DEBUG_LOG('Main: Going online...')
+                            util.setSetting('local_mode', False)
                             break
                         elif closeOption == 'switch':
                             background.setBusy(True)

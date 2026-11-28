@@ -11,8 +11,10 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
         xbmc.Monitor.__init__(self, *args, **kwargs)
         signalsmixin.SignalsMixin.__init__(self)
         self.device_sleeping = False
+        self.tv_standby = False
         self.wait_interval = 0.1
         self.ignore_ssevent = False
+        self._skin_reloading = False
 
     def watchStatusChanged(self):
         self.trigger('changed.watchstatus')
@@ -25,10 +27,16 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
 
     def actionHome(self):
         from plexnet import plexapp
-        from .windows import windowutils
+        from .windows import kodigui, windowutils
         plexapp.util.APP.trigger('close.windows')
         plexapp.util.APP.trigger('close.dialogs')
         windowutils.HOME.go_root = True
+        # wait for sub-windows to actually close before showing HOME
+        ct = 0
+        home_wid = windowutils.HOME._winID
+        while home_wid and kodigui.xbmcgui.getCurrentWindowId() != home_wid and ct < self.waitAmount(2):
+            self.waitFor()
+            ct += 1
         windowutils.HOME.show()
 
     def actionQuit(self):
@@ -99,7 +107,20 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
 
         elif sender == "xbmc" and method == "System.OnWake":
             self.device_sleeping = False
+            self.tv_standby = False
             self.trigger('system.wakeup')
+
+        elif sender == "xbmc" and method in ("Other.OnTVStandby", "Other.OnCECSourceDeactivated"):
+            # announced by p3i/CE Kodi when the TV sends a CEC standby or another
+            # CEC device becomes the active source; not available on stock Kodi
+            LOG("Monitor: TV/CEC display gone ({0})".format(method))
+            self.tv_standby = True
+            self.trigger('tv.standby')
+
+        elif sender == "xbmc" and method == "Other.OnCECSourceActivated":
+            if self.tv_standby:
+                LOG("Monitor: CEC source re-activated")
+            self.tv_standby = False
         elif sender == "xbmc" and method == "System.OnQuit":
             from .windows import windowutils
             LOG("OnQuit: Stopping playback")
@@ -108,6 +129,37 @@ class UtilityMonitor(xbmc.Monitor, signalsmixin.SignalsMixin):
             LOG("OnQuit: Closing Home")
             windowutils.HOME.closeOption = "kodi_exit"
             windowutils.HOME.doClose()
+            return
+
+        elif sender == "xbmc" and method == "GUI.OnSkinUnloading":
+            # The underlying Kodi skin is being torn down (most commonly a background
+            # skin-addon auto-update triggering ReloadSkin). The window manager's
+            # DeInitialize() Close()s and FreeResources() our windows, but Kodi's python
+            # binding never clears bModal on deinit (Window::OnDeinitWindow) - so HOME's
+            # native doModal() keeps spinning over a gutted window and the UI freezes.
+            # Arm the restart now so that however doModal eventually unblocks, _main is
+            # already routed to "restart"; we force the unblock on OnSkinLoaded.
+            from .windows import windowutils
+            LOG("Skin unloading: arming UI restart for after the reload")
+            self._skin_reloading = True
+            if windowutils.HOME:
+                windowutils.HOME.closeOption = "restart"
+
+        elif sender == "xbmc" and method in ("GUI.OnSkinLoaded", "GUI.OnSkinLoadFailed"):
+            # Skin reload settled (loaded, or failed outright). Recover via the same
+            # proven path as OnQuit: doClose() HOME so its native close() clears bModal
+            # and pulses doModal() out, _main sees the armed "restart" and returns, and
+            # the atexit handler RunScript()s us back from a clean state. We handle the
+            # failure case too so we don't hang if the default skin itself fails (the
+            # non-default fallback already reloads and fires OnSkinLoaded by then).
+            if not self._skin_reloading:
+                return
+            self._skin_reloading = False
+            from .windows import windowutils
+            if windowutils.HOME:
+                LOG("Skin reload settled ({}): restarting addon to recover UI", method)
+                windowutils.HOME.closeOption = "restart"
+                windowutils.HOME.doClose()
             return
 
     def stopPlayback(self):

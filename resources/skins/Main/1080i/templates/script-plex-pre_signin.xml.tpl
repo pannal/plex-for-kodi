@@ -22,6 +22,7 @@
     <width>275</width>
     <height>{{ vscale(104) }}</height>
     <onup>200</onup>
+    <ondown>101</ondown>
     <font>font13</font>
     <textcolor>FFFFFFFF</textcolor>
     <focusedcolor>FFFFFFFF</focusedcolor>
@@ -32,5 +33,23 @@
     <textoffsetx>0</textoffsetx>
     <textoffsety>0</textoffsety>
     <label> </label>
+</control>
+
+<control type="button" id="101">
+    <posx>1437</posx>
+    <posy>{{ vperc(vscale(1080)) + vscale(1080) - vscale(165) }}</posy>
+    <width>275</width>
+    <height>{{ vscale(70) }}</height>
+    <onup>100</onup>
+    <font>font12</font>
+    <textcolor>B3FFFFFF</textcolor>
+    <focusedcolor>FFFFFFFF</focusedcolor>
+    <align>center</align>
+    <aligny>center</aligny>
+    <texturefocus>-</texturefocus>
+    <texturenofocus>-</texturenofocus>
+    <textoffsetx>0</textoffsetx>
+    <textoffsety>0</textoffsety>
+    <label>$ADDON[script.plexmod 35022]</label>
 </control>
 {% endblock controls %}

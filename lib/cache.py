@@ -63,8 +63,10 @@ class KodiCacheManager(object):
         if xbmcvfs.exists(self.custom_tpl_path):
             try:
                 f = xbmcvfs.File(self.custom_tpl_path)
-                data = f.read()
-                f.close()
+                try:
+                    data = f.read()
+                finally:
+                    f.close()
                 if data:
                     return data
             except:
@@ -72,8 +74,10 @@ class KodiCacheManager(object):
 
         DEBUG_LOG("Custom pm4k_cache_template.xml not found, using default")
         f = xbmcvfs.File(self.orig_tpl_path)
-        data = f.read()
-        f.close()
+        try:
+            data = f.read()
+        finally:
+            f.close()
         return data
 
     def load(self):

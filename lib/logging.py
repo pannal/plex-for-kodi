@@ -76,10 +76,22 @@ def TEST(msg):
     xbmc.log('---TEST: {0}'.format(msg), xbmc.LOGINFO)
 
 
+def paramify(value):
+    """Quote a value for Kodi's builtin argument parser, mirroring StringUtils::Paramify.
+
+    Kodi splits builtin arguments on unquoted commas, and only \\" and \\\\ are honoured as
+    escapes, so any comma in an interpolated value silently ends its argument early and
+    shifts everything after it - a comma in a Notification() message would eat the display
+    time. Inside quotes commas and parentheses are taken literally.
+    """
+    return '"{0}"'.format(str(value).replace('\\', '\\\\').replace('"', '\\"'))
+
+
 def showNotification(message, time_ms=3000, icon_path=None, header=ADDON.getAddonInfo('name')):
     try:
         icon_path = icon_path or translatePath(ADDON.getAddonInfo('icon'))
-        xbmc.executebuiltin('Notification({0},{1},{2},{3})'.format(header, message, time_ms, icon_path))
+        xbmc.executebuiltin('Notification({0},{1},{2},{3})'.format(
+            paramify(header), paramify(message), time_ms, paramify(icon_path)))
     except RuntimeError:  # Happens when disabling the addon
         xbmc.log(message, xbmc.LOGINFO)
 

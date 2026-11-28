@@ -125,20 +125,38 @@
             {% include "includes/watched_indicator.xml.tpl" with itemref="Container(400).ListItem" & xoff=656+60 & uw_size=35 & scale="large" %}
         </control>
 
+        <!-- One row step above the meta row: the column below runs 160 -> 206, so 46, and 160-46=114. Sits
+             here in both modes, under whatever fills the top slot - the clear logo, or the show's title.
+             1084 is the column's right margin: 776+1084 = 1860. -->
         <control type="grouplist">
             <posx>776</posx>
-            <posy>0</posy>
-            <width>880</width>
-            <height>{{ vscale(60) }}</height>
+            <posy>{{ vscale(114) }}</posy>
+            <width>1084</width>
+            <!-- 46, the row step: at the inherited 60 this box ran to 174 and overlapped the meta row that
+                 starts at 160, which matters because a grouplist clips its children and owns that region -->
+            <height>{{ vscale(46) }}</height>
             <align>left</align>
             <itemgap>0</itemgap>
             <orientation>horizontal</orientation>
             <usecontrolcoords>true</usecontrolcoords>
+            <!-- SxxEyy and the air date, ahead of the episode title in both modes; with a logo up this is
+                 also what frees the row below for the logo's height -->
             <control type="label">
-                <visible>String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
-                <width max="880">auto</width>
-                <height>{{ vscale(60) }}</height>
-                <font>font13</font>
+                <width>auto</width>
+                <height>{{ vscale(46) }}</height>
+                <!-- font12 like the metadata rows this came off, not font13 like the title beside it -->
+                <font>font12</font>
+                <align>left</align>
+                <aligny>top</aligny>
+                <textcolor>FFFFFFFF</textcolor>
+                <label>$INFO[Container(400).ListItem.Property(heading.prefix)]</label>
+            </control>
+            <!-- capped so a long title can't outgrow the group and get clipped instead of scrolling: the
+                 SxxEyy prefix ahead of it runs to about 300 -->
+            <control type="label">
+                <width max="650">auto</width>
+                <height>{{ vscale(46) }}</height>
+                <font>font12</font>
                 <align>left</align>
                 <aligny>top</aligny>
                 <textcolor>FFFFFFFF</textcolor>
@@ -146,20 +164,9 @@
                 <scrollspeed>35</scrollspeed>
                 <label>$INFO[Container(400).ListItem.Property(title)]</label>
             </control>
-            <control type="label">
-                <visible>!String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
-                <width max="700">auto</width>
-                <height>{{ vscale(60) }}</height>
-                <font>font13</font>
-                <align>left</align>
-                <aligny>top</aligny>
-                <textcolor>FFFFFFFF</textcolor>
-                <scroll>true</scroll>
-                <scrollspeed>35</scrollspeed>
-                <label>$INFO[Container(400).ListItem.Property(title)]</label>
-            </control>
+            <!-- moved up here with the merged heading; its old row was removed to free the logo's height -->
             <control type="button">
-                <visible>!String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
+                <visible>!String.IsEmpty(Container(400).ListItem.Property(unavailable))</visible>
                 <posx>10</posx>
                 <posy>6</posy>
                 <width>auto</width>
@@ -167,12 +174,12 @@
                 <font>font12</font>
                 <align>center</align>
                 <aligny>center</aligny>
-                <focusedcolor>FFE5A00D</focusedcolor>
-                <textcolor>FFE5A00D</textcolor>
+                <focusedcolor>FFFFFFFF</focusedcolor>
+                <textcolor>FFFFFFFF</textcolor>
                 <textoffsetx>15</textoffsetx>
-                <texturefocus colordiffuse="40000000" border="12">script.plex/white-square-rounded.png</texturefocus>
-                <texturenofocus colordiffuse="40000000" border="12">script.plex/white-square-rounded.png</texturenofocus>
-                <label>$INFO[Container(400).ListItem.Property(remainingTime)]</label>
+                <texturefocus colordiffuse="FFAC3223" border="12">script.plex/white-square-rounded.png</texturefocus>
+                <texturenofocus colordiffuse="FFAC3223" border="12">script.plex/white-square-rounded.png</texturenofocus>
+                <label>$ADDON[script.plexmod 32312]</label>
             </control>
         </control>
         <control type="image">
@@ -183,18 +190,72 @@
             <height>{{ vscale(22) }}</height>
             <texture>script.plex/stars/$INFO[Container(400).ListItem.Property(rating.stars)].png</texture>
         </control>
+        <!-- Fills the same top slot the clear logo would, on the same box, so both variants put the show's
+             identity in one place and the episode line at 114 under it. Bottom-aligned to land its baseline
+             where the logo's bottom edge is. -->
         <control type="label">
+            <visible>String.IsEmpty(Window.Property(clear.logo))</visible>
             <posx>776</posx>
-            <posy>{{ vscale(50) }}</posy>
+            <posy>0</posy>
+            <!-- 714, not the heading's 950: this box overlaps the ratings' y range, and 776+714 stops short
+                 of them at 1560. The heading below clears them and can run wider. -->
             <width>714</width>
-            <height>{{ vscale(60) }}</height>
-            <font>font13</font>
+            <height>{{ vscale(68) }}</height>
+            <!-- stands in for the logo and has its whole 100px box to fill, so it takes the largest face
+                 the templates use; font32_title is the step down if this crowds the box -->
+            <font>font45</font>
             <align>left</align>
-            <aligny>top</aligny>
+            <aligny>bottom</aligny>
             <scroll>true</scroll>
             <scrollspeed>25</scrollspeed>
             <textcolor>FFFFFFFF</textcolor>
             <label>$INFO[Container(400).ListItem.Property(show.title)]</label>
+        </control>
+        <!-- Takes the watched/unwatched indicator's slot, flush to the thumb's top-right corner and using its
+             texture, which is free exactly when this is showing: isWatched is viewCount>0 OR viewOffset>0, so
+             an in-progress episode gets no unwatched dot, and isFullyWatched needs viewOffset empty, so it
+             gets no checkmark either. Right-aligned via a grouplist because the pill's width follows its text;
+             its right edge lands on xoff (656+60), the same anchor watched_indicator uses. Unconditional -
+             keeping it out of the heading is what lets that row be a single label with no width juggling. -->
+        <control type="grouplist">
+            <visible>!String.IsEmpty(Container(400).ListItem.Property(remainingTime))</visible>
+            <posx>416</posx>
+            <posy>0</posy>
+            <width>300</width>
+            <height>{{ vscale(35) }}</height>
+            <align>right</align>
+            <itemgap>0</itemgap>
+            <orientation>horizontal</orientation>
+            <control type="button">
+                <width>auto</width>
+                <height>{{ vscale(35) }}</height>
+                <font>font12</font>
+                <align>center</align>
+                <aligny>center</aligny>
+                <focusedcolor>FFE5A00D</focusedcolor>
+                <textcolor>FFE5A00D</textcolor>
+                <textoffsetx>15</textoffsetx>
+                <!-- The tight-radius twin of the _w texture the indicator uses (4px curve against its 12), and
+                     9-sliced at exactly that: without a border the 100x100 source stretches to the pill's
+                     width and the round flattens into an ellipse -->
+                <texturefocus colordiffuse="CC000000" border="4">script.plex/white-square-bl-rounded.png</texturefocus>
+                <texturenofocus colordiffuse="CC000000" border="4">script.plex/white-square-bl-rounded.png</texturenofocus>
+                <label>$INFO[Container(400).ListItem.Property(remainingTime)]</label>
+            </control>
+        </control>
+
+        <!-- Exactly the box the movie and show screens use, 0..68. This column could afford 102 - its next
+             row is the heading at 114, where theirs is a meta row at 80 - but the logo is bottom-aligned, so
+             a taller box draws the logo lower and it stops lining up with the other screens. Equal size or
+             equal position; position won. -->
+        <control type="image">
+            <visible>!String.IsEmpty(Window.Property(clear.logo))</visible>
+            <posx>776</posx>
+            <posy>0</posy>
+            <width>560</width>
+            <height>{{ vscale(68) }}</height>
+            <aspectratio align="left" aligny="bottom">keep</aspectratio>
+            <texture background="true">$INFO[Window.Property(clear.logo)]</texture>
         </control>
 
         <control type="grouplist">
@@ -245,51 +306,20 @@
 
         <control type="grouplist">
             <posx>776</posx>
-            <posy>{{ vscale(100) }}</posy>
-            <width>1360</width>
-            <height>{{ vscale(30) }}</height>
-            <align>left</align>
-            <itemgap>0</itemgap>
-            <orientation>horizontal</orientation>
-            <usecontrolcoords>true</usecontrolcoords>
-            <control type="label">
-                <width>auto</width>
-                <height>{{ vscale(30) }}</height>
-                <font>font12</font>
-                <align>left</align>
-                <textcolor>FFFFFFFF</textcolor>
-                <label>$INFO[Container(400).ListItem.Property(season)]$INFO[Container(400).ListItem.Property(episode), &#8226; , / ]$INFO[Container(400).ListItem.Property(date)]</label>
-            </control>
-            <control type="button">
-                <visible>!String.IsEmpty(Container(400).ListItem.Property(unavailable))</visible>
-                <posx>10</posx>
-                <width>auto</width>
-                <height>{{ vscale(30) }}</height>
-                <font>font12</font>
-                <align>center</align>
-                <aligny>center</aligny>
-                <focusedcolor>FFFFFFFF</focusedcolor>
-                <textcolor>FFFFFFFF</textcolor>
-                <textoffsetx>15</textoffsetx>
-                <texturefocus colordiffuse="FFAC3223" border="12">script.plex/white-square-rounded.png</texturefocus>
-                <texturenofocus colordiffuse="FFAC3223" border="12">script.plex/white-square-rounded.png</texturenofocus>
-                <label>$ADDON[script.plexmod 32312]</label>
-            </control>
-        </control>
-        <control type="grouplist">
-            <posx>776</posx>
-            <posy>{{ vscale(148) }}</posy>
-            <width>1360</width>
+            <posy>{{ vscale(160) }}</posy>
+            <width>1084</width>
             <height>{{ vscale(34) }}</height>
             <align>left</align>
             <itemgap>0</itemgap>
             <orientation>horizontal</orientation>
             <usecontrolcoords>true</usecontrolcoords>
             <control type="label">
-                <width>auto</width>
+                <width max="1084">auto</width>
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>left</align>
+                <scroll>true</scroll>
+                <scrollspeed>25</scrollspeed>
                 <textcolor>FFFFFFFF</textcolor>
                 <label>$INFO[Container(400).ListItem.Property(duration)]$INFO[Container(400).ListItem.Property(genre), &#8226; ]$INFO[Container(400).ListItem.Property(year), &#8226; ]$INFO[Container(400).ListItem.Property(content.rating), &#8226; ]</label>
             </control>
@@ -313,19 +343,21 @@
         <control type="label">
             <visible>!String.IsEmpty(Container(400).ListItem.Property(directors)) | !String.IsEmpty(Container(400).ListItem.Property(writers))</visible>
             <posx>776</posx>
-            <posy>{{ vscale(194) }}</posy>
-            <width>1360</width>
+            <posy>{{ vscale(206) }}</posy>
+            <width>1084</width>
             <height>{{ vscale(30) }}</height>
             <font>font12</font>
             <align>left</align>
+            <scroll>true</scroll>
+            <scrollspeed>25</scrollspeed>
             <textcolor>99FFFFFF</textcolor>
             <label>$INFO[Container(400).ListItem.Property(directors)]$INFO[Container(400).ListItem.Property(writers)]</label>
         </control>
 
         <control type="grouplist">
             <posx>776</posx>
-            <posy>{{ vscale(263) }}</posy>
-            <width>1360</width>
+            <posy>{{ vscale(275) }}</posy>
+            <width>1084</width>
             <height>{{ vscale(34) }}</height>
             <align>left</align>
             <itemgap>15</itemgap>
@@ -346,10 +378,12 @@
                 <label>[UPPERCASE]$ADDON[script.plexmod 32395][/UPPERCASE]</label>
             </control>
             <control type="label">
-                <width>auto</width>
+                <width max="1084">auto</width>
                 <height>{{ vscale(34) }}</height>
                 <font>font12</font>
                 <align>left</align>
+                <scroll>true</scroll>
+                <scrollspeed>25</scrollspeed>
                 <aligny>top</aligny>
                 <textcolor>FFFFFFFF</textcolor>
                 <label>$INFO[Container(400).ListItem.Property(audio)]</label>
@@ -384,7 +418,7 @@
         </control>
         <control type="textbox">
             <posx>776</posx>
-            <posy>{{ vscale(340) }}</posy>
+            <posy>{{ vscale(352) }}</posy>
             <width>1084</width>
             <height>{{ vscale(172) }}</height>
             <font>font12</font>

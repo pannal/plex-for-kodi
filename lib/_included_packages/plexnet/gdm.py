@@ -26,7 +26,8 @@ class GDMDiscovery(object):
 
     def isActive(self):
         from . import plexapp
-        return util.INTERFACE.getPreference("gdm_discovery", False) and self.thread and self.thread.is_alive()
+        return (util.INTERFACE.getPreference("gdm_discovery", False) or util.LOCAL_MODE) \
+            and self.thread and self.thread.is_alive()
 
     r'''
     def discover(self):
@@ -122,7 +123,8 @@ class GDMDiscovery(object):
 
     def discover(self):
         from . import plexapp
-        if not util.INTERFACE.getPreference("gdm_discovery", False) or self.isActive():
+        # local mode always allows GDM; it's the only discovery available besides manual connections
+        if not (util.INTERFACE.getPreference("gdm_discovery", False) or util.LOCAL_MODE) or self.isActive():
             return
 
         self.thread = threading.Thread(target=self._discover)

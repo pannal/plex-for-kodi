@@ -8,6 +8,7 @@ from . import mediadecisionengine
 from . import serverdecision
 from lib.util import KODI_VERSION_MAJOR
 from lib.cache import CACHE_SIZE
+from lib.language_util import getNativeLanguages
 
 from six.moves import range
 from six import ensure_str
@@ -63,6 +64,17 @@ class PlexPlayer(BasePlayer):
         major, minor = channelDef.split(".") if "." in channelDef else (channelDef, 0)
         return int(major) + int(minor)
 
+    def shouldSuppressSubtitleForAudioLanguage(self):
+        audio = self.choice.audioStream
+        if not audio:
+            return True
+        if audio.languageCode not in getNativeLanguages(
+                self.item.settings.getPreference("disable_subtitle_languages", [])):
+            return False
+
+        subtitle = self.choice.subtitleStream
+        return not (subtitle and subtitle.forced_subtitle)
+
     def rebuild(self, item, decision=None):
         # item.settings = self.item.settings
         oldChoice = self.choice
@@ -111,8 +123,7 @@ class PlexPlayer(BasePlayer):
             obj.frameRate = 30
 
         # Add soft subtitle info
-        if not self.choice.audioStream or self.choice.audioStream.languageCode not in self.item.settings.getPreference(
-                "disable_subtitle_languages", []):
+        if not self.shouldSuppressSubtitleForAudioLanguage():
             if self.choice.subtitleDecision == self.choice.SUBTITLES_SOFT_ANY:
                 # add sub autosync settings per item
                 auto_sync = self.item.playbackSettings.auto_sync
@@ -202,7 +213,12 @@ class PlexPlayer(BasePlayer):
                     if adjusted_sval < self.seekValue:
                         util.LOG("Adjusted resume point from {} to {} ({})", self.seekValue, adjusted_sval,
                                  self.item.settings.getPreference("resume_offset", -3500))
-                obj.playStart = int(adjusted_sval / 1000) - obj.startOffset
+                # clamp to the selected part's start: the resume_offset rewind above can push us
+                # back across a part boundary (e.g. advancing to part 2 at its exact start offset,
+                # which arrives here as a positive seekValue and gets rewound), yielding a negative
+                # part-relative playStart that later re-resolves the absolute offset into the
+                # *previous* part -> multi-part playback loops/black-screens.
+                obj.playStart = max(0, int(adjusted_sval / 1000) - obj.startOffset)
 
         self.metadata = obj
 
@@ -307,8 +323,7 @@ class PlexPlayer(BasePlayer):
 
                 subType = 'sidecar'  # AppSettings().getBoolPreference("custom_video_player"), "embedded", "sidecar")
                 # deselect subtitles if we don't need them
-                if not self.choice.audioStream or self.choice.audioStream.languageCode in self.item.settings.getPreference(
-                        "disable_subtitle_languages", []):
+                if self.shouldSuppressSubtitleForAudioLanguage():
                     subType = "none"
                 decisionPath = http.addUrlParam(decisionPath, "subtitles=" + subType)
 

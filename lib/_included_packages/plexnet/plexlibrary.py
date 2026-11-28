@@ -100,6 +100,7 @@ class LibrarySection(plexobjects.PlexObject):
         self.locations = []
         self._isMapped = None
         self._settings = None
+        self._filtersCache = {}
         super(LibrarySection, self).__init__(data, initpath=initpath, server=server, container=container)
 
     def __repr__(self):
@@ -181,19 +182,61 @@ class LibrarySection(plexobjects.PlexObject):
         self._isMapped = False
         return self._isMapped
 
+    @property
+    def mappedPaths(self):
+        """The Kodi-side roots this section's locations map to, deduplicated."""
+        paths = []
+        for loc in self.locations:
+            map_path, pms_path = self.getMappedPath(loc)
+            if map_path and pms_path and map_path not in paths:
+                paths.append(map_path)
+        return paths
+
+    @property
+    def mappingBroken(self):
+        """True when any of this section's mapped roots was found unreachable. Never cached;
+        the probe and playback both update the state behind it.
+        """
+        for map_path in self.mappedPaths:
+            if pmm.isMappingBroken(self.server.name, map_path):
+                return True
+        return False
+
     def getAbsolutePath(self, key):
         if key == 'key':
             return '/library/sections/{0}/all'.format(self.key)
 
         return plexobjects.PlexObject.getAbsolutePath(self, key)
 
-    def all(self, start=None, size=None, filter_=None, sort=None, unwatched=False, type_=None, hdr=False, dovi=False):
+    def _applyBoolFilters(self, args, bool_filters, type_):
+        """ Apply a {filter_key: True} dict of boolean filters onto a query args dict.
+            'unwatched' keeps its libtype-specific translation (depends on self.TYPE and
+            type_); every other key maps to <key>=1.
+        """
+        if not bool_filters:
+            return
+        for key, on in bool_filters.items():
+            if not on:
+                continue
+            if key == 'unwatched':
+                if self.TYPE == 'movie':
+                    args['unwatched'] = 1
+                elif type_ == 4:
+                    args['episode.unwatched'] = 1
+                elif self.TYPE == 'show':
+                    args['show.unwatchedLeaves'] = 1
+                else:
+                    args['unwatchedLeaves'] = 1
+            else:
+                args[key] = 1
+
+    def all(self, start=None, size=None, filter_=None, sort=None, type_=None, bool_filters=None):
         if self.key.startswith('/'):
             path = '{0}/all'.format(self.key)
         else:
             path = '/library/sections/{0}/all'.format(self.key)
-        
-        return self.items(path, start, size, filter_, sort, unwatched, type_, False, hdr=hdr, dovi=dovi)
+
+        return self.items(path, start, size, filter_, sort, type_, False, bool_filters=bool_filters)
 
     @property
     def settings(self):
@@ -217,13 +260,13 @@ class LibrarySection(plexobjects.PlexObject):
             path = self.key
         else:
             path = '/library/sections/{0}'.format(self.key)
-        
+
         if not subDir:
             path = '{0}/folder'.format(path)
-        
-        return self.items(path, start, size, None, None, False, None, True)
 
-    def items(self, path, start, size, filter_, sort, unwatched, type_, tag_fallback, hdr=False, dovi=False):
+        return self.items(path, start, size, None, None, None, True)
+
+    def items(self, path, start, size, filter_, sort, type_, tag_fallback, bool_filters=None):
 
         args = {}
         if self.DEFAULT_URL_ARGS:
@@ -248,20 +291,7 @@ class LibrarySection(plexobjects.PlexObject):
         if type_:
             args['type'] = str(type_)
 
-        if unwatched:
-            if self.TYPE == 'movie':
-                args['unwatched'] = 1
-            elif type_ == 4:
-                args['episode.unwatched'] = 1
-            elif self.TYPE == 'show':
-                args['show.unwatchedLeaves'] = 1
-            else:
-                # might not apply anywhere
-                args['unwatchedLeaves'] = 1
-        if hdr:
-            args['hdr'] = 1
-        if dovi:
-            args['dovi'] = 1
+        self._applyBoolFilters(args, bool_filters, type_)
 
         if args:
             path += util.joinArgs(args, '?' not in path)
@@ -269,7 +299,7 @@ class LibrarySection(plexobjects.PlexObject):
         return plexobjects.listItems(self.server, path, tag_fallback=tag_fallback, not_cachable=not self.cachable,
                                      cache_ref=self.cacheRef)
 
-    def jumpList(self, filter_=None, sort=None, unwatched=False, type_=None, hdr=False, dovi=False):
+    def jumpList(self, filter_=None, sort=None, type_=None, bool_filters=None):
         if self.key.startswith('/'):
             path = '{0}/firstCharacter'.format(self.key)
         else:
@@ -288,20 +318,7 @@ class LibrarySection(plexobjects.PlexObject):
         if type_:
             args['type'] = str(type_)
 
-        if unwatched:
-            if self.TYPE == 'movie':
-                args['unwatched'] = 1
-            elif type_ == 4:
-                args['episode.unwatched'] = 1
-            elif self.TYPE == 'show':
-                args['show.unwatchedLeaves'] = 1
-            else:
-                # might not apply anywhere
-                args['unwatchedLeaves'] = 1
-        if hdr:
-            args['hdr'] = 1
-        if dovi:
-            args['dovi'] = 1
+        self._applyBoolFilters(args, bool_filters, type_)
 
         if args:
             path += util.joinArgs(args, '?' not in path)
@@ -347,6 +364,51 @@ class LibrarySection(plexobjects.PlexObject):
         query = '{0}{1}{2}'.format(base, category, util.joinArgs(args))
 
         return plexobjects.listItems(self.server, query, bytag=True)
+
+    def listFilters(self, libtype=None):
+        """ Return the filters the server exposes for this section as a list of
+            Directory items (each has .filter, .filterType, .key, .title, .type).
+            When libtype is given, request libtype-specific filters; fall back to the
+            section default if that errors or returns nothing. Results are cached
+            per (key, libtype). Returns a possibly-empty list.
+        """
+        cache = getattr(self, '_filtersCache', None)
+        if cache is None:
+            cache = self._filtersCache = {}
+        if libtype in cache:
+            return cache[libtype]
+
+        if self.key.startswith('/'):
+            base = '{0}/filters'.format(self.key)
+        else:
+            base = '/library/sections/{0}/filters'.format(self.key)
+
+        def _fetch(with_type):
+            args = {}
+            if with_type and libtype is not None:
+                args['type'] = plexobjects.searchType(libtype)
+            return plexobjects.listItems(self.server, '{0}{1}'.format(base, util.joinArgs(args)), bytag=True)
+
+        try:
+            # NotFound covers an unrecognised libtype from searchType(); in either
+            # case retry without the type arg using the section default.
+            result = _fetch(libtype is not None)
+            if not result and libtype is not None:
+                result = _fetch(False)
+        except (exceptions.BadRequest, exceptions.NotFound):
+            try:
+                result = _fetch(False)
+            except exceptions.BadRequest:
+                util.ERROR('listFilters() request error for section {0}'.format(repr(self.key)))
+                return []
+        except Exception:
+            util.ERROR('listFilters() unexpected error for section {0}'.format(repr(self.key)))
+            return []
+
+        # Only successful results are cached, so a transient failure doesn't poison
+        # the cache for the rest of the session.
+        cache[libtype] = result
+        return result
 
     def search(self, title=None, sort=None, maxresults=999999, libtype=None, **kwargs):
         """ Search the library. If there are many results, they will be fetched from the server
@@ -690,7 +752,14 @@ class BaseHub(plexobjects.PlexObject):
 
     def getCleanHubIdentifier(self, is_home=False):
         if not self._identifier:
-            self._identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
+            # For collection hubs, only strip one suffix to preserve unique collection ID
+            # e.g., custom.collection.1.37180.37180 -> custom.collection.1.37180
+            if 'collection' in self.hubIdentifier:
+                self._identifier = re.sub(r'\.\d+$', '', self.hubIdentifier)
+            else:
+                # Strip two suffixes for regular hubs (section + instance)
+                self._identifier = re.sub(r'\.\d+$', '', re.sub(r'\.\d+$', '', self.hubIdentifier))
+
             if is_home and self._identifier == 'movie.recentlyreleased':
                 self._identifier = 'home.VIRTUAL.movies.recentlyreleased'
         return self._identifier
@@ -841,6 +910,59 @@ class PlaylistHub(BaseHub):
         self.set('offset', start)
         self.set('size', len(items))
         self.set('more', (items[0].container.offset.asInt() + items[0].container.size.asInt() < items[0].container.totalSize.asInt()) and '1' or '')
+        return items
+
+
+class CollectionsHub(BaseHub):
+    """A library's collections as one hub.
+
+    Plex serves no such hub: a server only returns hubs for collections an admin promoted
+    individually, and those hold the collection's *contents*. This one is built client-side
+    for a library pinned to the top bar as a collections view, so its row shows the
+    collections themselves. Items come from the section, so the row and the pinned view
+    always show the same thing in the same order.
+    """
+    TYPE = "Hub"
+    type = 'collection'
+
+    def __init__(self, section, *args, **kwargs):
+        self.librarySection = section
+        self.hubIdentifier = 'collections.{0}'.format(section.key)
+        kwargs.setdefault('server', section.server)
+        super(CollectionsHub, self).__init__(False, *args, **kwargs)
+
+    def __repr__(self):
+        return '<{0}:{1}>'.format(self.__class__.__name__, self.hubIdentifier)
+
+    def getCleanHubIdentifier(self, is_home=False):
+        # the base strips trailing numeric suffixes, which would collapse every library's
+        # collections onto one identifier and with it their stored item states
+        return self.hubIdentifier
+
+    def init(self, data):
+        try:
+            self.items = self.extend(0, 10) or []
+        except exceptions.BadRequest:
+            util.DEBUG_LOG('CollectionsHub: Bad request: {0}', self)
+            self.items = []
+
+    def reload(self, **kwargs):
+        # the base reloads from self.key, which a client-built hub doesn't have; re-query
+        # the section instead, so the periodic hub update still refreshes this row
+        self.items = self.extend(0, kwargs.get('limit') or 10) or []
+        return self
+
+    def extend(self, start=None, size=None):
+        items = self.librarySection.all(start, size, sort=('titleSort', 'asc'),
+                                        type_=plexobjects.SEARCHTYPES.get('collection'))
+        if not items:
+            return
+
+        container = items[0].container
+        self.set('offset', start or 0)
+        self.set('size', len(items))
+        self.set('more', (container.offset.asInt() + container.size.asInt()
+                          < container.totalSize.asInt()) and '1' or '')
         return items
 
 

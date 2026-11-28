@@ -20,6 +20,8 @@ class AdvancedSettings(object):
     def __bool__(self):
         return bool(self._data)
 
+    __nonzero__ = __bool__
+
     def getData(self):
         return self._data
 
@@ -27,8 +29,10 @@ class AdvancedSettings(object):
         if xbmcvfs.exists("special://profile/advancedsettings.xml"):
             try:
                 f = xbmcvfs.File("special://profile/advancedsettings.xml")
-                self._data = f.read()
-                f.close()
+                try:
+                    self._data = f.read()
+                finally:
+                    f.close()
             except:
                 LOG('script.plexmod: No advancedsettings.xml found')
 
@@ -39,8 +43,10 @@ class AdvancedSettings(object):
 
         try:
             f = xbmcvfs.File("special://profile/advancedsettings.xml", "w")
-            f.write(data)
-            f.close()
+            try:
+                f.write(data)
+            finally:
+                f.close()
         except:
             ERROR("Couldn't write advancedsettings.xml")
 

@@ -171,7 +171,8 @@ class PlexPart(plexobjects.PlexObject):
     def getPathMappedUrl(self, return_only_folder=False):
         verify = addonSettings.verifyMappedFiles
 
-        map_path, pms_path, _ = pmm.getMappedPathFor(self.file, self.getServer())
+        server = self.getServer()
+        map_path, pms_path, _ = pmm.getMappedPathFor(self.file, server)
         if map_path and pms_path:
             if return_only_folder:
                 return map_path
@@ -183,8 +184,12 @@ class PlexPart(plexobjects.PlexObject):
 
             if (verify and xbmcvfs.exists(url)) or not verify:
                 util.DEBUG_LOG("File {} found in path map, mapping to {}", self.file, pms_path)
+                if verify:
+                    pmm.markMappingState(server.name, map_path, True)
                 return url
             util.LOG("Mapped file {} doesn't exist", url)
+            # falling back to streaming from the PMS below happens silently otherwise
+            pmm.reportMappedFileMissing(server.name, map_path)
         return ""
 
     @property

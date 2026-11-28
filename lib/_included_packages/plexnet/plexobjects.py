@@ -332,7 +332,7 @@ class PlexObject(Checks):
         if _soft and self._reloaded:
             return self
 
-        if not data:
+        if data is None:
             try:
                 if self.get('ratingKey'):
                     data = self.server.query('/library/metadata/{0}'.format(self.ratingKey),

@@ -6,3 +6,5 @@
 /resources/skins/Main/packtex.bat
 /resources/skins/Main/1080i/*.xml
 __pycache__
+.pytest_cache
+.venv

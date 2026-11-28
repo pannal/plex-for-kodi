@@ -83,7 +83,7 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
             if not self.key:
                 extras.append(translate_func("Embedded"))
 
-            if self.forced.asBool():
+            if self.forced_subtitle:
                 extras.append(translate_func("Forced"))
 
             if len(extras) > 0:
@@ -150,6 +150,21 @@ class PlexStream(plexobjects.PlexObject, AudioCodecMixin):
         return self.hearingImpaired or "SDH" in self.title or "SDH" in self.displayTitle \
                or "SDH" in self.extendedDisplayTitle
 
+    def _title_has_token(self, token):
+        for title in (self.title, self.displayTitle, self.extendedDisplayTitle):
+            if not title:
+                continue
+            normalized = ensure_str(title).lower()
+            for sep in "[](){}_-./,;:|+":
+                normalized = normalized.replace(sep, " ")
+            if token in normalized.split():
+                return True
+        return False
+
+    @property
+    def forced_subtitle(self):
+        return self.forced.asBool() or self._title_has_token("forced")
+
     @property
     def videoCodecRendering(self):
         render = "sdr"
@@ -205,3 +220,37 @@ class NoneStream(PlexStream):
 
 
 NONE_STREAM = NoneStream()
+
+
+class ExternalAudioStream(PlexStream):
+    """Synthetic audio stream representing an external audio file discovered by Kodi."""
+
+    def __init__(self, language_code='', codec='', channels=0, kodi_index=0, filename=''):
+        PlexStream.__init__(self, None)
+        self.id = plexobjects.PlexValue("external_audio_{}".format(kodi_index))
+        self.streamType = plexobjects.PlexValue(str(self.TYPE_AUDIO))
+        self.languageCode = language_code
+        self.language = language_code
+        self.codec = codec
+        self.channels = plexobjects.PlexValue(str(channels))
+        self.selected = plexobjects.PlexValue('0')
+        self.typeIndex = None
+        self.kodiIndex = kodi_index
+        self.title = filename
+        self.isExternal = True
+
+    def getTitle(self, translate_func=util.dummyTranslate):
+        title = self.getLanguageName(translate_func)
+        codec = self.translateAudioCodec((self.codec or '').lower())
+        channels = self.getChannels(translate_func)
+
+        if codec and channels:
+            title += u" ({0} {1})".format(codec, channels)
+        elif codec or channels:
+            title += u" ({0}{1})".format(codec, channels)
+
+        title += u" [{}]".format(translate_func("External"))
+        return title
+
+    def __repr__(self):
+        return '<ExternalAudioStream: {} (kodi:{})>'.format(str(self), self.kodiIndex)

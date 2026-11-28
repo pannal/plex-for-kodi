@@ -9,6 +9,7 @@ from . import plexobjects
 from . import plexlibrary
 from . import compat
 from . import util
+from . import asyncadapter
 
 from lib.i18n import T
 
@@ -44,12 +45,23 @@ class MyPlexServer(plexserver.PlexServer):
         return plexserver.PlexServer.buildUrl(self, path, includeToken)
 
 
+class DiscoverRetry(asyncadapter.StoppableRetry):
+    def is_retry(self, method, status_code, has_retry_after=False):
+        # Pass 429 (including Retry-After) to PM4K without sleeping on the UI thread.
+        if status_code == 429:
+            return False
+        return super(DiscoverRetry, self).is_retry(method, status_code, has_retry_after)
+
+
 class PlexDiscoverServer(MyPlexServer):
     TYPE = 'PLEXDISCOVERSERVER'
     DEFER_HUBS = True
+    RATE_LIMIT_COOLDOWN = True
 
     def __init__(self):
         MyPlexServer.__init__(self)
+        for adapter in self.session.adapters.values():
+            adapter.max_retries = DiscoverRetry(asyncadapter.MAX_RETRIES)
         self.uuid = 'plexdiscover'
         self.name = 'discover.plex.tv'
 
@@ -66,7 +78,7 @@ class PlexDiscoverServer(MyPlexServer):
         #self.session.request = functools.partial(self.session.request, timeout=plexserver.util.PLEXTV_TIMEOUT)
 
 
-    def hubs(self, section=None, count=None, search_query=None, section_ids=None, ignore_hubs=None):
+    def hubs(self, section=None, count=None, search_query=None, section_ids=None):
         hubs = []
 
         self.currentHubs = {} if self.currentHubs is None else self.currentHubs
@@ -101,9 +113,6 @@ class PlexDiscoverServer(MyPlexServer):
                     hubIdent = elem.attrib.get('hubIdentifier')
                     hubTitle = T(34019, "Discover {}").format(elem.attrib.get('title')) if q == '/hubs/sections/home' else elem.attrib.get('title')
                     self.currentHubs["{}:{}".format(section, hubIdent)] = hubTitle
-
-                    if ignore_hubs and "{}:{}".format(section, hubIdent) in ignore_hubs:
-                        continue
 
                     hub = plexlibrary.WatchlistHub(elem, server=self, container=container)
                     hub.title = hubTitle

@@ -186,3 +186,52 @@ class LocalPlaylist(BasePlaylist):
         if not self._mediaItem:
             return super(LocalPlaylist, self).defaultArt
         return self._mediaItem.defaultArt
+
+
+def reorder_with_specials(episodes, mode='default'):
+    """
+    Reorder a flat episode list so specials (parentIndex == 0) land correctly.
+
+    Modes:
+      'default'    - return episodes unchanged (PMS allLeaves order: specials first).
+                     Note: getNextShowEp() will still skip past specials when picking
+                     the starting episode, so specials remain in the queue but won't
+                     play in this session - this preserves long-standing PM4K behaviour.
+      'interleave' - regulars by (season, episode), each special inserted before
+                     the first regular with a later originallyAvailableAt;
+                     undated specials appended at the end
+    """
+    if mode == 'default' or not episodes:
+        return episodes
+
+    regulars = [e for e in episodes if e.parentIndex.asInt() != 0]
+    specials = [e for e in episodes if e.parentIndex.asInt() == 0]
+
+    if not specials:
+        return episodes
+
+    regulars.sort(key=lambda e: (e.parentIndex.asInt(), e.index.asInt()))
+    specials.sort(key=lambda e: e.index.asInt())
+
+    if not regulars:
+        return specials
+
+    result = list(regulars)
+    leftover = []
+    for special in specials:
+        sd = special.originallyAvailableAt.asDatetime()
+        if sd is None:
+            leftover.append(special)
+            continue
+
+        inserted = False
+        for i, reg in enumerate(result):
+            reg_d = reg.originallyAvailableAt.asDatetime()
+            if reg_d is not None and reg_d > sd:
+                result.insert(i, special)
+                inserted = True
+                break
+        if not inserted:
+            leftover.append(special)
+
+    return result + leftover

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The Image children are what matters here. Note that on an episode the server already points
+     coverPoster/background/clearLogo at the grandparent (show) rating key, and only snapshot at the
+     episode itself, so a client never has to walk to the parent for a logo. -->
+<MediaContainer size="1" allowSync="1" identifier="com.plexapp.plugins.library"
+                librarySectionID="2" librarySectionTitle="TV Shows"
+                librarySectionUUID="22222222-3333-4444-5555-666666666666"
+                mediaTagPrefix="/system/bundle/media/flags/" mediaTagVersion="1600000000">
+  <Video ratingKey="2103" key="/library/metadata/2103" parentRatingKey="2102"
+         grandparentRatingKey="2101" guid="plex://episode/000000000000000000000003"
+         type="episode" title="Capture the Flag" grandparentTitle="Example Show" parentTitle="Season 3"
+         grandparentKey="/library/metadata/2101" parentKey="/library/metadata/2102"
+         contentRating="TV-14" summary="On a camping weekend, the family tries to bond."
+         index="3" parentIndex="3" audienceRating="8.0" year="2022"
+         thumb="/library/metadata/2103/thumb/1600000000"
+         art="/library/metadata/2101/art/1600000000"
+         grandparentThumb="/library/metadata/2101/thumb/1600000000"
+         duration="1666581" originallyAvailableAt="2022-07-29" addedAt="1600000000">
+    <Media id="3103" duration="1666581" bitrate="9900" width="1920" height="960" aspectRatio="1.85"
+           audioChannels="6" audioCodec="eac3" videoCodec="hevc" videoResolution="1080" container="mkv"
+           videoFrameRate="24p" videoProfile="main 10">
+      <Part accessible="1" exists="1" id="4103" key="/library/parts/4103/1600000000/file.mkv"
+            duration="1666581" file="/data/Series/Example Show/Season 03/Example Show - S03E03.mkv"
+            size="2063494690" container="mkv">
+        <Stream id="1" streamType="1" default="1" codec="hevc" index="0" bitrate="8360"
+                language="English" languageTag="en" languageCode="eng" bitDepth="10"
+                height="960" width="1920" profile="main 10" displayTitle="1080p DoVi/HDR10"/>
+        <Stream id="2" streamType="2" selected="1" default="1" codec="eac3" index="1" channels="6"
+                bitrate="768" language="English" languageTag="en" languageCode="eng"
+                audioChannelLayout="5.1(side)" samplingRate="48000" title="English"
+                displayTitle="English (EAC3 5.1 + Atmos)"/>
+      </Part>
+    </Media>
+    <Image alt="Capture the Flag" type="coverPoster" url="/library/metadata/2101/thumb/1600000000"/>
+    <Image alt="Capture the Flag" type="snapshot" url="/library/metadata/2103/thumb/1600000000"/>
+    <Image alt="Capture the Flag" type="background" url="/library/metadata/2101/art/1600000000"/>
+    <Image alt="Capture the Flag" type="clearLogo" url="/library/metadata/2101/clearLogo/1600000000"/>
+    <Image alt="Capture the Flag" type="backgroundSquare" url="/library/metadata/2101/squareArt/1600000000"/>
+    <UltraBlurColors topLeft="19210a" topRight="2e0d14" bottomRight="051322" bottomLeft="3a1611"/>
+    <Guid id="imdb://tt0000003"/>
+    <Guid id="tmdb://3000003"/>
+    <Rating image="imdb://image.rating" value="7.8" type="audience"/>
+    <Marker final="1" id="5103" type="credits" startTimeOffset="1607923" endTimeOffset="1666582">
+      <Attributes id="5103" version="4"/>
+    </Marker>
+    <Extras size="0"/>
+    <Related/>
+  </Video>
+</MediaContainer>

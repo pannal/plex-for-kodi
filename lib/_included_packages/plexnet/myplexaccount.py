@@ -47,8 +47,15 @@ class MyPlexAccount(object):
         self.hasQueue = False
 
         self.isAdmin = False
+        # only ever assigned from saved state or a plex.tv response, so without either
+        # (fresh install straight into account-less local mode) it wouldn't exist at all
+        self.isProtected = False
         self.switchUser = False
         self.forceResourceRefresh = False
+
+        # local mode: the current user's per-server access tokens ({machineIdentifier: token}),
+        # loaded from the LocalUsers registry on setLocal()/local user switches
+        self.serverTokens = {}
 
         self.adminHasPlexPass = False
 
@@ -60,10 +67,181 @@ class MyPlexAccount(object):
         # defaultSubtitleForced: 0 = prefer non forced, 1 = prefer forced, 2 = only forced, 3 = only non forced
         self.subtitlesSDH = 0
         self.subtitlesForced = 0
-        self.subtitlesLanguage = 'en'
+        # empty = user has not set a preferred subtitle language (distinct from explicitly choosing one);
+        # consumers that need a concrete language must fall back themselves.
+        self.subtitlesLanguage = ''
+        # Plex only allows a single "Preferred Audio Language"; combined with the subtitle mode below
+        # we infer native languages for subtitle suppression (see lib.language_util.getNativeLanguages).
+        self.audioLanguage = ''
+        # Plex "Subtitle Mode": 0 = manual, 1 = shown with foreign audio, 2 = always enabled.
+        self.autoSelectSubtitle = 0
 
     def init(self):
         self.loadState()
+
+    def setLocal(self):
+        # Explicit local-only mode; keeps cached account/server state but never contacts plex.tv.
+        # Reuses the isOffline plumbing (feature gates, home user handling).
+        self.isOffline = True
+        self.isSignedIn = False
+        self.isAuthenticated = False
+        self.serverTokens = self.loadLocalUsers().get(str(self.ID), {}).get('serverTokens', {})
+
+        # consider a single, unprotected user authenticated
+        if not self.isProtected:
+            self.isAuthenticated = True
+
+    def loadLocalUsers(self):
+        """
+        Per-user data usable without plex.tv: {userId: {'token': ..., 'pinHash': ..., 'thumb': ...}}
+        Populated by harvestLocalUsers() while online and opportunistically on user switches.
+        """
+        try:
+            return json.loads(util.INTERFACE.getRegistry("LocalUsers", None, "myplex") or '{}')
+        except ValueError:
+            return {}
+
+    def saveLocalUsers(self, localUsers):
+        util.INTERFACE.setRegistry("LocalUsers", json.dumps(localUsers), "myplex")
+
+    def cacheLocalUser(self, userId, token=None, pin=None, thumb=None, serverTokens=None,
+                       tokenPrompted=None):
+        if not userId:
+            return
+        localUsers = self.loadLocalUsers()
+        user = localUsers.get(str(userId), {})
+        if token:
+            user['token'] = token
+            if pin:
+                user['pinHash'] = hashlib.sha256((pin + token).encode('utf-8')).hexdigest()
+        if thumb:
+            user['thumb'] = thumb
+        if serverTokens:
+            # merge, so a token added for one server doesn't drop the others
+            merged = user.get('serverTokens', {})
+            merged.update(serverTokens)
+            user['serverTokens'] = merged
+        if tokenPrompted is not None:
+            user['tokenPrompted'] = tokenPrompted
+        localUsers[str(userId)] = user
+        self.saveLocalUsers(localUsers)
+
+    def fetchServerTokens(self, token):
+        """
+        While online, resolve a user's plex.tv token into their per-server access tokens
+        ({machineIdentifier: accessToken}). The PMS validates access tokens against its own
+        database, so they keep working in local mode - unlike plex.tv account tokens, which
+        the transcoder rejects with a bare 400 for managed users.
+        """
+        serverTokens = {}
+        try:
+            import requests
+
+            headers = util.getPlexHeaders()
+            headers['X-Plex-Token'] = token
+            r = requests.get('https://plex.tv/api/resources?includeHttps=1', headers=headers, timeout=10)
+            data = ElementTree.fromstring(r.content)
+            for device in data.findall('Device'):
+                if 'server' not in (device.attrib.get('provides') or ''):
+                    continue
+                cid = device.attrib.get('clientIdentifier')
+                accessToken = device.attrib.get('accessToken')
+                if cid and accessToken:
+                    serverTokens[cid] = accessToken
+        except:
+            util.WARN_LOG("Local mode: couldn't fetch server access tokens")
+        return serverTokens
+
+    def harvestLocalUsers(self):
+        """
+        While plex.tv is still reachable, collect per-user tokens for all non-protected home users
+        so user switching keeps working in local mode. Protected users are only cached when they
+        sign in/switch while online (we need their PIN to do better than an unlock).
+        Avatars are cached to disk so no plex.tv image URL is ever handed to Kodi in local mode.
+        """
+        if self.isOffline or not self.isSignedIn:
+            return
+
+        import threading
+
+        # collect per-user data in parallel (avatar + switch-token + server access tokens
+        # each cost a full plex.tv round trip; doing 3 x users of them sequentially made
+        # "Go local" take ages); the registry writes happen serialized below, as
+        # cacheLocalUser read-modify-writes the whole LocalUsers blob
+        results = {}
+
+        def harvest(user):
+            entry = {'thumb': self.downloadAvatar(user.id, user.thumb)}
+
+            if user.id == self.ID:
+                entry['token'] = self.authToken
+                entry['serverTokens'] = self.fetchServerTokens(self.authToken)
+            elif not user.isProtected:
+                try:
+                    path = '/api/home/users/{0}/switch'.format(user.id)
+                    req = myplexrequest.MyPlexRequest(path)
+                    res = req.postToStringWithTimeout({'pin': ''}, timeout=util.PLEXTV_TIMEOUT)
+                    data = ElementTree.fromstring(res)
+                    token = data.attrib.get('authenticationToken')
+                    if token:
+                        entry['token'] = token
+                        entry['serverTokens'] = self.fetchServerTokens(token)
+                        util.DEBUG_LOG("Local mode: harvested token for home user {0}", user.id)
+                except:
+                    util.WARN_LOG("Local mode: couldn't harvest token for home user {0}", user.id)
+
+            results[user.id] = entry
+
+        users = [u for u in self.homeUsers if u.id != self.ID]
+        if not any(u.id == self.ID for u in self.homeUsers):
+            users.append(util.AttributeDict(id=self.ID, thumb=self.thumb, isProtected=self.isProtected))
+        else:
+            users.append(self.getHomeUser(self.ID))
+
+        threads = [threading.Thread(target=harvest, args=(user,), name='localharvest') for user in users]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(30)
+
+        for userId, entry in results.items():
+            self.cacheLocalUser(userId, token=entry.get('token'),
+                                thumb=entry.get('thumb'), serverTokens=entry.get('serverTokens'))
+
+    def downloadAvatar(self, userId, thumbUrl):
+        if not thumbUrl or not thumbUrl.startswith('http') or not userId:
+            return None
+
+        try:
+            import os
+            import requests
+
+            path = os.path.join(util.translatePath(util.ADDON.getAddonInfo('profile')), 'local_avatars')
+            try:
+                # racy when the harvest downloads avatars in parallel
+                os.makedirs(path)
+            except OSError:
+                pass
+            fn = os.path.join(path, '{0}.jpg'.format(userId))
+
+            r = requests.get(thumbUrl, timeout=10)
+            if r.status_code == 200:
+                with open(fn, 'wb') as f:
+                    f.write(r.content)
+                return fn
+        except:
+            util.WARN_LOG("Local mode: couldn't cache avatar for user {0}", userId)
+        return None
+
+    def safeUserThumb(self, userId, thumb=''):
+        """
+        Returns the given thumb unchanged - except in local mode, where only cached local files
+        may be used as avatars (or nothing at all): Kodi's texture cache fetches image URLs
+        itself, outside of our transport layer, so a plex.tv URL must never leave this method.
+        """
+        if not util.LOCAL_MODE:
+            return thumb
+        return self.loadLocalUsers().get(str(userId), {}).get('thumb') or ''
 
     def saveState(self):
         obj = {
@@ -83,6 +261,8 @@ class MyPlexAccount(object):
             'subtitlesSDH': self.subtitlesSDH,
             'subtitlesForced': self.subtitlesForced,
             'subtitlesLanguage': self.subtitlesLanguage,
+            'audioLanguage': self.audioLanguage,
+            'autoSelectSubtitle': self.autoSelectSubtitle,
         }
 
         if self.cacheHomeUsers:
@@ -122,7 +302,9 @@ class MyPlexAccount(object):
                 self.lastHomeUserUpdate = obj.get('lastHomeUserUpdate')
                 self.subtitlesSDH = obj.get('subtitlesSDH', 0)
                 self.subtitlesForced = obj.get('subtitlesForced', 0)
-                self.subtitlesLanguage = obj.get('subtitlesLanguage', 'en')
+                self.subtitlesLanguage = obj.get('subtitlesLanguage', '')
+                self.audioLanguage = obj.get('audioLanguage', '')
+                self.autoSelectSubtitle = obj.get('autoSelectSubtitle', 0)
                 if self.cacheHomeUsers:
                     self.homeUsers = [HomeUser(data) for data in obj.get('homeUsers', [])]
                     self.setAdminByCHU()
@@ -158,6 +340,8 @@ class MyPlexAccount(object):
         util.LOG("subtitlesSDH: {0}", self.subtitlesSDH)
         util.LOG("subtitlesForced: {0}", self.subtitlesForced)
         util.LOG("subtitlesLanguage: {0}", self.subtitlesLanguage)
+        util.LOG("audioLanguage: {0}", self.audioLanguage)
+        util.LOG("autoSelectSubtitle: {0}", self.autoSelectSubtitle)
 
     def getHomeSubscription(self):
         """
@@ -205,7 +389,12 @@ class MyPlexAccount(object):
             prof = data.find('profile_settings')
             self.subtitlesSDH = int(prof.attrib.get('default_subtitle_accessibility', 0))
             self.subtitlesForced = int(prof.attrib.get('default_subtitle_forced', 0))
-            self.subtitlesLanguage = str(prof.attrib.get('default_subtitle_language', 'en'))
+            self.subtitlesLanguage = str(prof.attrib.get('default_subtitle_language', ''))
+            self.audioLanguage = str(prof.attrib.get('default_audio_language', ''))
+            # Plex "Subtitle Mode" (auto_select_subtitle): 0 = manually selected,
+            # 1 = shown with foreign audio, 2 = always enabled (confirmed). Only mode 1 implies
+            # suppressing same-language subtitles, which is what our native-languages logic derives from.
+            self.autoSelectSubtitle = int(prof.attrib.get('auto_select_subtitle', 0))
 
             # PIN
             if data.attrib.get('pin'):
@@ -300,6 +489,10 @@ class MyPlexAccount(object):
         # Clear the saved resources
         util.INTERFACE.clearRegistry("mpaResources", "xml_cache")
 
+        # Clear harvested local mode user tokens
+        util.INTERFACE.clearRegistry("LocalUsers", "myplex")
+        self.serverTokens = {}
+
         # Remove all saved servers
         plexapp.SERVERMANAGER.clearServers()
 
@@ -333,9 +526,11 @@ class MyPlexAccount(object):
     def updateHomeUsers(self, use_async=False, refreshSubscription=False):
         # Ignore request and clear any home users we are not signed in
         if not self.isSignedIn:
-            self.homeUsers = []
-            if self.isOffline:
-                self.homeUsers.append(MyPlexAccount())
+            # explicit local mode keeps the cached home user list for local user switching
+            if not (util.LOCAL_MODE and self.homeUsers):
+                self.homeUsers = []
+                if self.isOffline:
+                    self.homeUsers.append(MyPlexAccount())
 
             self.lastHomeUserUpdate = None
             return
@@ -401,16 +596,59 @@ class MyPlexAccount(object):
         if userId == self.ID and self.isAuthenticated:
             return True
 
-        # Offline support
+        # Offline/local support
         if self.isOffline:
-            hashed = 'NONE'
-            if pin and self.authToken:
-                hashed = hashlib.sha256(pin + self.authToken).digest()
+            localUser = self.loadLocalUsers().get(str(userId), {})
+            homeUser = self.getHomeUser(userId)
+            token = localUser.get('token') or self.authToken
 
-            if not self.isProtected or self.isAuthenticated or hashed == (self.pin or ""):
-                util.DEBUG_LOG("OFFLINE access granted")
+            if homeUser is not None and userId != self.ID:
+                protected = homeUser.isProtected
+            else:
+                protected = self.isProtected
+
+            granted = not protected or self.isAuthenticated
+            if not granted and pin and token:
+                hashed = hashlib.sha256((pin + token).encode('utf-8')).hexdigest()
+                granted = bool(localUser.get('pinHash')) and localUser.get('pinHash') == hashed
+
+            if granted:
+                util.DEBUG_LOG("OFFLINE/LOCAL access granted for {0}", userId)
+                oldId = self.ID
                 self.isAuthenticated = True
-                self.validateToken(self.authToken, True)
+                self.serverTokens = localUser.get('serverTokens', {})
+
+                # account-less local mode has no plex.tv token at all; the profile's server
+                # token (if any) is the whole identity there
+                accountLess = not self.authToken and not self.isSignedIn
+                hasIdentity = bool(localUser.get('token') or localUser.get('serverTokens'))
+
+                if (hasIdentity or accountLess) and userId != self.ID and homeUser is not None:
+                    # real switch: adopt the harvested identity/token; the PMS validates home user
+                    # tokens against its own database, no plex.tv needed
+                    self.ID = userId
+                    self.title = homeUser.get('title')
+                    self.username = homeUser.get('username') or self.username
+                    self.thumb = localUser.get('thumb') or homeUser.get('thumb')
+                    self.isAdmin = homeUser.isAdmin
+                    self.isManaged = homeUser.isManaged
+                    self.isProtected = homeUser.isProtected
+
+                if token:
+                    self.validateToken(token, True)
+                    # the transport block answers the validation synchronously, so
+                    # onAccountResponse has already consumed switchUser; restore it -
+                    # callers check it to detect an actual switch
+                    self.switchUser = True
+                    # only save after validateToken has adopted the token - saving earlier
+                    # persists the new identity paired with the previous user's token
+                    self.saveState()
+                else:
+                    # nothing to validate against plex.tv - announce the switch ourselves
+                    self.switchUser = True
+                    self.saveState()
+                    util.APP.trigger("change:user", account=self, reallyChanged=oldId != self.ID)
+                    plexapp.refreshResources(True)
                 return True
         else:
             # build path and post to myplex to switch the user
@@ -426,6 +664,9 @@ class MyPlexAccount(object):
 
             if data.attrib.get('authenticationToken'):
                 self.isAuthenticated = True
+                # keep the per-user token/PIN cache fresh for local mode
+                self.cacheLocalUser(userId, token=data.attrib.get('authenticationToken'), pin=pin or None,
+                                    serverTokens=self.fetchServerTokens(data.attrib.get('authenticationToken')))
                 # validate the token (trigger change:user) on user change or channel startup
                 if userId != self.ID or not locks.LOCKS.isLocked("idleLock"):
                     self.revalidatePlexPass = True

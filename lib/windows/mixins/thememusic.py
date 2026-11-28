@@ -32,8 +32,10 @@ class ThemeMusicTask(backgroundthread.Task):
                         r = GET(self.url)
                         r.raise_for_status()
                         f = xbmcvfs.File(fn, 'w')
-                        f.write(r.content)
-                        f.close()
+                        try:
+                            f.write(r.content)
+                        finally:
+                            f.close()
                         path = fn
                         is_cached = True
                         util.DEBUG_LOG("Cached theme music for {} to: {}", self.rating_key, path)
