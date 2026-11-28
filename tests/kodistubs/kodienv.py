@@ -18,12 +18,15 @@ function (e.g. util.populateTimeFormat()) or test the function directly.
 
 from __future__ import absolute_import
 
+from io import open
+
 import atexit
 import collections
 import json
 import os
 import re
 import shutil
+import sys
 import tempfile
 
 
@@ -134,7 +137,8 @@ class KodiEnv(object):
         self.settings = {}
 
         self.infolabels = {
-            "System.BuildVersion": "21.2 (21.2.0) Git:20250101-abcdef1",
+            "System.BuildVersion": ("18.9 (18.9.0)" if sys.version_info[0] == 2
+                                    else "21.2 (21.2.0) Git:20250101-abcdef1"),
             "System.Time": "13:45:00",
             "System.CurrentWindow": "Home",
             # lib.cache parses this with [:-2], so the "MB" suffix matters

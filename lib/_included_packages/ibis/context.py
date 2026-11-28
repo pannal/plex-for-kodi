@@ -159,6 +159,8 @@ class Undefined:
     def __bool__(self):
         return False
 
+    __nonzero__ = __bool__
+
     def __len__(self):
         return 0
 
@@ -170,6 +172,8 @@ class Undefined:
 
     def __next__(self):
         raise StopIteration
+
+    next = __next__
 
     def __eq__(self, other):
         return False

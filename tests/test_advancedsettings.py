@@ -8,7 +8,9 @@ unrelated sections: a user's <network> block has to survive a <hosts> or
 <cache> update.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
+
+from io import open
 
 import os
 

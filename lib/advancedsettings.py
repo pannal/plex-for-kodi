@@ -14,6 +14,8 @@ class AdvancedSettings(object):
     def __bool__(self):
         return bool(self._data)
 
+    __nonzero__ = __bool__
+
     def getData(self):
         return self._data
 

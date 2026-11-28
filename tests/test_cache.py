@@ -8,7 +8,9 @@ data cache silently migrates and prunes itself. Both are easy to break without
 noticing.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
+
+from io import open
 
 import json
 import os

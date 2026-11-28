@@ -35,6 +35,8 @@ class PlexHostsManager(object):
     def __bool__(self):
         return bool(self._hosts)
 
+    __nonzero__ = __bool__
+
     def __len__(self):
         return self and len(self._hosts) or 0
 

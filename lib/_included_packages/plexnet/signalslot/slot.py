@@ -11,7 +11,7 @@ from .signal import BaseSlot
 
 # We cannot test a branch for Python >= 3.4 in Python < 3.4.
 if sys.version_info < (3, 4):  # pragma: no cover
-    from weakrefmethod import WeakMethod
+    from ._weakmethod import WeakMethod
 else:  # pragma: no cover
     from weakref import WeakMethod
 

@@ -49,6 +49,8 @@ class Task:
     def __bool__(self):
         return self.isValid()
 
+    __nonzero__ = __bool__
+
     def start(self):
         BGThreader.addTask(self)
 

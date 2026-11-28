@@ -14,6 +14,14 @@ python3 -m unittest discover -s tests -t . # no dependencies at all
 Tests are plain `unittest.TestCase` classes, so both runners work. pytest is
 optional and only buys better output and `-k` filtering.
 
+For Leia, also run `python2.7 -B -m tests.run_legacy` with its manifest's
+Python 2-compatible dependencies (including six >= 1.15 and requests 2.22).
+This runs the compatible regression modules plus fresh-process startup,
+Unicode playback paths, weak callback ownership, and all-theme rendering.
+The stubs default to Kodi 18 under Python 2 and Kodi 21 under Python 3.
+The full suite still needs Python 3 unittest/mock and AST APIs; a Kodi 18
+version string under Python 3 is not a substitute for the Python 2 run.
+
 Nothing needs a Kodi install, a Plex server or a network connection. Nothing is
 written into the working tree — every path the addon would write to is
 redirected into a temp directory that is removed on exit.

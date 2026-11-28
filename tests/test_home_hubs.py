@@ -19,7 +19,9 @@ monitor thread that spins until Kodi says abort. Setting abort_requested before
 the import lets that thread exit immediately.
 """
 
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
+
+from six import get_unbound_function
 
 from kodienv import ENV
 
@@ -35,7 +37,7 @@ class FakeHub(object):
 
     # borrow the actual implementation so the suffix stripping under test is the
     # shipped one, not a re-implementation
-    getCleanHubIdentifier = plexlibrary.BaseHub.getCleanHubIdentifier
+    getCleanHubIdentifier = get_unbound_function(plexlibrary.BaseHub.getCleanHubIdentifier)
 
     def __init__(self, hubIdentifier, title):
         self.hubIdentifier = hubIdentifier
